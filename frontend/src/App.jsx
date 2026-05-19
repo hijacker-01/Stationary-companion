@@ -11,6 +11,9 @@ import Suppliers from "./pages/Suppliers";
 import Customers from "./pages/Customers";
 import Schemes from "./pages/Schemes";
 import SalesReturn from "./pages/SalesReturn";
+import PurchaseReturn from "./pages/PurchaseReturn";
+import SalesmanPage from "./pages/Salesman";
+import Vouchers from "./pages/Vouchers";
 
 function App() {
   return (
@@ -28,6 +31,9 @@ function App() {
         <Route path="/customers" element={<Customers />} />
         <Route path="/schemes" element={<Schemes />} />
         <Route path="/sales-return" element={<SalesReturn />} />
+        <Route path="/purchase-return" element={<PurchaseReturn />} />
+        <Route path="/salesman" element={<SalesmanPage />} />
+        <Route path="/vouchers" element={<Vouchers />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

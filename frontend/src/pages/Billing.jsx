@@ -22,6 +22,8 @@ export default function Billing() {
   const [allSchemes, setAllSchemes] = useState([]);
   const [settings, setSettings] = useState({});
   const [customers, setCustomers] = useState([]);
+  const [salesmen, setSalesmen] = useState([]);
+  const [selectedSalesman, setSelectedSalesman] = useState({ id: "", name: "" });
 
   const fetchBills = () => {
     axios.get("http://localhost:5000/api/billing", { headers: headers() })
@@ -40,6 +42,10 @@ export default function Billing() {
   const fetchCustomers = () =>
     axios.get("http://localhost:5000/api/customers", { headers: headers() })
       .then(res => setCustomers(res.data || []));
+
+  const fetchSalesmen = () =>
+    axios.get("http://localhost:5000/api/salesman", { headers: headers() })
+      .then(res => setSalesmen(res.data || []));
 
   const handleCustomerSelect = (name) => {
     const found = customers.find(c => c.name.toLowerCase() === name.toLowerCase());
@@ -70,7 +76,7 @@ export default function Billing() {
     axios.get("http://localhost:5000/api/settings", { headers: headers() })
       .then(res => setSettings(res.data || {}));
 
-  useEffect(() => { fetchBills(); fetchItems(); fetchSchemes(); fetchSettings(); fetchCustomers(); }, []);
+  useEffect(() => { fetchBills(); fetchItems(); fetchSchemes(); fetchSettings(); fetchCustomers(); fetchSalesmen(); }, []);
 
   // Check for applicable schemes for a row
   const checkScheme = async (index, itemName, qty) => {
@@ -106,6 +112,12 @@ export default function Billing() {
       if (found.expiry && new Date(found.expiry) < new Date()) {
         alert("⚠️ WARNING: This batch is expired and should not be billed!");
       }
+      
+      // Drug schedule warning enforcement
+      if (found.schedule && found.schedule !== "None") {
+        alert(`🚨 DRUG COMPLIANCE WARNING:\n\nThis item is classified under ${found.schedule}.\nA registered medical practitioner's prescription is MANDATORY before dispensing this drug.`);
+      }
+
       updated[index] = {
         ...updated[index],
         name: found.name,
@@ -186,6 +198,8 @@ export default function Billing() {
       customerGst: customer.gstNumber,
       dueDate: customer.dueDate || null,
       transportDetails: customer.transportDetails,
+      salesmanId: selectedSalesman.id || null,
+      salesmanName: selectedSalesman.name || "",
       items: rows.filter(r => r.name),
       subtotal: parseFloat(subtotal.toFixed(2)),
       gstAmount: parseFloat(gstAmount.toFixed(2)),
@@ -218,6 +232,7 @@ export default function Billing() {
     setCustomer({ name: "", phone: "", address: "", dlNumber: "", gstNumber: "", transportDetails: "Hand Delivery", dueDate: "" });
     setDiscount(0);
     setPaymentMode("cash");
+    setSelectedSalesman({ id: "", name: "" });
     setActiveBill(null);
     setRowSchemes({});
     setView("list");
@@ -369,7 +384,7 @@ export default function Billing() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-4 pt-4 border-t border-gray-100">
+              <div className="grid grid-cols-5 gap-3 pt-4 border-t border-gray-100">
                 <div>
                   <label className="text-xs font-medium text-gray-600 block mb-1">Drug License (DL) No</label>
                   <input
@@ -408,6 +423,22 @@ export default function Billing() {
                     onChange={e => setCustomer({ ...customer, transportDetails: e.target.value })}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 block mb-1">Salesman</label>
+                  <select
+                    value={selectedSalesman.id}
+                    onChange={e => {
+                      const found = salesmen.find(s => s.id === parseInt(e.target.value));
+                      setSelectedSalesman(found ? { id: found.id, name: found.name } : { id: "", name: "" });
+                    }}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                  >
+                    <option value="">No Salesman</option>
+                    {salesmen.map(s => (
+                      <option key={s.id} value={s.id}>{s.name} ({s.area || "No Area"})</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>

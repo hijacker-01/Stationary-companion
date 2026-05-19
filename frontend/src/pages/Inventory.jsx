@@ -5,7 +5,8 @@ import Sidebar from "../components/Sidebar";
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
 
-const empty = { name: "", batch: "", hsn: "", pack: "", category: "", company: "", stock_qty: "", scheme_qty: "", unit: "strips", expiry: "", location: "", mrp: "", selling_price: "", cost_price: "", purchaseScheme: "" };
+const empty = { name: "", batch: "", hsn: "", pack: "", category: "", company: "", stock_qty: "", scheme_qty: "", unit: "strips", expiry: "", location: "", mrp: "", selling_price: "", cost_price: "", purchaseScheme: "", schedule: "None", reorderPoint: 10 };
+const emptyAdj = { itemId: "", itemName: "", batch: "", type: "increase", quantity: 1, reason: "audit", note: "" };
 
 export default function Inventory() {
   const [items, setItems] = useState([]);
@@ -14,6 +15,8 @@ export default function Inventory() {
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState("");
   const [allSchemes, setAllSchemes] = useState([]);
+  const [adjForm, setAdjForm] = useState(emptyAdj);
+  const [showAdjModal, setShowAdjModal] = useState(false);
 
   const fetchItems = () => {
     axios.get("http://localhost:5000/api/items", { headers: headers() })
@@ -40,7 +43,12 @@ export default function Inventory() {
   };
 
   const handleEdit = (item) => {
-    setForm({ ...item, expiry: item.expiry?.split("T")[0] });
+    setForm({ 
+      ...item, 
+      expiry: item.expiry?.split("T")[0],
+      schedule: item.schedule || "None",
+      reorderPoint: item.reorderPoint || 10
+    });
     setEditId(item.id);
     setShowModal(true);
   };
@@ -51,12 +59,39 @@ export default function Inventory() {
     fetchItems();
   };
 
+  const openAdjustment = (item) => {
+    setAdjForm({
+      itemId: item.id,
+      itemName: item.name,
+      batch: item.batch || "",
+      type: "increase",
+      quantity: 1,
+      reason: "audit",
+      note: ""
+    });
+    setShowAdjModal(true);
+  };
+
+  const handleAdjustmentSubmit = async () => {
+    if (!adjForm.quantity || parseInt(adjForm.quantity) <= 0) {
+      return alert("Please specify a valid positive quantity");
+    }
+    try {
+      await axios.post("http://localhost:5000/api/stock-adjust", adjForm, { headers: headers() });
+      setShowAdjModal(false);
+      setAdjForm(emptyAdj);
+      fetchItems();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to submit stock adjustment");
+    }
+  };
+
   const filtered = items.filter(i =>
     i.name.toLowerCase().includes(search.toLowerCase()) ||
     i.batch?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const lowStockItems = items.filter(i => i.stock_qty > 0 && i.stock_qty < 10);
+  const lowStockItems = items.filter(i => i.stock_qty > 0 && i.stock_qty <= (i.reorderPoint || 10));
   const outOfStockItems = items.filter(i => i.stock_qty <= 0);
   const totalStockValue = items.reduce((sum, i) => sum + (i.stock_qty * (i.selling_price || i.mrp || 0)), 0);
 
@@ -131,6 +166,11 @@ export default function Inventory() {
                   <td className="px-6 py-4 text-gray-400">{i + 1}</td>
                   <td className="px-6 py-4">
                     <span className="font-semibold text-gray-800">{item.name}</span>
+                    {item.schedule && item.schedule !== "None" && (
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-700 border border-rose-200">
+                        💊 {item.schedule}
+                      </span>
+                    )}
                     {item.purchaseScheme && (
                       <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 border border-green-200">
                         🎁 {item.purchaseScheme}
@@ -154,7 +194,7 @@ export default function Inventory() {
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
                       item.stock_qty <= 0
                         ? "bg-red-100 text-red-700 border border-red-200"
-                        : item.stock_qty < 10
+                        : item.stock_qty <= (item.reorderPoint || 10)
                           ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
                           : "bg-green-100 text-green-700 border border-green-200"
                     }`}>
@@ -163,8 +203,8 @@ export default function Inventory() {
                     {item.stock_qty <= 0 && (
                       <span className="ml-2 text-red-500 text-[10px] font-semibold uppercase">Out of Stock</span>
                     )}
-                    {item.stock_qty > 0 && item.stock_qty < 10 && (
-                      <span className="ml-2 text-yellow-600 text-[10px] font-semibold uppercase">Low Stock</span>
+                    {item.stock_qty > 0 && item.stock_qty <= (item.reorderPoint || 10) && (
+                      <span className="ml-2 text-yellow-600 text-[10px] font-semibold uppercase">Low (Min: {item.reorderPoint || 10})</span>
                     )}
                   </td>
                   <td className="px-6 py-4">
@@ -182,9 +222,10 @@ export default function Inventory() {
                   <td className="px-6 py-4 text-gray-600">
                     {item.expiry ? new Date(item.expiry).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
                   </td>
-                  <td className="px-6 py-4 flex gap-2">
-                    <button onClick={() => handleEdit(item)} className="text-blue-600 hover:underline text-xs font-medium">Edit</button>
-                    <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:underline text-xs font-medium">Delete</button>
+                  <td className="px-6 py-4 flex gap-2.5">
+                    <button onClick={() => handleEdit(item)} className="text-blue-600 hover:underline text-xs font-semibold">Edit</button>
+                    <button onClick={() => openAdjustment(item)} className="text-emerald-600 hover:underline text-xs font-semibold">🛠️ Adjust</button>
+                    <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:underline text-xs font-semibold">Delete</button>
                   </td>
                 </tr>
               ))}
@@ -274,12 +315,132 @@ export default function Inventory() {
                     </div>
                   )}
                 </div>
+
+                {/* Drug Schedule Input */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Drug Schedule</label>
+                  <select
+                    value={form.schedule || "None"}
+                    onChange={(e) => setForm({ ...form, schedule: e.target.value })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                  >
+                    <option value="None">None (General)</option>
+                    <option value="H">Schedule H</option>
+                    <option value="H1">Schedule H1</option>
+                    <option value="X">Schedule X</option>
+                  </select>
+                </div>
+
+                {/* Reorder Point Input */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Reorder Level (Min Qty)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 10"
+                    value={form.reorderPoint || ""}
+                    onChange={(e) => setForm({ ...form, reorderPoint: parseInt(e.target.value) || 0 })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
               </div>
               <div className="flex gap-3 mt-6">
                 <button onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold">
                   {editId ? "Update Item" : "Add Item"}
                 </button>
                 <button onClick={() => setShowModal(false)} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Stock Adjustment Modal */}
+        {showAdjModal && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-gray-800">🛠️ Stock Adjustment</h2>
+                <button onClick={() => setShowAdjModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-4 text-xs">
+                <p className="font-semibold text-blue-800">Item: {adjForm.itemName}</p>
+                {adjForm.batch && <p className="text-blue-600 mt-0.5">Batch: {adjForm.batch}</p>}
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Adjustment Type</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setAdjForm({ ...adjForm, type: "increase" })}
+                      className={`py-2 rounded-lg text-sm font-semibold border ${adjForm.type === "increase" ? "bg-emerald-50 border-emerald-500 text-emerald-700 font-bold" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                    >
+                      ➕ Add Stock
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAdjForm({ ...adjForm, type: "decrease" })}
+                      className={`py-2 rounded-lg text-sm font-semibold border ${adjForm.type === "decrease" ? "bg-rose-50 border-rose-500 text-rose-700 font-bold" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                    >
+                      ➖ Deduct Stock
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Quantity</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={adjForm.quantity}
+                    onChange={(e) => setAdjForm({ ...adjForm, quantity: Math.max(1, parseInt(e.target.value) || 1) })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Reason</label>
+                  <select
+                    value={adjForm.reason}
+                    onChange={(e) => setAdjForm({ ...adjForm, reason: e.target.value })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                  >
+                    <option value="audit">Physical Verification Audit</option>
+                    <option value="damage">Damaged Goods</option>
+                    <option value="theft">Theft / Missing</option>
+                    <option value="expiry">Expired Stock Disposal</option>
+                    <option value="other">Other / Correction</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Remarks / Note</label>
+                  <textarea
+                    rows="3"
+                    value={adjForm.note}
+                    placeholder="Provide context for this adjustment..."
+                    onChange={(e) => setAdjForm({ ...adjForm, note: e.target.value })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleAdjustmentSubmit}
+                  className={`flex-1 text-white py-2.5 rounded-xl text-sm font-semibold shadow ${adjForm.type === "increase" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"}`}
+                >
+                  Adjust Stock
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAdjModal(false)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold"
+                >
                   Cancel
                 </button>
               </div>

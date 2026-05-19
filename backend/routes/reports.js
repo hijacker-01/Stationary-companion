@@ -103,4 +103,101 @@ router.get("/expiry-summary", async (req, res) => {
   }
 });
 
+// Outstanding Aging Report (Customers and Suppliers)
+router.get("/outstanding", async (req, res) => {
+  try {
+    const Customer = require("../models/Customer");
+    const Supplier = require("../models/Supplier");
+    
+    const customers = await Customer.findAll({
+      where: { balance: { [Op.gt]: 0 } }
+    });
+    const suppliers = await Supplier.findAll({
+      where: { balance: { [Op.gt]: 0 } }
+    });
+
+    const today = new Date();
+
+    const customerOutstanding = customers.map(c => {
+      const ageDays = Math.ceil((today - new Date(c.updatedAt)) / 86400000);
+      return {
+        id: c.id,
+        name: c.name,
+        phone: c.phone || "",
+        balance: c.balance,
+        days: ageDays,
+      };
+    });
+
+    const supplierOutstanding = suppliers.map(s => {
+      const ageDays = Math.ceil((today - new Date(s.updatedAt)) / 86400000);
+      return {
+        id: s.id,
+        name: s.name,
+        phone: s.phone || "",
+        outstanding: s.balance,
+        days: ageDays,
+      };
+    });
+
+    res.json({
+      customers: customerOutstanding,
+      suppliers: supplierOutstanding,
+      totalCustomerOutstanding: customers.reduce((s, c) => s + c.balance, 0),
+      totalSupplierOutstanding: suppliers.reduce((s, sup) => s + sup.balance, 0),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Salesman wise Sales Report
+router.get("/salesman-sales", async (req, res) => {
+  try {
+    const bills = await Bill.findAll({
+      where: { status: "paid" }
+    });
+
+    const repWise = {};
+    bills.forEach(b => {
+      const repName = b.salesmanName || "Self / Direct";
+      if (!repWise[repName]) {
+        repWise[repName] = { salesmanName: repName, sales: 0, bills: 0 };
+      }
+      repWise[repName].sales += b.total;
+      repWise[repName].bills += 1;
+    });
+
+    res.json(Object.values(repWise));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Item wise Sales Report
+router.get("/item-sales", async (req, res) => {
+  try {
+    const bills = await Bill.findAll({
+      where: { status: "paid" }
+    });
+
+    const itemWise = {};
+    bills.forEach(b => {
+      (b.items || []).forEach(item => {
+        const key = item.name;
+        if (!itemWise[key]) {
+          itemWise[key] = { name: item.name, qty: 0, schemeQty: 0, amount: 0 };
+        }
+        itemWise[key].qty += parseInt(item.qty || 0);
+        itemWise[key].schemeQty += parseInt(item.schemeQty || 0);
+        itemWise[key].amount += parseFloat(item.amount || 0);
+      });
+    });
+
+    res.json(Object.values(itemWise));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

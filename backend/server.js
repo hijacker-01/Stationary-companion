@@ -37,6 +37,7 @@ app.use("/api/purchase-return",require("./routes/purchaseReturn"));
 app.use("/api/salesman",       require("./routes/salesman"));
 app.use("/api/stock-adjust",   require("./routes/stockAdjustment"));
 app.use("/api/dashboard",      require("./routes/dashboard"));
+app.use("/api/vouchers",       require("./routes/vouchers"));
 
 const PORT = process.env.PORT || 5000;
 
