@@ -7,6 +7,7 @@ const Bill = sequelize.define("Bill", {
   customerPhone:{ type: DataTypes.STRING },
   customerAddress: { type: DataTypes.STRING },
   customerDl:   { type: DataTypes.STRING },
+  customerGst:  { type: DataTypes.STRING },
   items:        { type: DataTypes.JSON },
   subtotal:     { type: DataTypes.FLOAT, defaultValue: 0 },
   gstAmount:    { type: DataTypes.FLOAT, defaultValue: 0 },

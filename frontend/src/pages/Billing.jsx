@@ -21,6 +21,7 @@ export default function Billing() {
   const [rowSchemes, setRowSchemes] = useState({}); // { rowIndex: [scheme, ...] }
   const [allSchemes, setAllSchemes] = useState([]);
   const [settings, setSettings] = useState({});
+  const [customers, setCustomers] = useState([]);
 
   const fetchBills = () => {
     axios.get("http://localhost:5000/api/billing", { headers: headers() })
@@ -723,7 +724,7 @@ export default function Billing() {
                 {activeBill.customerGst && <p className="font-semibold">GSTIN: {activeBill.customerGst}</p>}
               </div>
               <div className="w-1/2 pl-4 space-y-1">
-                <div className="flex justify-between"><span className="font-bold">Invoice No:</span> <span className="font-mono">{settings.invoicePrefix || "INV"}-{activeBill.billNo}</span></div>
+                <div className="flex justify-between"><span className="font-bold">Invoice No:</span> <span className="font-mono">{activeBill.billNo}</span></div>
                 <div className="flex justify-between"><span className="font-bold">Invoice Date:</span> <span>{new Date(activeBill.createdAt).toLocaleDateString("en-IN")}</span></div>
                 <div className="flex justify-between"><span className="font-bold">Due Date:</span> <span>{activeBill.dueDate ? new Date(activeBill.dueDate).toLocaleDateString("en-IN") : "N/A"}</span></div>
                 <div className="flex justify-between"><span className="font-bold">Transport:</span> <span>{activeBill.transportDetails || "Hand Delivery"}</span></div>
