@@ -19,6 +19,7 @@ import DeliveryMan from "./pages/DeliveryMan";
 import DirectMessages from "./pages/DirectMessages";
 import Expenses from "./pages/Expenses";
 import JournalVouchers from "./pages/JournalVouchers";
+import PurchaseBills from "./pages/PurchaseBills";
 
 function App() {
   return (
@@ -44,6 +45,7 @@ function App() {
         <Route path="/messages" element={<DirectMessages />} />
         <Route path="/expenses" element={<Expenses />} />
         <Route path="/journal-vouchers" element={<JournalVouchers />} />
+        <Route path="/purchase-bills" element={<PurchaseBills />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
