@@ -46,13 +46,37 @@ router.post("/", async (req, res) => {
         return res.status(400).json({ error: `Item "${billedItem.name}" not found in inventory` });
       }
       const billedQty = parseInt(billedItem.qty) || 0;
-      if (item.qty < billedQty) {
+      const billedSchemeQty = parseInt(billedItem.schemeQty) || 0;
+      const totalToDeduct = billedQty + billedSchemeQty;
+      
+      const totalAvailable = item.qty + item.schemeQty;
+      
+      if (totalAvailable < totalToDeduct) {
         await t.rollback();
         return res.status(400).json({
-          error: `Insufficient stock for "${billedItem.name}". Available: ${item.qty}, Requested: ${billedQty}`
+          error: `Insufficient total stock for "${billedItem.name}". Available: ${totalAvailable}, Requested: ${totalToDeduct}`
         });
       }
-      await item.update({ qty: item.qty - billedQty }, { transaction: t });
+      
+      let remainingToDeduct = totalToDeduct;
+      let newQty = item.qty;
+      let newSchemeQty = item.schemeQty;
+      
+      // Consume normal stock first
+      if (newQty >= remainingToDeduct) {
+        newQty -= remainingToDeduct;
+        remainingToDeduct = 0;
+      } else {
+        remainingToDeduct -= newQty;
+        newQty = 0;
+        // Consume remainder from scheme stock
+        newSchemeQty -= remainingToDeduct;
+      }
+      
+      await item.update({ 
+        qty: newQty,
+        schemeQty: newSchemeQty
+      }, { transaction: t });
     }
 
     const bill = await Bill.create({
@@ -111,7 +135,9 @@ router.delete("/:id", async (req, res) => {
     for (const billedItem of billedItems) {
       const item = await Item.findOne({ where: { name: billedItem.name }, transaction: t });
       if (item) {
-        await item.update({ qty: item.qty + (parseInt(billedItem.qty) || 0) }, { transaction: t });
+        await item.update({ 
+          qty: item.qty + (parseInt(billedItem.qty) || 0) + (parseInt(billedItem.schemeQty) || 0)
+        }, { transaction: t });
       }
     }
 

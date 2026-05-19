@@ -7,7 +7,7 @@ const headers = () => ({ Authorization: `Bearer ${token()}` });
 const GST_RATES = [0, 5, 12, 18, 28];
 
 const emptySupplier = { name:"", phone:"", email:"", address:"", gstNumber:"", panNumber:"", contactPerson:"", creditLimit:0, creditDays:30 };
-const emptyItem = { name:"", batch:"", category:"", qty:1, unit:"units", mrp:"", costPrice:"", gst:12, expiry:"" };
+const emptyItem = { name:"", batch:"", category:"", qty:1, schemeQty:0, unit:"units", mrp:"", costPrice:"", gst:12, expiry:"" };
 
 const STATUS_COLOR = {
   pending:   "bg-yellow-100 text-yellow-700 border-yellow-200",
@@ -416,6 +416,7 @@ export default function Suppliers() {
                     <th className="px-2 py-2 text-left">Item Name</th>
                     <th className="px-2 py-2 text-left">Batch</th>
                     <th className="px-2 py-2 text-left">Qty</th>
+                    <th className="px-2 py-2 text-left">Scheme Qty</th>
                     <th className="px-2 py-2 text-left">Unit</th>
                     <th className="px-2 py-2 text-left">Cost ₹</th>
                     <th className="px-2 py-2 text-left">MRP ₹</th>
@@ -433,9 +434,9 @@ export default function Suppliers() {
                     return (
                       <Fragment key={i}>
                         <tr>
-                          {["name","batch","qty","unit","costPrice","mrp"].map(f => (
+                          {["name","batch","qty","schemeQty","unit","costPrice","mrp"].map(f => (
                             <td key={f} className="px-1 py-1">
-                              <input type={["qty","costPrice","mrp"].includes(f)?"number":"text"}
+                              <input type={["qty","schemeQty","costPrice","mrp"].includes(f)?"number":"text"}
                                 value={item[f]} placeholder={f}
                                 onChange={e => {
                                   const u=[...poItems]; u[i]={...u[i],[f]:e.target.value}; setPoItems(u);

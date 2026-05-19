@@ -5,7 +5,7 @@ import Sidebar from "../components/Sidebar";
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
 
-const empty = { name: "", batch: "", category: "", company: "", qty: "", unit: "strips", expiry: "", location: "", mrp: "", costPrice: "", purchaseScheme: "" };
+const empty = { name: "", batch: "", category: "", company: "", qty: "", schemeQty: "", unit: "strips", expiry: "", location: "", mrp: "", costPrice: "", purchaseScheme: "" };
 
 export default function Inventory() {
   const [items, setItems] = useState([]);
@@ -116,6 +116,8 @@ export default function Inventory() {
                 <th className="px-6 py-4 text-left">Category</th>
                 <th className="px-6 py-4 text-left">Company</th>
                 <th className="px-6 py-4 text-left">Stock Qty</th>
+                <th className="px-6 py-4 text-left">Scheme Qty</th>
+                <th className="px-6 py-4 text-left">Total Qty</th>
                 <th className="px-6 py-4 text-left">MRP</th>
                 <th className="px-6 py-4 text-left">Expiry</th>
                 <th className="px-6 py-4 text-left">Actions</th>
@@ -161,6 +163,17 @@ export default function Inventory() {
                       <span className="ml-2 text-yellow-600 text-[10px] font-semibold uppercase">Low Stock</span>
                     )}
                   </td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
+                      🎁 {item.schemeQty || 0}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="font-bold text-gray-800 text-base">
+                      {(item.qty || 0) + (item.schemeQty || 0)}
+                    </span>
+                    <span className="text-gray-500 text-xs ml-1">{item.unit}</span>
+                  </td>
                   <td className="px-6 py-4 text-green-600 font-medium">₹{item.mrp || 0}</td>
                   <td className="px-6 py-4 text-gray-600">
                     {item.expiry ? new Date(item.expiry).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
@@ -192,6 +205,7 @@ export default function Inventory() {
                   { key: "category", label: "Category", type: "text" },
                   { key: "company", label: "Company / Manufacturer", type: "text" },
                   { key: "qty", label: "Quantity", type: "number" },
+                  { key: "schemeQty", label: "Scheme Quantity", type: "number" },
                   { key: "unit", label: "Unit", type: "text" },
                   { key: "expiry", label: "Expiry Date *", type: "date" },
                   { key: "location", label: "Location/Rack", type: "text" },

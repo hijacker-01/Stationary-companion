@@ -7,6 +7,7 @@ const Item = sequelize.define("Item", {
   category:       { type: DataTypes.STRING },
   company:        { type: DataTypes.STRING },
   qty:            { type: DataTypes.INTEGER, defaultValue: 0 },
+  schemeQty:      { type: DataTypes.INTEGER, defaultValue: 0 },
   unit:           { type: DataTypes.STRING },
   expiry:         { type: DataTypes.DATEONLY },
   location:       { type: DataTypes.STRING },

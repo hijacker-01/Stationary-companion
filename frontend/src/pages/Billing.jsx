@@ -7,7 +7,7 @@ const headers = () => ({ Authorization: `Bearer ${token()}` });
 
 const GST_RATES = [0, 5, 12, 18, 28];
 
-const emptyRow = { name: "", qty: 1, unit: "strips", mrp: "", gst: 12, amount: 0, availableQty: null };
+const emptyRow = { name: "", qty: 1, schemeQty: 0, unit: "strips", mrp: "", gst: 12, amount: 0, availableQty: null, availableSchemeQty: null };
 
 export default function Billing() {
   const [bills, setBills] = useState([]);
@@ -48,7 +48,8 @@ export default function Billing() {
         params: { itemName, qty },
         headers: headers(),
       });
-      setRowSchemes(prev => ({ ...prev, [index]: res.data }));
+      const schemes = res.data || [];
+      setRowSchemes(prev => ({ ...prev, [index]: schemes }));
     } catch {
       setRowSchemes(prev => { const n = { ...prev }; delete n[index]; return n; });
     }
@@ -65,12 +66,14 @@ export default function Billing() {
         mrp: found.mrp || "",
         unit: found.unit || "strips",
         availableQty: found.qty,
+        availableSchemeQty: found.schemeQty,
         amount: calculateAmount(found.mrp, updated[index].qty, updated[index].gst),
       };
       checkScheme(index, found.name, updated[index].qty);
     } else {
       updated[index].name = name;
       updated[index].availableQty = null;
+      updated[index].availableSchemeQty = null;
       checkScheme(index, name, updated[index].qty);
     }
     setRows(updated);
@@ -108,22 +111,7 @@ export default function Billing() {
     return s + (base * r.gst) / 100;
   }, 0);
 
-  // Calculate scheme discount
-  const schemeDiscount = rows.reduce((total, row, i) => {
-    const schemes = rowSchemes[i] || [];
-    let disc = 0;
-    for (const s of schemes) {
-      if (s.type === "buy_get_free" && s.totalFreeItems > 0) {
-        disc += s.totalFreeItems * parseFloat(row.mrp || 0);
-      } else if (s.type === "flat_discount") {
-        const base = parseFloat(row.mrp || 0) * parseInt(row.qty || 1);
-        disc += (base * s.discountPercent) / 100;
-      }
-    }
-    return total + disc;
-  }, 0);
-
-  const total = subtotal + gstAmount - parseFloat(discount || 0) - schemeDiscount;
+  const total = subtotal + gstAmount - parseFloat(discount || 0);
 
   const handleSaveBill = async () => {
     if (!customer.name) return alert("Customer name is required");
@@ -131,8 +119,10 @@ export default function Billing() {
 
     // Check stock availability on frontend before submitting
     for (const row of rows.filter(r => r.name)) {
-      if (row.availableQty !== null && parseInt(row.qty) > row.availableQty) {
-        return alert(`Insufficient stock for "${row.name}". Available: ${row.availableQty}, Requested: ${row.qty}`);
+      const totalAvailable = (row.availableQty || 0) + (row.availableSchemeQty || 0);
+      const totalRequested = parseInt(row.qty || 0) + parseInt(row.schemeQty || 0);
+      if (row.availableQty !== null && totalRequested > totalAvailable) {
+        return alert(`Insufficient total stock for "${row.name}". Total Available: ${totalAvailable}, Total Requested: ${totalRequested}`);
       }
     }
 
@@ -143,7 +133,7 @@ export default function Billing() {
       items: rows.filter(r => r.name),
       subtotal: parseFloat(subtotal.toFixed(2)),
       gstAmount: parseFloat(gstAmount.toFixed(2)),
-      discount: parseFloat((parseFloat(discount || 0) + schemeDiscount).toFixed(2)),
+      discount: parseFloat(parseFloat(discount || 0).toFixed(2)),
       total: parseFloat(total.toFixed(2)),
       paymentMode,
       status: "paid",
@@ -315,6 +305,7 @@ export default function Billing() {
                     <th className="px-3 py-2 text-left">Item Name</th>
                     <th className="px-3 py-2 text-left">Stock</th>
                     <th className="px-3 py-2 text-left">Qty</th>
+                    <th className="px-3 py-2 text-left">Scheme Qty</th>
                     <th className="px-3 py-2 text-left">Unit</th>
                     <th className="px-3 py-2 text-left">MRP ₹</th>
                     <th className="px-3 py-2 text-left">GST %</th>
@@ -340,15 +331,20 @@ export default function Billing() {
                         </td>
                         <td className="px-2 py-2">
                           {row.availableQty !== null && row.availableQty !== undefined ? (
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
-                              row.availableQty <= 0
-                                ? "bg-red-100 text-red-700"
-                                : row.availableQty < 10
-                                  ? "bg-yellow-100 text-yellow-700"
-                                  : "bg-green-100 text-green-700"
-                            }`}>
-                              {row.availableQty} {row.unit}
-                            </span>
+                            <div className="flex flex-col gap-1">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-semibold ${
+                                (row.availableQty + (row.availableSchemeQty || 0)) <= 0
+                                  ? "bg-red-100 text-red-700"
+                                  : (row.availableQty + (row.availableSchemeQty || 0)) < 10
+                                    ? "bg-yellow-100 text-yellow-700"
+                                    : "bg-green-100 text-green-700"
+                              }`}>
+                                Total: {row.availableQty + (row.availableSchemeQty || 0)} {row.unit}
+                              </span>
+                              <span className="text-[10px] text-gray-500 whitespace-nowrap">
+                                ({row.availableQty} Stock + {row.availableSchemeQty || 0} Scheme)
+                              </span>
+                            </div>
                           ) : (
                             <span className="text-gray-400 text-xs">—</span>
                           )}
@@ -363,6 +359,19 @@ export default function Billing() {
                             }`}
                           />
                           {row.availableQty !== null && parseInt(row.qty) > row.availableQty && (
+                            <p className="text-red-500 text-[10px] mt-0.5">Exceeds stock!</p>
+                          )}
+                        </td>
+                        <td className="px-2 py-2">
+                          <input type="number" min="0" value={row.schemeQty}
+                            onChange={e => handleRowChange(i, "schemeQty", e.target.value)}
+                            className={`w-16 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 ${
+                              row.availableSchemeQty !== null && parseInt(row.schemeQty) > row.availableSchemeQty
+                                ? "border-red-400 focus:ring-red-400 bg-red-50 text-red-700"
+                                : "border-gray-200 focus:ring-blue-400"
+                            }`}
+                          />
+                          {row.availableSchemeQty !== null && parseInt(row.schemeQty) > row.availableSchemeQty && (
                             <p className="text-red-500 text-[10px] mt-0.5">Exceeds stock!</p>
                           )}
                         </td>
@@ -396,23 +405,29 @@ export default function Billing() {
                       {/* Scheme badge row */}
                       {rowSchemes[i] && rowSchemes[i].length > 0 && (
                         <tr className="bg-green-50/70">
-                          <td colSpan={8} className="px-3 py-1.5">
+                          <td colSpan={9} className="px-3 py-1.5">
                             <div className="flex flex-wrap gap-2">
                               {rowSchemes[i].map((s, si) => (
-                                <span key={si} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                <button key={si} type="button" 
+                                  onClick={() => {
+                                    if (s.type === "buy_get_free" && s.totalFreeItems > 0) {
+                                      handleRowChange(i, "schemeQty", s.totalFreeItems);
+                                    }
+                                  }}
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold hover:opacity-80 transition cursor-pointer ${
                                   s.type === "buy_get_free"
                                     ? "bg-green-100 text-green-700 border border-green-200"
                                     : "bg-orange-100 text-orange-700 border border-orange-200"
                                 }`}>
                                   🎁 {s.description}
                                   {s.type === "buy_get_free" && s.totalFreeItems > 0 && (
-                                    <span className="font-bold">→ {s.totalFreeItems} FREE (Save ₹{(s.totalFreeItems * parseFloat(row.mrp || 0)).toFixed(2)})</span>
+                                    <span className="font-bold">→ {s.totalFreeItems} FREE (Click to apply)</span>
                                   )}
                                   {s.type === "flat_discount" && (
-                                    <span className="font-bold">→ Save ₹{((parseFloat(row.mrp || 0) * parseInt(row.qty || 1) * s.discountPercent) / 100).toFixed(2)}</span>
+                                    <span className="font-bold">→ Auto-applied</span>
                                   )}
                                   <span className="text-[10px] opacity-70">({s.company})</span>
-                                </span>
+                                </button>
                               ))}
                             </div>
                           </td>
@@ -450,14 +465,7 @@ export default function Billing() {
                     className="w-24 border border-gray-200 rounded px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-blue-400"
                   />
                 </div>
-                {schemeDiscount > 0 && (
-                  <div className="flex justify-between text-green-600">
-                    <span className="flex items-center gap-1">
-                      🎁 Scheme Savings
-                    </span>
-                    <span className="font-semibold">-₹{schemeDiscount.toFixed(2)}</span>
-                  </div>
-                )}
+
                 <div className="border-t pt-3 flex justify-between font-bold text-lg text-gray-800">
                   <span>Total</span>
                   <span className="text-green-600">₹{total.toFixed(2)}</span>
@@ -603,7 +611,9 @@ export default function Billing() {
                 <tr key={i} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-400">{i + 1}</td>
                   <td className="px-4 py-3 font-medium text-gray-800">{item.name} <span className="text-gray-400 text-xs">{item.unit}</span></td>
-                  <td className="px-4 py-3 text-center text-gray-600">{item.qty}</td>
+                  <td className="px-4 py-3 text-center text-gray-600">
+                    {item.qty} {item.schemeQty > 0 && <span className="text-blue-600 font-semibold">+ {item.schemeQty}</span>}
+                  </td>
                   <td className="px-4 py-3 text-right text-gray-600">₹{item.mrp}</td>
                   <td className="px-4 py-3 text-right text-gray-500">{item.gst}%</td>
                   <td className="px-4 py-3 text-right font-semibold text-gray-800">₹{item.amount}</td>
