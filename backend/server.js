@@ -16,6 +16,8 @@ require("./models/SalesReturn");
 require("./models/PurchaseReturn");
 require("./models/Salesman");
 require("./models/StockAdjustment");
+require("./models/DeliveryMan");
+require("./models/DirectMessage");
 
 const app = express();
 app.use(cors());
@@ -38,6 +40,8 @@ app.use("/api/salesman",       require("./routes/salesman"));
 app.use("/api/stock-adjust",   require("./routes/stockAdjustment"));
 app.use("/api/dashboard",      require("./routes/dashboard"));
 app.use("/api/vouchers",       require("./routes/vouchers"));
+app.use("/api/delivery-man",   require("./routes/deliveryMan"));
+app.use("/api/messages",       require("./routes/messages"));
 
 const PORT = process.env.PORT || 5000;
 

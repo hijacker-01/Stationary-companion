@@ -12,6 +12,8 @@ const links = [
   { to: "/customers",       icon: "👤", label: "Customers" },
   { to: "/salesman",        icon: "🧑‍💼", label: "Salesman" },
   { to: "/vouchers",        icon: "💵", label: "Vouchers" },
+  { to: "/delivery-man",    icon: "🚚", label: "Delivery Man" },
+  { to: "/messages",        icon: "💬", label: "Team Chat" },
   { to: "/reports",         icon: "📈", label: "Reports" },
   { to: "/users",           icon: "👥", label: "Users" },
   { to: "/settings",        icon: "⚙️", label: "Settings" },
