@@ -5,10 +5,30 @@ const Item = require("../models/Item");
 const Customer = require("../models/Customer");
 const sequelize = require("../config/db");
 
-// Generate bill number
-const generateBillNo = () => {
+// Generate sequential bill number per financial year (e.g. INV-2526-0001)
+const generateBillNo = async (transaction) => {
   const now = new Date();
-  return `INV-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}-${Math.floor(1000 + Math.random() * 9000)}`;
+  // Indian financial year: Apr-Mar
+  const fyStart = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  const fyEnd   = fyStart + 1;
+  const fyCode  = `${String(fyStart).slice(-2)}${String(fyEnd).slice(-2)}`; // e.g. "2526"
+  const prefix  = `INV-${fyCode}-`;
+
+  // Find the last bill in this financial year
+  const last = await Bill.findOne({
+    where: { billNo: { [require('sequelize').Op.like]: `${prefix}%` } },
+    order: [["createdAt", "DESC"]],
+    transaction,
+  });
+
+  let nextNum = 1;
+  if (last && last.billNo) {
+    const parts = last.billNo.split("-");
+    const lastNum = parseInt(parts[parts.length - 1], 10);
+    if (!isNaN(lastNum)) nextNum = lastNum + 1;
+  }
+
+  return `${prefix}${String(nextNum).padStart(4, "0")}`;
 };
 
 // Get all bills
@@ -81,7 +101,7 @@ router.post("/", async (req, res) => {
 
     const bill = await Bill.create({
       ...req.body,
-      billNo: generateBillNo(),
+      billNo: await generateBillNo(t),
     }, { transaction: t });
 
     // Auto-add or update customer
