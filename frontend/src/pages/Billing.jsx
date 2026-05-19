@@ -14,7 +14,7 @@ export default function Billing() {
   const [items, setItems] = useState([]);
   const [view, setView] = useState("list"); // list | create | preview
   const [rows, setRows] = useState([{ ...emptyRow }]);
-  const [customer, setCustomer] = useState({ name: "", phone: "", address: "" });
+  const [customer, setCustomer] = useState({ name: "", phone: "", address: "", dlNumber: "", gstNumber: "", transportDetails: "Hand Delivery", dueDate: "" });
   const [discount, setDiscount] = useState(0);
   const [paymentMode, setPaymentMode] = useState("cash");
   const [activeBill, setActiveBill] = useState(null);
@@ -36,11 +36,40 @@ export default function Billing() {
     axios.get("http://localhost:5000/api/schemes", { headers: headers() })
       .then(res => setAllSchemes(res.data));
 
+  const fetchCustomers = () =>
+    axios.get("http://localhost:5000/api/customers", { headers: headers() })
+      .then(res => setCustomers(res.data || []));
+
+  const handleCustomerSelect = (name) => {
+    const found = customers.find(c => c.name.toLowerCase() === name.toLowerCase());
+    if (found) {
+      const days = found.creditDays || 30;
+      const due = new Date();
+      due.setDate(due.getDate() + days);
+      const formattedDueDate = due.toISOString().split("T")[0];
+
+      setCustomer({
+        name: found.name,
+        phone: found.phone || "",
+        address: found.address || "",
+        dlNumber: found.dlNumber || "",
+        gstNumber: found.gstNumber || "",
+        dueDate: formattedDueDate,
+        transportDetails: customer.transportDetails || "Hand Delivery",
+      });
+    } else {
+      setCustomer(prev => ({
+        ...prev,
+        name,
+      }));
+    }
+  };
+
   const fetchSettings = () =>
     axios.get("http://localhost:5000/api/settings", { headers: headers() })
       .then(res => setSettings(res.data || {}));
 
-  useEffect(() => { fetchBills(); fetchItems(); fetchSchemes(); fetchSettings(); }, []);
+  useEffect(() => { fetchBills(); fetchItems(); fetchSchemes(); fetchSettings(); fetchCustomers(); }, []);
 
   // Check for applicable schemes for a row
   const checkScheme = async (index, itemName, qty) => {
@@ -152,6 +181,10 @@ export default function Billing() {
       customerName: customer.name,
       customerPhone: customer.phone,
       customerAddress: customer.address,
+      customerDl: customer.dlNumber,
+      customerGst: customer.gstNumber,
+      dueDate: customer.dueDate || null,
+      transportDetails: customer.transportDetails,
       items: rows.filter(r => r.name),
       subtotal: parseFloat(subtotal.toFixed(2)),
       gstAmount: parseFloat(gstAmount.toFixed(2)),
@@ -181,7 +214,7 @@ export default function Billing() {
 
   const resetForm = () => {
     setRows([{ ...emptyRow }]);
-    setCustomer({ name: "", phone: "", address: "" });
+    setCustomer({ name: "", phone: "", address: "", dlNumber: "", gstNumber: "", transportDetails: "Hand Delivery", dueDate: "" });
     setDiscount(0);
     setPaymentMode("cash");
     setActiveBill(null);
@@ -297,24 +330,84 @@ export default function Billing() {
 
             {/* Customer Details */}
             <div className="bg-white rounded-2xl shadow p-6">
-              <h2 className="font-semibold text-gray-700 mb-4">Customer Details</h2>
-              <div className="grid grid-cols-3 gap-4">
-                {[
-                  { key: "name", label: "Customer Name *", placeholder: "Enter name" },
-                  { key: "phone", label: "Phone", placeholder: "10-digit number" },
-                  { key: "address", label: "Address", placeholder: "City / Address" },
-                ].map(f => (
-                  <div key={f.key}>
-                    <label className="text-xs font-medium text-gray-600 block mb-1">{f.label}</label>
-                    <input
-                      type="text"
-                      placeholder={f.placeholder}
-                      value={customer[f.key]}
-                      onChange={e => setCustomer({ ...customer, [f.key]: e.target.value })}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    />
-                  </div>
-                ))}
+              <h2 className="font-semibold text-gray-700 mb-4">Customer Details & Logistics</h2>
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 block mb-1">Customer Name *</label>
+                  <input
+                    type="text"
+                    list="billing-customer-list"
+                    placeholder="Search or enter customer"
+                    value={customer.name}
+                    onChange={e => handleCustomerSelect(e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                  <datalist id="billing-customer-list">
+                    {customers.map(c => <option key={c.id} value={c.name} />)}
+                  </datalist>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 block mb-1">Phone</label>
+                  <input
+                    type="text"
+                    placeholder="Phone number"
+                    value={customer.phone}
+                    onChange={e => setCustomer({ ...customer, phone: e.target.value })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 block mb-1">Address</label>
+                  <input
+                    type="text"
+                    placeholder="Address"
+                    value={customer.address}
+                    onChange={e => setCustomer({ ...customer, address: e.target.value })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-4 pt-4 border-t border-gray-100">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 block mb-1">Drug License (DL) No</label>
+                  <input
+                    type="text"
+                    placeholder="DL Number"
+                    value={customer.dlNumber}
+                    onChange={e => setCustomer({ ...customer, dlNumber: e.target.value })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 block mb-1">GSTIN</label>
+                  <input
+                    type="text"
+                    placeholder="GSTIN"
+                    value={customer.gstNumber}
+                    onChange={e => setCustomer({ ...customer, gstNumber: e.target.value })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 block mb-1">Due Date</label>
+                  <input
+                    type="date"
+                    value={customer.dueDate}
+                    onChange={e => setCustomer({ ...customer, dueDate: e.target.value })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 block mb-1">Transport Details</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Courier, Hand Delivery"
+                    value={customer.transportDetails}
+                    onChange={e => setCustomer({ ...customer, transportDetails: e.target.value })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
               </div>
             </div>
 

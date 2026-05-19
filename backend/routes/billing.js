@@ -95,12 +95,16 @@ router.post("/", async (req, res) => {
           name: req.body.customerName,
           phone: req.body.customerPhone || "",
           address: req.body.customerAddress || "",
+          dlNumber: req.body.customerDl || "",
+          gstNumber: req.body.customerGst || "",
         }, { transaction: t });
       } else {
-        // Update phone/address if provided and customer had blank values
+        // Update phone/address/DL/GST if provided and customer had blank values
         const updates = {};
         if (req.body.customerPhone && !customer.phone) updates.phone = req.body.customerPhone;
         if (req.body.customerAddress && !customer.address) updates.address = req.body.customerAddress;
+        if (req.body.customerDl && !customer.dlNumber) updates.dlNumber = req.body.customerDl;
+        if (req.body.customerGst && !customer.gstNumber) updates.gstNumber = req.body.customerGst;
         if (Object.keys(updates).length) await customer.update(updates, { transaction: t });
       }
       await customer.increment("totalPurchased", { by: bill.total, transaction: t });
