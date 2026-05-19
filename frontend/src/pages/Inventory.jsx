@@ -5,7 +5,7 @@ import Sidebar from "../components/Sidebar";
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
 
-const empty = { name: "", batch: "", category: "", company: "", qty: "", unit: "strips", expiry: "", location: "", mrp: "", costPrice: "" };
+const empty = { name: "", batch: "", category: "", company: "", qty: "", unit: "strips", expiry: "", location: "", mrp: "", costPrice: "", purchaseScheme: "" };
 
 export default function Inventory() {
   const [items, setItems] = useState([]);
@@ -13,13 +13,18 @@ export default function Inventory() {
   const [editId, setEditId] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState("");
+  const [allSchemes, setAllSchemes] = useState([]);
 
   const fetchItems = () => {
     axios.get("http://localhost:5000/api/items", { headers: headers() })
       .then(res => setItems(res.data));
   };
 
-  useEffect(() => { fetchItems(); }, []);
+  const fetchSchemes = () =>
+    axios.get("http://localhost:5000/api/schemes", { headers: headers() })
+      .then(res => setAllSchemes(res.data)).catch(() => {});
+
+  useEffect(() => { fetchItems(); fetchSchemes(); }, []);
 
   const handleSubmit = async () => {
     if (!form.name || !form.expiry) return alert("Name and Expiry are required");
@@ -120,7 +125,14 @@ export default function Inventory() {
               {filtered.map((item, i) => (
                 <tr key={item.id} className={`hover:bg-gray-50 ${item.qty <= 0 ? "bg-red-50/50" : ""}`}>
                   <td className="px-6 py-4 text-gray-400">{i + 1}</td>
-                  <td className="px-6 py-4 font-semibold text-gray-800">{item.name}</td>
+                  <td className="px-6 py-4">
+                    <span className="font-semibold text-gray-800">{item.name}</span>
+                    {item.purchaseScheme && (
+                      <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 border border-green-200">
+                        🎁 {item.purchaseScheme}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-gray-500">{item.batch || "—"}</td>
                   <td className="px-6 py-4 text-gray-500">{item.category || "—"}</td>
                   <td className="px-6 py-4">
@@ -196,6 +208,50 @@ export default function Inventory() {
                     />
                   </div>
                 ))}
+                {/* Purchase Scheme Field */}
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    🎁 Purchase Scheme <span className="text-gray-400 font-normal">(scheme received when buying this item)</span>
+                  </label>
+                  <input
+                    type="text"
+                    list="scheme-suggestions"
+                    placeholder="e.g. Buy 10 Get 2 Free, 15% discount, etc."
+                    value={form.purchaseScheme}
+                    onChange={(e) => setForm({ ...form, purchaseScheme: e.target.value })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  />
+                  <datalist id="scheme-suggestions">
+                    {allSchemes.filter(s => s.isActive).map(s => (
+                      <option key={s.id} value={
+                        s.type === "buy_get_free"
+                          ? `${s.name} - Buy ${s.buyQty} Get ${s.freeQty} Free (${s.company})`
+                          : `${s.name} - ${s.discountPercent}% Off (${s.company})`
+                      } />
+                    ))}
+                  </datalist>
+                  {form.company && allSchemes.filter(s => s.isActive && s.company.toLowerCase() === (form.company || "").toLowerCase()).length > 0 && (
+                    <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-2.5">
+                      <p className="text-[10px] font-semibold text-green-700 uppercase mb-1">Schemes from {form.company}:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {allSchemes.filter(s => s.isActive && s.company.toLowerCase() === (form.company || "").toLowerCase()).map(s => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => setForm({ ...form, purchaseScheme:
+                              s.type === "buy_get_free"
+                                ? `Buy ${s.buyQty} Get ${s.freeQty} Free`
+                                : `${s.discountPercent}% Off`
+                            })}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 transition cursor-pointer border border-green-200"
+                          >
+                            🎁 {s.type === "buy_get_free" ? `Buy ${s.buyQty}+${s.freeQty} Free` : `${s.discountPercent}% Off`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="flex gap-3 mt-6">
                 <button onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold">
