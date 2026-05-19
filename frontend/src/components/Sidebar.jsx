@@ -5,6 +5,7 @@ const links = [
   { to: "/inventory",  icon: "📦", label: "Inventory" },
   { to: "/expiry",     icon: "⏰", label: "Expiry Box" },
   { to: "/billing",    icon: "🧾", label: "Billing" },
+  { to: "/schemes",    icon: "🎁", label: "Schemes" },
   { to: "/suppliers",  icon: "🏭", label: "Suppliers" },
   { to: "/customers",  icon: "👤", label: "Customers" },
   { to: "/reports",    icon: "📈", label: "Reports" },

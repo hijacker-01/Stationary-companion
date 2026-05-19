@@ -5,7 +5,7 @@ import Sidebar from "../components/Sidebar";
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
 
-const empty = { name: "", batch: "", category: "", qty: "", unit: "strips", expiry: "", location: "", mrp: "", costPrice: "" };
+const empty = { name: "", batch: "", category: "", company: "", qty: "", unit: "strips", expiry: "", location: "", mrp: "", costPrice: "" };
 
 export default function Inventory() {
   const [items, setItems] = useState([]);
@@ -51,6 +51,10 @@ export default function Inventory() {
     i.batch?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const lowStockItems = items.filter(i => i.qty > 0 && i.qty < 10);
+  const outOfStockItems = items.filter(i => i.qty <= 0);
+  const totalStockValue = items.reduce((sum, i) => sum + (i.qty * (i.mrp || 0)), 0);
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
@@ -68,6 +72,21 @@ export default function Inventory() {
           >
             + Add Item
           </button>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-4 gap-4 mb-6">
+          {[
+            { label: "Total Items", value: items.length, color: "bg-blue-600", icon: "📦" },
+            { label: "Stock Value", value: `₹${totalStockValue.toFixed(2)}`, color: "bg-green-600", icon: "💰" },
+            { label: "Low Stock", value: lowStockItems.length, color: "bg-yellow-500", icon: "⚠️" },
+            { label: "Out of Stock", value: outOfStockItems.length, color: "bg-red-500", icon: "🚫" },
+          ].map(c => (
+            <div key={c.label} className={`${c.color} text-white rounded-2xl p-5 shadow`}>
+              <p className="text-3xl font-bold">{c.icon} {c.value}</p>
+              <p className="text-sm opacity-80 mt-1">{c.label}</p>
+            </div>
+          ))}
         </div>
 
         {/* Search */}
@@ -90,7 +109,8 @@ export default function Inventory() {
                 <th className="px-6 py-4 text-left">Name</th>
                 <th className="px-6 py-4 text-left">Batch</th>
                 <th className="px-6 py-4 text-left">Category</th>
-                <th className="px-6 py-4 text-left">Qty</th>
+                <th className="px-6 py-4 text-left">Company</th>
+                <th className="px-6 py-4 text-left">Stock Qty</th>
                 <th className="px-6 py-4 text-left">MRP</th>
                 <th className="px-6 py-4 text-left">Expiry</th>
                 <th className="px-6 py-4 text-left">Actions</th>
@@ -98,12 +118,37 @@ export default function Inventory() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filtered.map((item, i) => (
-                <tr key={item.id} className="hover:bg-gray-50">
+                <tr key={item.id} className={`hover:bg-gray-50 ${item.qty <= 0 ? "bg-red-50/50" : ""}`}>
                   <td className="px-6 py-4 text-gray-400">{i + 1}</td>
                   <td className="px-6 py-4 font-semibold text-gray-800">{item.name}</td>
                   <td className="px-6 py-4 text-gray-500">{item.batch || "—"}</td>
                   <td className="px-6 py-4 text-gray-500">{item.category || "—"}</td>
-                  <td className="px-6 py-4">{item.qty} <span className="text-gray-400 text-xs">{item.unit}</span></td>
+                  <td className="px-6 py-4">
+                    {item.company ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                        {item.company}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                      item.qty <= 0
+                        ? "bg-red-100 text-red-700 border border-red-200"
+                        : item.qty < 10
+                          ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                          : "bg-green-100 text-green-700 border border-green-200"
+                    }`}>
+                      {item.qty} {item.unit}
+                    </span>
+                    {item.qty <= 0 && (
+                      <span className="ml-2 text-red-500 text-[10px] font-semibold uppercase">Out of Stock</span>
+                    )}
+                    {item.qty > 0 && item.qty < 10 && (
+                      <span className="ml-2 text-yellow-600 text-[10px] font-semibold uppercase">Low Stock</span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-green-600 font-medium">₹{item.mrp || 0}</td>
                   <td className="px-6 py-4 text-gray-600">
                     {item.expiry ? new Date(item.expiry).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
@@ -115,7 +160,7 @@ export default function Inventory() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} className="text-center py-12 text-gray-400">No items found. Add your first item!</td></tr>
+                <tr><td colSpan={9} className="text-center py-12 text-gray-400">No items found. Add your first item!</td></tr>
               )}
             </tbody>
           </table>
@@ -133,6 +178,7 @@ export default function Inventory() {
                   { key: "name", label: "Item Name *", type: "text" },
                   { key: "batch", label: "Batch No", type: "text" },
                   { key: "category", label: "Category", type: "text" },
+                  { key: "company", label: "Company / Manufacturer", type: "text" },
                   { key: "qty", label: "Quantity", type: "number" },
                   { key: "unit", label: "Unit", type: "text" },
                   { key: "expiry", label: "Expiry Date *", type: "date" },

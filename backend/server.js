@@ -11,6 +11,7 @@ require("./models/Supplier");
 require("./models/PurchaseOrder");
 require("./models/Customer");
 require("./models/Payment");
+require("./models/Scheme");
 
 const app = express();
 app.use(cors());
@@ -26,6 +27,7 @@ app.use("/api/settings",  require("./routes/settings"));
 app.use("/api/gst",       require("./routes/gst"));
 app.use("/api/suppliers", require("./routes/suppliers"));
 app.use("/api/customers", require("./routes/customers"));
+app.use("/api/schemes",   require("./routes/schemes"));
 
 const PORT = process.env.PORT || 5000;
 

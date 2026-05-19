@@ -9,6 +9,7 @@ import Users from "./pages/Users";
 import Settings from "./pages/Settings";
 import Suppliers from "./pages/Suppliers";
 import Customers from "./pages/Customers";
+import Schemes from "./pages/Schemes";
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/suppliers" element={<Suppliers />} />
         <Route path="/customers" element={<Customers />} />
+        <Route path="/schemes" element={<Schemes />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
