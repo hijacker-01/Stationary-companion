@@ -6,13 +6,14 @@ const Item = sequelize.define("Item", {
   batch:          { type: DataTypes.STRING },
   category:       { type: DataTypes.STRING },
   company:        { type: DataTypes.STRING },
-  qty:            { type: DataTypes.INTEGER, defaultValue: 0 },
-  schemeQty:      { type: DataTypes.INTEGER, defaultValue: 0 },
+  stock_qty:      { type: DataTypes.INTEGER, defaultValue: 0 },
+  scheme_qty:     { type: DataTypes.INTEGER, defaultValue: 0 },
   unit:           { type: DataTypes.STRING },
   expiry:         { type: DataTypes.DATEONLY },
   location:       { type: DataTypes.STRING },
   mrp:            { type: DataTypes.FLOAT },
-  costPrice:      { type: DataTypes.FLOAT },
+  selling_price:  { type: DataTypes.FLOAT },
+  cost_price:     { type: DataTypes.FLOAT },
   purchaseScheme: { type: DataTypes.STRING },
 });
 

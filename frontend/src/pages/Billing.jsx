@@ -7,7 +7,7 @@ const headers = () => ({ Authorization: `Bearer ${token()}` });
 
 const GST_RATES = [0, 5, 12, 18, 28];
 
-const emptyRow = { name: "", qty: 1, schemeQty: 0, unit: "strips", mrp: "", gst: 12, amount: 0, availableQty: null, availableSchemeQty: null };
+const emptyRow = { name: "", qty: 1, schemeQty: 0, unit: "strips", selling_price: "", mrp: "", gst: 12, amount: 0, availableQty: null, availableSchemeQty: null };
 
 export default function Billing() {
   const [bills, setBills] = useState([]);
@@ -64,10 +64,11 @@ export default function Billing() {
         ...updated[index],
         name: found.name,
         mrp: found.mrp || "",
+        selling_price: found.selling_price || found.mrp || "",
         unit: found.unit || "strips",
-        availableQty: found.qty,
-        availableSchemeQty: found.schemeQty,
-        amount: calculateAmount(found.mrp, updated[index].qty, updated[index].gst),
+        availableQty: found.stock_qty,
+        availableSchemeQty: found.scheme_qty,
+        amount: calculateAmount(found.selling_price || found.mrp, updated[index].qty, updated[index].gst),
       };
       checkScheme(index, found.name, updated[index].qty);
     } else {
@@ -88,7 +89,7 @@ export default function Billing() {
     const updated = [...rows];
     updated[index][field] = value;
     updated[index].amount = calculateAmount(
-      field === "mrp" ? value : updated[index].mrp,
+      field === "selling_price" ? value : updated[index].selling_price,
       field === "qty" ? value : updated[index].qty,
       field === "gst" ? value : updated[index].gst
     );
@@ -105,9 +106,9 @@ export default function Billing() {
     setRowSchemes(prev => { const n = { ...prev }; delete n[i]; return n; });
   };
 
-  const subtotal = rows.reduce((s, r) => s + parseFloat(r.mrp || 0) * parseInt(r.qty || 1), 0);
+  const subtotal = rows.reduce((s, r) => s + parseFloat(r.selling_price || r.mrp || 0) * parseInt(r.qty || 1), 0);
   const gstAmount = rows.reduce((s, r) => {
-    const base = parseFloat(r.mrp || 0) * parseInt(r.qty || 1);
+    const base = parseFloat(r.selling_price || r.mrp || 0) * parseInt(r.qty || 1);
     return s + (base * r.gst) / 100;
   }, 0);
 
@@ -307,7 +308,7 @@ export default function Billing() {
                     <th className="px-3 py-2 text-left">Qty</th>
                     <th className="px-3 py-2 text-left">Scheme Qty</th>
                     <th className="px-3 py-2 text-left">Unit</th>
-                    <th className="px-3 py-2 text-left">MRP ₹</th>
+                    <th className="px-3 py-2 text-left">Selling Price ₹</th>
                     <th className="px-3 py-2 text-left">GST %</th>
                     <th className="px-3 py-2 text-left">Amount</th>
                     <th className="px-3 py-2"></th>
@@ -382,8 +383,8 @@ export default function Billing() {
                           />
                         </td>
                         <td className="px-2 py-2">
-                          <input type="number" value={row.mrp}
-                            onChange={e => handleRowChange(i, "mrp", e.target.value)}
+                          <input type="number" value={row.selling_price}
+                            onChange={e => handleRowChange(i, "selling_price", e.target.value)}
                             className="w-24 border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
                           />
                         </td>
@@ -601,7 +602,7 @@ export default function Billing() {
                 <th className="px-4 py-3 text-left rounded-tl-lg">#</th>
                 <th className="px-4 py-3 text-left">Item</th>
                 <th className="px-4 py-3 text-center">Qty</th>
-                <th className="px-4 py-3 text-right">MRP</th>
+                <th className="px-4 py-3 text-right">Price</th>
                 <th className="px-4 py-3 text-right">GST</th>
                 <th className="px-4 py-3 text-right rounded-tr-lg">Amount</th>
               </tr>
@@ -614,7 +615,7 @@ export default function Billing() {
                   <td className="px-4 py-3 text-center text-gray-600">
                     {item.qty} {item.schemeQty > 0 && <span className="text-blue-600 font-semibold">+ {item.schemeQty}</span>}
                   </td>
-                  <td className="px-4 py-3 text-right text-gray-600">₹{item.mrp}</td>
+                  <td className="px-4 py-3 text-right text-gray-600">₹{item.selling_price}</td>
                   <td className="px-4 py-3 text-right text-gray-500">{item.gst}%</td>
                   <td className="px-4 py-3 text-right font-semibold text-gray-800">₹{item.amount}</td>
                 </tr>

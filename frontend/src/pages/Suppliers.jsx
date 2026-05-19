@@ -7,7 +7,7 @@ const headers = () => ({ Authorization: `Bearer ${token()}` });
 const GST_RATES = [0, 5, 12, 18, 28];
 
 const emptySupplier = { name:"", phone:"", email:"", address:"", gstNumber:"", panNumber:"", contactPerson:"", creditLimit:0, creditDays:30 };
-const emptyItem = { name:"", batch:"", category:"", qty:1, schemeQty:0, unit:"units", mrp:"", costPrice:"", gst:12, expiry:"" };
+const emptyItem = { name:"", batch:"", category:"", qty:1, scheme_qty:0, unit:"units", selling_price:"", mrp:"", cost_price:"", gst:12, expiry:"" };
 
 const STATUS_COLOR = {
   pending:   "bg-yellow-100 text-yellow-700 border-yellow-200",
@@ -63,12 +63,12 @@ export default function Suppliers() {
   };
 
   // PO Calculations
-  const subtotal = poItems.reduce((s, i) => s + parseFloat(i.costPrice || 0) * parseInt(i.qty || 1), 0);
-  const gstTotal = poItems.reduce((s, i) => {
-    const base = parseFloat(i.costPrice || 0) * parseInt(i.qty || 1);
+  const subtotal = poItems.reduce((s, i) => s + parseFloat(i.cost_price || 0) * parseInt(i.qty || 1), 0);
+  const gstAmount = poItems.reduce((s, i) => {
+    const base = parseFloat(i.cost_price || 0) * parseInt(i.qty || 1);
     return s + (base * i.gst) / 100;
   }, 0);
-  const total = subtotal + gstTotal;
+  const total = subtotal + gstAmount;
 
   const handleSaveSupplier = async () => {
     if (!supForm.name) return alert("Supplier name required");
@@ -419,6 +419,7 @@ export default function Suppliers() {
                     <th className="px-2 py-2 text-left">Scheme Qty</th>
                     <th className="px-2 py-2 text-left">Unit</th>
                     <th className="px-2 py-2 text-left">Cost ₹</th>
+                    <th className="px-2 py-2 text-left">Selling Price ₹</th>
                     <th className="px-2 py-2 text-left">MRP ₹</th>
                     <th className="px-2 py-2 text-left">GST%</th>
                     <th className="px-2 py-2 text-left">Expiry</th>
@@ -428,15 +429,15 @@ export default function Suppliers() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {poItems.map((item, i) => {
-                    const base = parseFloat(item.costPrice||0)*parseInt(item.qty||1);
+                    const base = parseFloat(item.cost_price||0)*parseInt(item.qty||1);
                     const amt = (base + (base*item.gst)/100).toFixed(2);
                     const schemes = poItemSchemes[i] || [];
                     return (
                       <Fragment key={i}>
                         <tr>
-                          {["name","batch","qty","schemeQty","unit","costPrice","mrp"].map(f => (
+                          {["name","batch","qty","scheme_qty","unit","cost_price","selling_price","mrp"].map(f => (
                             <td key={f} className="px-1 py-1">
-                              <input type={["qty","schemeQty","costPrice","mrp"].includes(f)?"number":"text"}
+                              <input type={["qty","scheme_qty","cost_price","selling_price","mrp"].includes(f)?"number":"text"}
                                 value={item[f]} placeholder={f}
                                 onChange={e => {
                                   const u=[...poItems]; u[i]={...u[i],[f]:e.target.value}; setPoItems(u);
@@ -505,7 +506,7 @@ export default function Suppliers() {
               <div className="flex justify-end mb-6">
                 <div className="w-56 space-y-2 text-sm">
                   <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
-                  <div className="flex justify-between text-gray-600"><span>GST</span><span>₹{gstTotal.toFixed(2)}</span></div>
+                  <div className="flex justify-between text-gray-600"><span>GST</span><span>₹{gstAmount.toFixed(2)}</span></div>
                   <div className="border-t pt-2 flex justify-between font-bold text-gray-800 text-base">
                     <span>Total</span><span className="text-green-600">₹{total.toFixed(2)}</span>
                   </div>

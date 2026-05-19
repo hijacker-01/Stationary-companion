@@ -49,7 +49,7 @@ router.post("/", async (req, res) => {
       const billedSchemeQty = parseInt(billedItem.schemeQty) || 0;
       const totalToDeduct = billedQty + billedSchemeQty;
       
-      const totalAvailable = item.qty + item.schemeQty;
+      const totalAvailable = item.stock_qty + item.scheme_qty;
       
       if (totalAvailable < totalToDeduct) {
         await t.rollback();
@@ -59,8 +59,8 @@ router.post("/", async (req, res) => {
       }
       
       let remainingToDeduct = totalToDeduct;
-      let newQty = item.qty;
-      let newSchemeQty = item.schemeQty;
+      let newQty = item.stock_qty;
+      let newSchemeQty = item.scheme_qty;
       
       // Consume normal stock first
       if (newQty >= remainingToDeduct) {
@@ -74,8 +74,8 @@ router.post("/", async (req, res) => {
       }
       
       await item.update({ 
-        qty: newQty,
-        schemeQty: newSchemeQty
+        stock_qty: newQty,
+        scheme_qty: newSchemeQty
       }, { transaction: t });
     }
 
@@ -136,7 +136,7 @@ router.delete("/:id", async (req, res) => {
       const item = await Item.findOne({ where: { name: billedItem.name }, transaction: t });
       if (item) {
         await item.update({ 
-          qty: item.qty + (parseInt(billedItem.qty) || 0) + (parseInt(billedItem.schemeQty) || 0)
+          stock_qty: item.stock_qty + (parseInt(billedItem.qty) || 0) + (parseInt(billedItem.schemeQty) || 0)
         }, { transaction: t });
       }
     }

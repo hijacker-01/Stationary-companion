@@ -159,7 +159,7 @@ export default function ExpiryBox() {
                       <td className="px-6 py-4 text-gray-500">{item.batch || "—"}</td>
                       <td className="px-6 py-4 text-gray-500">{item.category || "—"}</td>
                       <td className="px-6 py-4 font-medium">
-                        {item.qty} <span className="text-gray-400 text-xs">{item.unit}</span>
+                        {item.stock_qty} <span className="text-gray-400 text-xs">{item.unit}</span>
                       </td>
                       <td className="px-6 py-4 text-gray-500">{item.location || "—"}</td>
                       <td className="px-6 py-4 text-gray-700">

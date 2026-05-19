@@ -44,9 +44,9 @@ router.get("/stock", async (req, res) => {
   try {
     const items = await Item.findAll();
     const totalItems = items.length;
-    const totalValue = items.reduce((s, i) => s + (i.mrp * i.qty), 0);
-    const lowStock = items.filter(i => i.qty <= 10);
-    const outOfStock = items.filter(i => i.qty === 0);
+    const totalValue = items.reduce((s, i) => s + (i.selling_price * i.stock_qty), 0);
+    const lowStock = items.filter(i => i.stock_qty <= 10);
+    const outOfStock = items.filter(i => i.stock_qty === 0);
 
     // Group by category
     const byCategory = {};
@@ -54,7 +54,7 @@ router.get("/stock", async (req, res) => {
       const cat = i.category || "Uncategorized";
       if (!byCategory[cat]) byCategory[cat] = { name: cat, count: 0, value: 0 };
       byCategory[cat].count += 1;
-      byCategory[cat].value += i.mrp * i.qty;
+      byCategory[cat].value += i.selling_price * i.stock_qty;
     });
 
     res.json({

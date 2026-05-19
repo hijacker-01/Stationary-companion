@@ -265,12 +265,12 @@ export default function Reports() {
                         <td className="px-6 py-3 text-gray-500">{item.category || "—"}</td>
                         <td className="px-6 py-3 text-gray-500">{item.batch || "—"}</td>
                         <td className="px-6 py-3">
-                          <span className={`font-bold ${item.qty === 0 ? "text-red-600" : "text-yellow-600"}`}>
-                            {item.qty} {item.unit}
+                          <span className={`font-bold ${item.stock_qty === 0 ? "text-red-600" : "text-yellow-600"}`}>
+                            {item.stock_qty} {item.unit}
                           </span>
                         </td>
                         <td className="px-6 py-3 text-gray-500">{item.location || "—"}</td>
-                        <td className="px-6 py-3 text-right text-green-600 font-medium">₹{item.mrp}</td>
+                        <td className="px-6 py-3 text-right text-green-600 font-medium">₹{item.selling_price || item.mrp}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -339,7 +339,7 @@ export default function Reports() {
                         <td className="px-6 py-3 font-semibold text-gray-800">{item.name}</td>
                         <td className="px-6 py-3 text-gray-500">{item.batch || "—"}</td>
                         <td className="px-6 py-3 text-gray-500">{item.category || "—"}</td>
-                        <td className="px-6 py-3 font-bold text-red-600">{item.qty} {item.unit}</td>
+                        <td className="px-6 py-3 font-bold text-red-600">{item.stock_qty} {item.unit}</td>
                         <td className="px-6 py-3 text-red-500">
                           {new Date(item.expiry).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                         </td>
@@ -376,7 +376,7 @@ export default function Reports() {
                         <tr key={item.id} className="hover:bg-orange-50">
                           <td className="px-6 py-3 font-semibold text-gray-800">{item.name}</td>
                           <td className="px-6 py-3 text-gray-500">{item.batch || "—"}</td>
-                          <td className="px-6 py-3 font-bold text-orange-600">{item.qty} {item.unit}</td>
+                          <td className="px-6 py-3 font-bold text-orange-600">{item.stock_qty} {item.unit}</td>
                           <td className="px-6 py-3 text-gray-600">
                             {new Date(item.expiry).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                           </td>

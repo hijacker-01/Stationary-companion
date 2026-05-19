@@ -76,21 +76,22 @@ router.put("/orders/:id/receive", protect, async (req, res) => {
     for (const item of order.items || []) {
       const existing = await Item.findOne({ where: { name: item.name, batch: item.batch || null } });
       if (existing) {
-        await existing.increment("qty", { by: parseInt(item.qty || 1) });
+        await existing.increment("stock_qty", { by: parseInt(item.qty || 1) });
         if (item.schemeQty) {
-          await existing.increment("schemeQty", { by: parseInt(item.schemeQty || 0) });
+          await existing.increment("scheme_qty", { by: parseInt(item.schemeQty || 0) });
         }
       } else {
         await Item.create({
           name:      item.name,
           batch:     item.batch || "",
           category:  item.category || "",
-          qty:       parseInt(item.qty || 1),
-          schemeQty: parseInt(item.schemeQty || 0),
+          stock_qty:       parseInt(item.qty || 1),
+          scheme_qty: parseInt(item.schemeQty || 0),
           unit:      item.unit || "units",
           expiry:    item.expiry || null,
           mrp:       item.mrp || 0,
-          costPrice: item.costPrice || 0,
+          selling_price: item.selling_price || item.mrp || 0,
+          cost_price: item.costPrice || 0,
         });
       }
     }

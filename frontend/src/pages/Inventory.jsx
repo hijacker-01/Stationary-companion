@@ -5,7 +5,7 @@ import Sidebar from "../components/Sidebar";
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
 
-const empty = { name: "", batch: "", category: "", company: "", qty: "", schemeQty: "", unit: "strips", expiry: "", location: "", mrp: "", costPrice: "", purchaseScheme: "" };
+const empty = { name: "", batch: "", category: "", company: "", stock_qty: "", scheme_qty: "", unit: "strips", expiry: "", location: "", mrp: "", selling_price: "", cost_price: "", purchaseScheme: "" };
 
 export default function Inventory() {
   const [items, setItems] = useState([]);
@@ -56,9 +56,9 @@ export default function Inventory() {
     i.batch?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const lowStockItems = items.filter(i => i.qty > 0 && i.qty < 10);
-  const outOfStockItems = items.filter(i => i.qty <= 0);
-  const totalStockValue = items.reduce((sum, i) => sum + (i.qty * (i.mrp || 0)), 0);
+  const lowStockItems = items.filter(i => i.stock_qty > 0 && i.stock_qty < 10);
+  const outOfStockItems = items.filter(i => i.stock_qty <= 0);
+  const totalStockValue = items.reduce((sum, i) => sum + (i.stock_qty * (i.selling_price || i.mrp || 0)), 0);
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -125,7 +125,7 @@ export default function Inventory() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filtered.map((item, i) => (
-                <tr key={item.id} className={`hover:bg-gray-50 ${item.qty <= 0 ? "bg-red-50/50" : ""}`}>
+                <tr key={item.id} className={`hover:bg-gray-50 ${item.stock_qty <= 0 ? "bg-red-50/50" : ""}`}>
                   <td className="px-6 py-4 text-gray-400">{i + 1}</td>
                   <td className="px-6 py-4">
                     <span className="font-semibold text-gray-800">{item.name}</span>
@@ -148,33 +148,33 @@ export default function Inventory() {
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                      item.qty <= 0
+                      item.stock_qty <= 0
                         ? "bg-red-100 text-red-700 border border-red-200"
-                        : item.qty < 10
+                        : item.stock_qty < 10
                           ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
                           : "bg-green-100 text-green-700 border border-green-200"
                     }`}>
-                      {item.qty} {item.unit}
+                      {item.stock_qty} {item.unit}
                     </span>
-                    {item.qty <= 0 && (
+                    {item.stock_qty <= 0 && (
                       <span className="ml-2 text-red-500 text-[10px] font-semibold uppercase">Out of Stock</span>
                     )}
-                    {item.qty > 0 && item.qty < 10 && (
+                    {item.stock_qty > 0 && item.stock_qty < 10 && (
                       <span className="ml-2 text-yellow-600 text-[10px] font-semibold uppercase">Low Stock</span>
                     )}
                   </td>
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
-                      🎁 {item.schemeQty || 0}
+                      🎁 {item.scheme_qty || 0}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <span className="font-bold text-gray-800 text-base">
-                      {(item.qty || 0) + (item.schemeQty || 0)}
+                      {(item.stock_qty || 0) + (item.scheme_qty || 0)}
                     </span>
                     <span className="text-gray-500 text-xs ml-1">{item.unit}</span>
                   </td>
-                  <td className="px-6 py-4 text-green-600 font-medium">₹{item.mrp || 0}</td>
+                  <td className="px-6 py-4 text-green-600 font-medium">₹{item.selling_price || item.mrp || 0}</td>
                   <td className="px-6 py-4 text-gray-600">
                     {item.expiry ? new Date(item.expiry).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
                   </td>
@@ -204,13 +204,15 @@ export default function Inventory() {
                   { key: "batch", label: "Batch No", type: "text" },
                   { key: "category", label: "Category", type: "text" },
                   { key: "company", label: "Company / Manufacturer", type: "text" },
-                  { key: "qty", label: "Quantity", type: "number" },
-                  { key: "schemeQty", label: "Scheme Quantity", type: "number" },
+                  { key: "stock_qty", label: "Stock Quantity", type: "number" },
+                  { key: "scheme_qty", label: "Scheme Quantity", type: "number" },
                   { key: "unit", label: "Unit", type: "text" },
                   { key: "expiry", label: "Expiry Date *", type: "date" },
                   { key: "location", label: "Location/Rack", type: "text" },
-                  { key: "mrp", label: "MRP (₹)", type: "number" },
-                  { key: "costPrice", label: "Cost Price (₹)", type: "number" },
+                  { key: "selling_price", label: "Selling Price (₹)", type: "number" },
+                  { key: "mrp", label: "MRP (₹) [Reference]", type: "number" },
+                  { key: "cost_price", label: "Cost Price (₹)", type: "number" },
+                  { key: "purchaseScheme", label: "Purchase Scheme Note", type: "text" }
                 ].map(f => (
                   <div key={f.key} className={f.key === "name" ? "col-span-2" : ""}>
                     <label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
