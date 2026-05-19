@@ -225,6 +225,12 @@ export default function Settings() {
                   placeholder="info@company.com"
                 />
               </div>
+              <Field
+                label="Drug License (DL) Number"
+                value={settings.dlNumber}
+                onChange={setField("dlNumber")}
+                placeholder="e.g. MH-MZ3-123456"
+              />
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -362,6 +368,18 @@ export default function Settings() {
                 onChange={setField("printFooter")}
                 placeholder="Thank you for your business!"
               />
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Bank Details (For Invoice)</label>
+                <textarea rows={3} value={settings.bankDetails || ""} onChange={setField("bankDetails")}
+                  placeholder="Bank Name: XYZ Bank&#10;A/C No: 123456789&#10;IFSC: XYZB000123"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Terms & Conditions</label>
+                <textarea rows={3} value={settings.termsConditions || ""} onChange={setField("termsConditions")}
+                  placeholder="1. Goods once sold will not be taken back.&#10;2. Subject to local jurisdiction."
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              </div>
               <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                 <p className="text-sm font-semibold text-gray-700 mb-1">
                   Invoice Preview

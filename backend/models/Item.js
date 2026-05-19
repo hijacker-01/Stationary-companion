@@ -6,6 +6,8 @@ const Item = sequelize.define("Item", {
   batch:          { type: DataTypes.STRING },
   category:       { type: DataTypes.STRING },
   company:        { type: DataTypes.STRING },
+  hsn:            { type: DataTypes.STRING },
+  pack:           { type: DataTypes.STRING },
   stock_qty:      { type: DataTypes.INTEGER, defaultValue: 0 },
   scheme_qty:     { type: DataTypes.INTEGER, defaultValue: 0 },
   unit:           { type: DataTypes.STRING },

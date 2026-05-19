@@ -5,7 +5,7 @@ import Sidebar from "../components/Sidebar";
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
 
-const empty = { name: "", batch: "", category: "", company: "", stock_qty: "", scheme_qty: "", unit: "strips", expiry: "", location: "", mrp: "", selling_price: "", cost_price: "", purchaseScheme: "" };
+const empty = { name: "", batch: "", hsn: "", pack: "", category: "", company: "", stock_qty: "", scheme_qty: "", unit: "strips", expiry: "", location: "", mrp: "", selling_price: "", cost_price: "", purchaseScheme: "" };
 
 export default function Inventory() {
   const [items, setItems] = useState([]);
@@ -113,6 +113,8 @@ export default function Inventory() {
                 <th className="px-6 py-4 text-left">#</th>
                 <th className="px-6 py-4 text-left">Name</th>
                 <th className="px-6 py-4 text-left">Batch</th>
+                <th className="px-6 py-4 text-left">HSN</th>
+                <th className="px-6 py-4 text-left">Pack</th>
                 <th className="px-6 py-4 text-left">Category</th>
                 <th className="px-6 py-4 text-left">Company</th>
                 <th className="px-6 py-4 text-left">Stock Qty</th>
@@ -136,6 +138,8 @@ export default function Inventory() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-gray-500">{item.batch || "—"}</td>
+                  <td className="px-6 py-4 text-gray-500">{item.hsn || "—"}</td>
+                  <td className="px-6 py-4 text-gray-500">{item.pack || "—"}</td>
                   <td className="px-6 py-4 text-gray-500">{item.category || "—"}</td>
                   <td className="px-6 py-4">
                     {item.company ? (
@@ -202,6 +206,8 @@ export default function Inventory() {
                 {[
                   { key: "name", label: "Item Name *", type: "text" },
                   { key: "batch", label: "Batch No", type: "text" },
+                  { key: "hsn", label: "HSN Code", type: "text" },
+                  { key: "pack", label: "Pack (e.g. 10x10)", type: "text" },
                   { key: "category", label: "Category", type: "text" },
                   { key: "company", label: "Company / Manufacturer", type: "text" },
                   { key: "stock_qty", label: "Stock Quantity", type: "number" },

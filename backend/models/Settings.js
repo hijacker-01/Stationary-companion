@@ -16,6 +16,9 @@ const Settings = sequelize.define("Settings", {
   lowStockAlert:  { type: DataTypes.INTEGER, defaultValue: 10 },
   expiryAlertDays:{ type: DataTypes.INTEGER, defaultValue: 30 },
   printFooter:    { type: DataTypes.STRING, defaultValue: "Thank you for your business!" },
+  dlNumber:       { type: DataTypes.STRING, defaultValue: "" },
+  bankDetails:    { type: DataTypes.TEXT, defaultValue: "" },
+  termsConditions:{ type: DataTypes.TEXT, defaultValue: "" },
 });
 
 module.exports = Settings;

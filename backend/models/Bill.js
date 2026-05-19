@@ -6,6 +6,7 @@ const Bill = sequelize.define("Bill", {
   customerName: { type: DataTypes.STRING, allowNull: false },
   customerPhone:{ type: DataTypes.STRING },
   customerAddress: { type: DataTypes.STRING },
+  customerDl:   { type: DataTypes.STRING },
   items:        { type: DataTypes.JSON },
   subtotal:     { type: DataTypes.FLOAT, defaultValue: 0 },
   gstAmount:    { type: DataTypes.FLOAT, defaultValue: 0 },
@@ -13,6 +14,8 @@ const Bill = sequelize.define("Bill", {
   total:        { type: DataTypes.FLOAT, defaultValue: 0 },
   paymentMode:  { type: DataTypes.ENUM("cash", "upi", "card", "credit"), defaultValue: "cash" },
   status:       { type: DataTypes.ENUM("paid", "unpaid", "partial"), defaultValue: "paid" },
+  dueDate:      { type: DataTypes.DATEONLY },
+  transportDetails: { type: DataTypes.STRING },
 });
 
 module.exports = Bill;

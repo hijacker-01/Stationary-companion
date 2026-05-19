@@ -7,6 +7,7 @@ const Customer = sequelize.define("Customer", {
   email:         { type: DataTypes.STRING },
   address:       { type: DataTypes.STRING },
   gstNumber:     { type: DataTypes.STRING },
+  dlNumber:      { type: DataTypes.STRING },
   creditLimit:   { type: DataTypes.FLOAT, defaultValue: 0 },
   creditDays:    { type: DataTypes.INTEGER, defaultValue: 30 },
   openingBalance:{ type: DataTypes.FLOAT, defaultValue: 0 },

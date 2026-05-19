@@ -7,7 +7,7 @@ const headers = () => ({ Authorization: `Bearer ${token()}` });
 
 const GST_RATES = [0, 5, 12, 18, 28];
 
-const emptyRow = { name: "", qty: 1, schemeQty: 0, unit: "strips", selling_price: "", mrp: "", gst: 12, amount: 0, availableQty: null, availableSchemeQty: null };
+const emptyRow = { searchStr: "", name: "", batch: "", hsn: "", pack: "", expiry: "", qty: 1, schemeQty: 0, unit: "strips", selling_price: "", mrp: "", gst: 12, amount: 0, availableQty: null, availableSchemeQty: null };
 
 export default function Billing() {
   const [bills, setBills] = useState([]);
@@ -20,6 +20,7 @@ export default function Billing() {
   const [activeBill, setActiveBill] = useState(null);
   const [rowSchemes, setRowSchemes] = useState({}); // { rowIndex: [scheme, ...] }
   const [allSchemes, setAllSchemes] = useState([]);
+  const [settings, setSettings] = useState({});
 
   const fetchBills = () => {
     axios.get("http://localhost:5000/api/billing", { headers: headers() })
@@ -35,7 +36,11 @@ export default function Billing() {
     axios.get("http://localhost:5000/api/schemes", { headers: headers() })
       .then(res => setAllSchemes(res.data));
 
-  useEffect(() => { fetchBills(); fetchItems(); fetchSchemes(); }, []);
+  const fetchSettings = () =>
+    axios.get("http://localhost:5000/api/settings", { headers: headers() })
+      .then(res => setSettings(res.data || {}));
+
+  useEffect(() => { fetchBills(); fetchItems(); fetchSchemes(); fetchSettings(); }, []);
 
   // Check for applicable schemes for a row
   const checkScheme = async (index, itemName, qty) => {
@@ -56,13 +61,28 @@ export default function Billing() {
   };
 
   // Auto fill item details when selected from dropdown
-  const handleItemSelect = (index, name) => {
-    const found = items.find(i => i.name === name);
+  const handleItemSelect = (index, searchStr) => {
     const updated = [...rows];
+    updated[index].searchStr = searchStr;
+
+    // Parse the compound string "Name | Batch: BATCH123"
+    const [namePart, batchPart] = searchStr.split(" | Batch: ");
+    const name = namePart?.trim();
+    const batch = batchPart?.trim();
+
+    const found = items.find(i => i.name === name && (batch ? i.batch === batch : true));
+    
     if (found) {
+      if (found.expiry && new Date(found.expiry) < new Date()) {
+        alert("⚠️ WARNING: This batch is expired and should not be billed!");
+      }
       updated[index] = {
         ...updated[index],
         name: found.name,
+        batch: found.batch || "",
+        hsn: found.hsn || "",
+        pack: found.pack || "",
+        expiry: found.expiry || "",
         mrp: found.mrp || "",
         selling_price: found.selling_price || found.mrp || "",
         unit: found.unit || "strips",
@@ -72,10 +92,11 @@ export default function Billing() {
       };
       checkScheme(index, found.name, updated[index].qty);
     } else {
-      updated[index].name = name;
+      updated[index].name = name || searchStr;
+      updated[index].batch = "";
       updated[index].availableQty = null;
       updated[index].availableSchemeQty = null;
-      checkScheme(index, name, updated[index].qty);
+      checkScheme(index, name || searchStr, updated[index].qty);
     }
     setRows(updated);
   };
@@ -320,14 +341,16 @@ export default function Billing() {
                       <tr> {/* <-- Remove the key from this tr */}
                         <td className="px-2 py-2">
                           <input
-                            list="item-list"
-                            value={row.name}
+                            list={`item-list-${i}`}
+                            value={row.searchStr !== undefined ? row.searchStr : row.name}
                             onChange={e => handleItemSelect(i, e.target.value)}
                             placeholder="Type or select..."
                             className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
                           />
-                          <datalist id="item-list">
-                            {items.map(it => <option key={it.id} value={it.name} />)}
+                          <datalist id={`item-list-${i}`}>
+                            {items.map(it => (
+                              <option key={it.id} value={`${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`} />
+                            ))}
                           </datalist>
                         </td>
                         <td className="px-2 py-2">
@@ -548,112 +571,150 @@ export default function Billing() {
     </div>
   );
 
-  // ── PREVIEW / PRINT VIEW ──
-  if (view === "preview" && activeBill) return (
-    <div className="flex min-h-screen bg-gray-100">
-      <Sidebar />
-      <main className="flex-1 p-8">
-        <div className="flex items-center justify-between mb-6 print:hidden">
-          <button onClick={resetForm} className="text-sm text-gray-500 hover:text-gray-700">← Back to Bills</button>
-          <button
-            onClick={() => window.print()}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold"
-          >
-            🖨️ Print Invoice
-          </button>
-        </div>
+  // Number to Words converter for Indian Rupees
+  const numberToWords = (num) => {
+    const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    if ((num = num.toString()).length > 9) return 'overflow';
+    let n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+    if (!n) return; let str = '';
+    str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+    str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+    str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+    str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+    str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) + 'Only' : '';
+    return str || "Zero";
+  };
 
-        {/* Invoice */}
-        <div id="invoice" className="bg-white rounded-2xl shadow max-w-3xl mx-auto p-10">
-          {/* Header */}
-          <div className="flex justify-between items-start mb-8">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-                  <span className="text-white font-bold text-xl">M</span>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-800">Marg ERP</h1>
-                  <p className="text-gray-500 text-xs">Business Management Software</p>
-                </div>
+  if (view === "preview" && activeBill) {
+    const totalGst = activeBill.gstAmount || 0;
+    const cgst = totalGst / 2;
+    const sgst = totalGst / 2;
+    const roundOff = (Math.round(activeBill.total) - activeBill.total).toFixed(2);
+    const grandTotal = Math.round(activeBill.total);
+
+    return (
+      <div className="flex min-h-screen bg-gray-100 print:bg-white">
+        <Sidebar />
+        <main className="flex-1 p-8 print:p-0">
+          <div className="flex items-center justify-between mb-6 print:hidden">
+            <button onClick={resetForm} className="text-sm text-gray-500 hover:text-gray-700">← Back to Bills</button>
+            <button
+              onClick={() => window.print()}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow"
+            >
+              🖨️ Print Invoice
+            </button>
+          </div>
+
+          <div id="invoice" className="bg-white rounded max-w-[210mm] mx-auto p-8 print:shadow-none shadow-lg print:p-4 text-xs font-sans text-gray-800">
+            {/* Header */}
+            <div className="text-center border-b-2 border-gray-800 pb-3 mb-3">
+              <h1 className="text-2xl font-extrabold uppercase tracking-wider">{settings.companyName || "PHARMA DISTRIBUTORS"}</h1>
+              <p className="text-sm font-medium">{settings.companyAddress || "123, Wholesale Market, Mumbai, MH"}</p>
+              <div className="flex justify-center gap-6 mt-1 font-semibold text-[11px]">
+                <p>Phone: {settings.companyPhone || "+91-XXXXXXXXXX"}</p>
+                <p>DL No: {settings.dlNumber || "MH-MZ3-123456"}</p>
+                <p>GSTIN: {settings.gstNumber || "27AAAAA0000A1Z5"}</p>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-blue-600">INVOICE</p>
-              <p className="text-gray-500 text-sm mt-1 font-mono">{activeBill.billNo}</p>
-              <p className="text-gray-400 text-xs mt-1">
-                {new Date(activeBill.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}
-              </p>
+
+            {/* Meta Data */}
+            <div className="flex justify-between border-b border-gray-400 pb-3 mb-3">
+              <div className="w-1/2 pr-4 border-r border-gray-400">
+                <p className="font-bold mb-1 underline">Billed To:</p>
+                <p className="font-bold uppercase text-sm">{activeBill.customerName}</p>
+                <p>{activeBill.customerAddress || "Walk-in Customer"}</p>
+                <p>Phone: {activeBill.customerPhone || "N/A"}</p>
+                <p className="mt-1 font-semibold">DL No: {activeBill.customerDl || "N/A"}</p>
+                {activeBill.customerGst && <p className="font-semibold">GSTIN: {activeBill.customerGst}</p>}
+              </div>
+              <div className="w-1/2 pl-4 space-y-1">
+                <div className="flex justify-between"><span className="font-bold">Invoice No:</span> <span className="font-mono">{settings.invoicePrefix || "INV"}-{activeBill.billNo}</span></div>
+                <div className="flex justify-between"><span className="font-bold">Invoice Date:</span> <span>{new Date(activeBill.createdAt).toLocaleDateString("en-IN")}</span></div>
+                <div className="flex justify-between"><span className="font-bold">Due Date:</span> <span>{activeBill.dueDate ? new Date(activeBill.dueDate).toLocaleDateString("en-IN") : "N/A"}</span></div>
+                <div className="flex justify-between"><span className="font-bold">Transport:</span> <span>{activeBill.transportDetails || "Hand Delivery"}</span></div>
+                <div className="flex justify-between"><span className="font-bold">Payment Mode:</span> <span className="uppercase">{activeBill.paymentMode}</span></div>
+              </div>
             </div>
-          </div>
 
-          {/* Customer */}
-          <div className="bg-gray-50 rounded-xl p-5 mb-8">
-            <p className="text-xs text-gray-500 uppercase font-medium mb-2">Bill To</p>
-            <p className="font-bold text-gray-800 text-lg">{activeBill.customerName}</p>
-            {activeBill.customerPhone && <p className="text-gray-500 text-sm">📞 {activeBill.customerPhone}</p>}
-            {activeBill.customerAddress && <p className="text-gray-500 text-sm">📍 {activeBill.customerAddress}</p>}
-          </div>
-
-          {/* Items */}
-          <table className="w-full text-sm mb-8">
-            <thead>
-              <tr className="bg-blue-600 text-white">
-                <th className="px-4 py-3 text-left rounded-tl-lg">#</th>
-                <th className="px-4 py-3 text-left">Item</th>
-                <th className="px-4 py-3 text-center">Qty</th>
-                <th className="px-4 py-3 text-right">Price</th>
-                <th className="px-4 py-3 text-right">GST</th>
-                <th className="px-4 py-3 text-right rounded-tr-lg">Amount</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {activeBill.items?.map((item, i) => (
-                <tr key={i} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-400">{i + 1}</td>
-                  <td className="px-4 py-3 font-medium text-gray-800">{item.name} <span className="text-gray-400 text-xs">{item.unit}</span></td>
-                  <td className="px-4 py-3 text-center text-gray-600">
-                    {item.qty} {item.schemeQty > 0 && <span className="text-blue-600 font-semibold">+ {item.schemeQty}</span>}
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-600">₹{item.selling_price}</td>
-                  <td className="px-4 py-3 text-right text-gray-500">{item.gst}%</td>
-                  <td className="px-4 py-3 text-right font-semibold text-gray-800">₹{item.amount}</td>
+            {/* Items Table */}
+            <table className="w-full text-[10px] mb-3 border border-gray-400">
+              <thead className="bg-gray-100 border-b border-gray-400">
+                <tr>
+                  <th className="border-r border-gray-400 p-1 text-center">S.No</th>
+                  <th className="border-r border-gray-400 p-1 text-left">Product Name</th>
+                  <th className="border-r border-gray-400 p-1 text-center">HSN</th>
+                  <th className="border-r border-gray-400 p-1 text-center">Pack</th>
+                  <th className="border-r border-gray-400 p-1 text-center">Batch</th>
+                  <th className="border-r border-gray-400 p-1 text-center">Exp</th>
+                  <th className="border-r border-gray-400 p-1 text-center">Qty</th>
+                  <th className="border-r border-gray-400 p-1 text-center">Free</th>
+                  <th className="border-r border-gray-400 p-1 text-right">MRP</th>
+                  <th className="border-r border-gray-400 p-1 text-right">Rate</th>
+                  <th className="border-r border-gray-400 p-1 text-center">GST%</th>
+                  <th className="p-1 text-right">Amount</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {activeBill.items?.map((item, i) => (
+                  <tr key={i} className="border-b border-gray-200 last:border-b-0">
+                    <td className="border-r border-gray-400 p-1 text-center">{i + 1}</td>
+                    <td className="border-r border-gray-400 p-1 font-bold uppercase">{item.name}</td>
+                    <td className="border-r border-gray-400 p-1 text-center">{item.hsn || "—"}</td>
+                    <td className="border-r border-gray-400 p-1 text-center">{item.pack || "—"}</td>
+                    <td className="border-r border-gray-400 p-1 text-center font-mono">{item.batch || "—"}</td>
+                    <td className="border-r border-gray-400 p-1 text-center">
+                      {item.expiry ? new Date(item.expiry).toLocaleDateString("en-IN", {month:"short", year:"2-digit"}) : "—"}
+                    </td>
+                    <td className="border-r border-gray-400 p-1 text-center font-bold">{item.qty}</td>
+                    <td className="border-r border-gray-400 p-1 text-center">{item.schemeQty || 0}</td>
+                    <td className="border-r border-gray-400 p-1 text-right">{item.mrp}</td>
+                    <td className="border-r border-gray-400 p-1 text-right font-semibold">{item.selling_price}</td>
+                    <td className="border-r border-gray-400 p-1 text-center">{item.gst}%</td>
+                    <td className="p-1 text-right font-bold">{item.amount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-          {/* Totals */}
-          <div className="flex justify-end">
-            <div className="w-64 space-y-2 text-sm">
-              <div className="flex justify-between text-gray-600">
-                <span>Subtotal</span><span>₹{activeBill.subtotal}</span>
-              </div>
-              <div className="flex justify-between text-gray-600">
-                <span>GST</span><span>₹{activeBill.gstAmount}</span>
-              </div>
-              {activeBill.discount > 0 && (
-                <div className="flex justify-between text-red-500">
-                  <span>Discount</span><span>-₹{activeBill.discount}</span>
+            {/* Totals & Footer Info */}
+            <div className="flex border border-gray-400">
+              <div className="w-2/3 p-2 border-r border-gray-400 flex flex-col justify-between">
+                <div>
+                  <p className="font-bold mb-1">Rupees in Words:</p>
+                  <p className="italic font-medium">{numberToWords(grandTotal)}</p>
                 </div>
-              )}
-              <div className="border-t pt-2 flex justify-between font-bold text-lg text-gray-800">
-                <span>Total</span>
-                <span className="text-green-600">₹{activeBill.total}</span>
+                <div className="mt-4">
+                  <p className="font-bold">Bank Details:</p>
+                  <p className="whitespace-pre-wrap leading-tight">{settings.bankDetails || "Bank Name: XYZ Bank\nA/C No: 0000000000\nIFSC: XYZ0000000"}</p>
+                </div>
+                <div className="mt-4 text-[9px] text-gray-600">
+                  <p className="font-bold text-gray-800">Terms & Conditions:</p>
+                  <p className="whitespace-pre-wrap">{settings.termsConditions || "1. Goods once sold will not be taken back.\n2. Interest @ 24% p.a. will be charged if bill is not paid within due date."}</p>
+                </div>
               </div>
-              <div className="flex justify-between text-gray-500 text-xs capitalize">
-                <span>Payment Mode</span><span>{activeBill.paymentMode}</span>
+
+              <div className="w-1/3 text-sm">
+                <div className="flex justify-between p-1 border-b border-gray-300"><span>Subtotal:</span> <span>{activeBill.subtotal?.toFixed(2)}</span></div>
+                <div className="flex justify-between p-1 border-b border-gray-300"><span>Discount:</span> <span>{activeBill.discount?.toFixed(2)}</span></div>
+                <div className="flex justify-between p-1 border-b border-gray-300"><span>SGST:</span> <span>{sgst.toFixed(2)}</span></div>
+                <div className="flex justify-between p-1 border-b border-gray-300"><span>CGST:</span> <span>{cgst.toFixed(2)}</span></div>
+                <div className="flex justify-between p-1 border-b border-gray-300"><span>Round Off:</span> <span>{roundOff}</span></div>
+                <div className="flex justify-between p-2 bg-gray-100 font-bold text-lg"><span>GRAND TOTAL:</span> <span>₹ {grandTotal.toFixed(2)}</span></div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-between items-end">
+              <p className="text-[10px] text-gray-500 italic">This is a computer generated invoice.</p>
+              <div className="text-center w-48 border-t border-gray-800 pt-1 mt-12">
+                <p className="font-bold text-[10px]">For {settings.companyName || "PHARMA DISTRIBUTORS"}</p>
+                <p className="text-[9px] mt-1 text-gray-500">Authorized Signatory</p>
               </div>
             </div>
           </div>
-
-          {/* Footer */}
-          <div className="border-t mt-8 pt-6 text-center text-gray-400 text-xs">
-            <p>Thank you for your business! 🙏</p>
-            <p className="mt-1">Generated by Marg ERP Clone</p>
-          </div>
-        </div>
-      </main>
-    </div>
-  );
+        </main>
+      </div>
+    );
+  }
 }

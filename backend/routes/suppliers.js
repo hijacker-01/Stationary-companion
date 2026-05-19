@@ -85,6 +85,8 @@ router.put("/orders/:id/receive", protect, async (req, res) => {
           name:      item.name,
           batch:     item.batch || "",
           category:  item.category || "",
+          hsn:       item.hsn || "",
+          pack:      item.pack || "",
           stock_qty:       parseInt(item.qty || 1),
           scheme_qty: parseInt(item.schemeQty || 0),
           unit:      item.unit || "units",

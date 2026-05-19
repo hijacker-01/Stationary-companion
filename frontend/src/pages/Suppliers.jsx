@@ -7,7 +7,7 @@ const headers = () => ({ Authorization: `Bearer ${token()}` });
 const GST_RATES = [0, 5, 12, 18, 28];
 
 const emptySupplier = { name:"", phone:"", email:"", address:"", gstNumber:"", panNumber:"", contactPerson:"", creditLimit:0, creditDays:30 };
-const emptyItem = { name:"", batch:"", category:"", qty:1, scheme_qty:0, unit:"units", selling_price:"", mrp:"", cost_price:"", gst:12, expiry:"" };
+const emptyItem = { name:"", batch:"", hsn:"", pack:"", category:"", qty:1, scheme_qty:0, unit:"units", selling_price:"", mrp:"", cost_price:"", gst:12, expiry:"" };
 
 const STATUS_COLOR = {
   pending:   "bg-yellow-100 text-yellow-700 border-yellow-200",
@@ -415,6 +415,8 @@ export default function Suppliers() {
                   <tr>
                     <th className="px-2 py-2 text-left">Item Name</th>
                     <th className="px-2 py-2 text-left">Batch</th>
+                    <th className="px-2 py-2 text-left">HSN</th>
+                    <th className="px-2 py-2 text-left">Pack</th>
                     <th className="px-2 py-2 text-left">Qty</th>
                     <th className="px-2 py-2 text-left">Scheme Qty</th>
                     <th className="px-2 py-2 text-left">Unit</th>
@@ -435,7 +437,7 @@ export default function Suppliers() {
                     return (
                       <Fragment key={i}>
                         <tr>
-                          {["name","batch","qty","scheme_qty","unit","cost_price","selling_price","mrp"].map(f => (
+                          {["name","batch","hsn","pack","qty","scheme_qty","unit","cost_price","selling_price","mrp"].map(f => (
                             <td key={f} className="px-1 py-1">
                               <input type={["qty","scheme_qty","cost_price","selling_price","mrp"].includes(f)?"number":"text"}
                                 value={item[f]} placeholder={f}

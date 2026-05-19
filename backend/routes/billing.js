@@ -40,7 +40,7 @@ router.post("/", async (req, res) => {
 
     // Validate stock availability and deduct quantities
     for (const billedItem of billedItems) {
-      const item = await Item.findOne({ where: { name: billedItem.name }, transaction: t });
+      const item = await Item.findOne({ where: { name: billedItem.name, batch: billedItem.batch || "" }, transaction: t });
       if (!item) {
         await t.rollback();
         return res.status(400).json({ error: `Item "${billedItem.name}" not found in inventory` });
@@ -133,7 +133,7 @@ router.delete("/:id", async (req, res) => {
     // Restore stock for each item in the deleted bill
     const billedItems = (bill.items || []).filter(r => r.name);
     for (const billedItem of billedItems) {
-      const item = await Item.findOne({ where: { name: billedItem.name }, transaction: t });
+      const item = await Item.findOne({ where: { name: billedItem.name, batch: billedItem.batch || "" }, transaction: t });
       if (item) {
         await item.update({ 
           stock_qty: item.stock_qty + (parseInt(billedItem.qty) || 0) + (parseInt(billedItem.schemeQty) || 0)
