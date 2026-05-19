@@ -7,6 +7,7 @@ const links = [
   { to: "/billing",   icon: "🧾", label: "Billing" },
   { to: "/reports",   icon: "📈", label: "Reports" },
   { to: "/users",     icon: "👥", label: "Users" },
+  { to: "/settings",  icon: "⚙️", label: "Settings" },
 ];
 
 export default function Sidebar() {

@@ -6,6 +6,7 @@ import ExpiryBox from "./pages/ExpiryBox";
 import Billing from "./pages/Billing";
 import Reports from "./pages/Reports";
 import Users from "./pages/Users";
+import Settings from "./pages/Settings";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/billing" element={<Billing />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/users" element={<Users />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
