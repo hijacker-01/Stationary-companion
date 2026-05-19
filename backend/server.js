@@ -12,22 +12,31 @@ require("./models/PurchaseOrder");
 require("./models/Customer");
 require("./models/Payment");
 require("./models/Scheme");
+require("./models/SalesReturn");
+require("./models/PurchaseReturn");
+require("./models/Salesman");
+require("./models/StockAdjustment");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/auth",      require("./routes/auth"));
-app.use("/api/items",     require("./routes/items"));
-app.use("/api/expiry",    require("./routes/expiry"));
-app.use("/api/billing",   require("./routes/billing"));
-app.use("/api/reports",   require("./routes/reports"));
-app.use("/api/users",     require("./routes/users"));
-app.use("/api/settings",  require("./routes/settings"));
-app.use("/api/gst",       require("./routes/gst"));
-app.use("/api/suppliers", require("./routes/suppliers"));
-app.use("/api/customers", require("./routes/customers"));
-app.use("/api/schemes",   require("./routes/schemes"));
+app.use("/api/auth",           require("./routes/auth"));
+app.use("/api/items",          require("./routes/items"));
+app.use("/api/expiry",         require("./routes/expiry"));
+app.use("/api/billing",        require("./routes/billing"));
+app.use("/api/reports",        require("./routes/reports"));
+app.use("/api/users",          require("./routes/users"));
+app.use("/api/settings",       require("./routes/settings"));
+app.use("/api/gst",            require("./routes/gst"));
+app.use("/api/suppliers",      require("./routes/suppliers"));
+app.use("/api/customers",      require("./routes/customers"));
+app.use("/api/schemes",        require("./routes/schemes"));
+app.use("/api/sales-return",   require("./routes/salesReturn"));
+app.use("/api/purchase-return",require("./routes/purchaseReturn"));
+app.use("/api/salesman",       require("./routes/salesman"));
+app.use("/api/stock-adjust",   require("./routes/stockAdjustment"));
+app.use("/api/dashboard",      require("./routes/dashboard"));
 
 const PORT = process.env.PORT || 5000;
 

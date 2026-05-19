@@ -17,6 +17,9 @@ const Item = sequelize.define("Item", {
   selling_price:  { type: DataTypes.FLOAT },
   cost_price:     { type: DataTypes.FLOAT },
   purchaseScheme: { type: DataTypes.STRING },
+  schedule:       { type: DataTypes.ENUM("None","H","H1","X"), defaultValue: "None" },
+  reorderPoint:   { type: DataTypes.INTEGER, defaultValue: 10 },
+  salesmanId:     { type: DataTypes.INTEGER },
 });
 
 module.exports = Item;

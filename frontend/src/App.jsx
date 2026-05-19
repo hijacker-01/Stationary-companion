@@ -10,6 +10,7 @@ import Settings from "./pages/Settings";
 import Suppliers from "./pages/Suppliers";
 import Customers from "./pages/Customers";
 import Schemes from "./pages/Schemes";
+import SalesReturn from "./pages/SalesReturn";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
         <Route path="/suppliers" element={<Suppliers />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/schemes" element={<Schemes />} />
+        <Route path="/sales-return" element={<SalesReturn />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
