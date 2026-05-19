@@ -17,6 +17,8 @@ import Vouchers from "./pages/Vouchers";
 import Register from "./pages/Register";
 import DeliveryMan from "./pages/DeliveryMan";
 import DirectMessages from "./pages/DirectMessages";
+import Expenses from "./pages/Expenses";
+import JournalVouchers from "./pages/JournalVouchers";
 
 function App() {
   return (
@@ -40,6 +42,8 @@ function App() {
         <Route path="/vouchers" element={<Vouchers />} />
         <Route path="/delivery-man" element={<DeliveryMan />} />
         <Route path="/messages" element={<DirectMessages />} />
+        <Route path="/expenses" element={<Expenses />} />
+        <Route path="/journal-vouchers" element={<JournalVouchers />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

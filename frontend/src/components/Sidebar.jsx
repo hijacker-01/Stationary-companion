@@ -14,6 +14,8 @@ const links = [
   { to: "/vouchers",        icon: "💵", label: "Vouchers" },
   { to: "/delivery-man",    icon: "🚚", label: "Delivery Man" },
   { to: "/messages",        icon: "💬", label: "Team Chat" },
+  { to: "/expenses",        icon: "🧾", label: "Expenses" },
+  { to: "/journal-vouchers",icon: "📓", label: "Journal Vouchers" },
   { to: "/reports",         icon: "📈", label: "Reports" },
   { to: "/users",           icon: "👥", label: "Users" },
   { to: "/settings",        icon: "⚙️", label: "Settings" },
@@ -46,7 +48,28 @@ export default function Sidebar() {
 
       {/* Nav Links */}
       <nav className="flex-1 px-4 py-6 space-y-1">
-        {links.map((link) => (
+        {links.filter((link) => {
+          if (user.role === "admin") return true;
+          const p = user.permissions || [];
+          const req = {
+            "/inventory": "view_inventory",
+            "/expiry": "view_expiry",
+            "/billing": "view_billing",
+            "/sales-return": "create_billing",
+            "/purchase-return": "create_billing",
+            "/reports": "view_reports",
+            "/users": "manage_users",
+            "/settings": "manage_users",
+            "/schemes": "edit_inventory",
+            "/suppliers": "view_inventory",
+            "/customers": "view_billing",
+            "/salesman": "manage_users",
+            "/vouchers": "view_reports",
+            "/delivery-man": "view_billing",
+          }[link.to];
+          if (!req) return true; // Dashboard, Messages
+          return p.includes(req) || p.includes("admin");
+        }).map((link) => (
           <NavLink
             key={link.to}
             to={link.to}

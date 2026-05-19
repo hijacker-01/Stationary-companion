@@ -18,6 +18,8 @@ require("./models/Salesman");
 require("./models/StockAdjustment");
 require("./models/DeliveryMan");
 require("./models/DirectMessage");
+require("./models/Expense");
+require("./models/JournalVoucher");
 
 const app = express();
 app.use(cors());
@@ -42,6 +44,8 @@ app.use("/api/dashboard",      require("./routes/dashboard"));
 app.use("/api/vouchers",       require("./routes/vouchers"));
 app.use("/api/delivery-man",   require("./routes/deliveryMan"));
 app.use("/api/messages",       require("./routes/messages"));
+app.use("/api/expenses",       require("./routes/expenses"));
+app.use("/api/journal",        require("./routes/journal"));
 
 const PORT = process.env.PORT || 5000;
 

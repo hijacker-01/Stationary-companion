@@ -32,6 +32,7 @@ export default function Reports() {
   const [gstr1Data, setGstr1Data] = useState(null);
   const [gstr2Data, setGstr2Data] = useState(null);
   const [gstr3bData, setGstr3bData] = useState(null);
+  const [pnlData, setPnlData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -72,6 +73,10 @@ export default function Reports() {
     ]);
   };
 
+  const fetchPnl = () =>
+    axios.get("http://localhost:5000/api/reports/pnl", { headers: headers() })
+      .then(res => setPnlData(res.data)).catch(() => {});
+
   useEffect(() => {
     setLoading(true);
     Promise.all([
@@ -81,7 +86,8 @@ export default function Reports() {
       fetchOutstanding(),
       fetchSalesmanSales(),
       fetchItemSales(),
-      fetchGstData()
+      fetchGstData(),
+      fetchPnl()
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -93,6 +99,7 @@ export default function Reports() {
     { key: "salesman", label: "👨‍💼 Rep Sales" },
     { key: "items", label: "💊 Item Sales" },
     { key: "gst", label: "🏛️ GST Returns" },
+    { key: "pnl", label: "💰 Profit & Loss" },
   ];
 
   if (loading) return (
@@ -764,6 +771,53 @@ export default function Reports() {
             </div>
           </div>
         )}
+
+        {/* ── PROFIT & LOSS REPORT ── */}
+        {tab === "pnl" && pnlData && (
+          <div className="space-y-6 max-w-4xl mx-auto">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+              <div className="text-center mb-8 border-b border-gray-100 pb-6">
+                <h2 className="text-2xl font-bold text-gray-800">Profit & Loss Statement</h2>
+                <p className="text-gray-500 text-sm mt-1">Consolidated Financial Overview</p>
+              </div>
+
+              <div className="space-y-6">
+                {/* Sales Section */}
+                <div className="flex justify-between items-center px-4">
+                  <span className="text-gray-600 font-semibold text-lg">Total Sales Revenue</span>
+                  <span className="text-gray-800 font-bold text-xl">₹{pnlData.sales.toFixed(2)}</span>
+                </div>
+
+                {/* COGS Section */}
+                <div className="flex justify-between items-center px-4">
+                  <span className="text-gray-600 font-semibold text-lg">Cost of Goods Sold (COGS)</span>
+                  <span className="text-rose-600 font-bold text-xl">- ₹{pnlData.cogs.toFixed(2)}</span>
+                </div>
+
+                {/* Gross Profit */}
+                <div className="bg-blue-50/50 rounded-xl p-4 flex justify-between items-center border border-blue-100">
+                  <span className="text-blue-800 font-bold text-xl">Gross Profit</span>
+                  <span className="text-blue-700 font-extrabold text-2xl">₹{pnlData.grossProfit.toFixed(2)}</span>
+                </div>
+
+                {/* Expenses Section */}
+                <div className="flex justify-between items-center px-4 pt-4 border-t border-gray-100">
+                  <span className="text-gray-600 font-semibold text-lg">Total Operating Expenses</span>
+                  <span className="text-rose-600 font-bold text-xl">- ₹{pnlData.expenses.toFixed(2)}</span>
+                </div>
+
+                {/* Net Profit */}
+                <div className={`rounded-xl p-6 flex justify-between items-center border shadow-sm ${pnlData.netProfit >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
+                  <span className={`font-bold text-2xl ${pnlData.netProfit >= 0 ? 'text-emerald-800' : 'text-rose-800'}`}>Net Profit / (Loss)</span>
+                  <span className={`font-extrabold text-4xl ${pnlData.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    ₹{pnlData.netProfit.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
     </div>
   );

@@ -200,4 +200,55 @@ router.get("/item-sales", async (req, res) => {
   }
 });
 
+// Profit & Loss Report
+router.get("/pnl", async (req, res) => {
+  try {
+    const Expense = require("../models/Expense");
+    
+    // 1. Total Sales and COGS
+    // We will calculate COGS by mapping each sold item to its cost price.
+    // In our simplified system, cost_price is saved on the bill items or we fetch from master.
+    // To be perfectly accurate without historical cost tracking, we'll use the item's current cost_price,
+    // or fallback to 80% of MRP if cost_price is missing.
+    const Item = require("../models/Item");
+    const allItems = await Item.findAll();
+    const costMap = {};
+    allItems.forEach(i => costMap[i.name] = i.cost_price || (i.mrp * 0.8) || 0);
+
+    const bills = await Bill.findAll(); // Assuming all generated bills count towards revenue
+    
+    let totalSales = 0;
+    let totalCOGS = 0;
+    
+    bills.forEach(b => {
+      totalSales += (b.subtotal || 0);
+      (b.items || []).forEach(item => {
+        const qty = parseInt(item.qty || 0) + parseInt(item.schemeQty || 0); // COGS includes scheme qty given
+        const cost = costMap[item.name] || 0;
+        totalCOGS += (qty * cost);
+      });
+    });
+
+    // 2. Expenses
+    const expenses = await Expense.findAll();
+    let totalExpenses = 0;
+    expenses.forEach(e => totalExpenses += (e.amount || 0));
+
+    // 3. Profit calculations
+    const grossProfit = totalSales - totalCOGS;
+    const netProfit = grossProfit - totalExpenses;
+
+    res.json({
+      sales: totalSales,
+      cogs: totalCOGS,
+      grossProfit: grossProfit,
+      expenses: totalExpenses,
+      netProfit: netProfit
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
