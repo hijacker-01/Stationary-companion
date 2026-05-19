@@ -432,7 +432,7 @@ export default function Billing() {
                       const found = salesmen.find(s => s.id === parseInt(e.target.value));
                       setSelectedSalesman(found ? { id: found.id, name: found.name } : { id: "", name: "" });
                     }}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                    className="w-full border border-gray-200 rounded-lg px-1.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
                   >
                     <option value="">No Salesman</option>
                     {salesmen.map(s => (
