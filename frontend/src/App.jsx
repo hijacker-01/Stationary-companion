@@ -7,6 +7,8 @@ import Billing from "./pages/Billing";
 import Reports from "./pages/Reports";
 import Users from "./pages/Users";
 import Settings from "./pages/Settings";
+import Suppliers from "./pages/Suppliers";
+import Customers from "./pages/Customers";
 
 function App() {
   return (
@@ -20,6 +22,8 @@ function App() {
         <Route path="/reports" element={<Reports />} />
         <Route path="/users" element={<Users />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/suppliers" element={<Suppliers />} />
+        <Route path="/customers" element={<Customers />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

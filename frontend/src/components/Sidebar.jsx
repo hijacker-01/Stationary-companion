@@ -1,13 +1,15 @@
 import { NavLink, useNavigate } from "react-router-dom";
 
 const links = [
-  { to: "/dashboard", icon: "📊", label: "Dashboard" },
-  { to: "/inventory", icon: "📦", label: "Inventory" },
-  { to: "/expiry",    icon: "⏰", label: "Expiry Box" },
-  { to: "/billing",   icon: "🧾", label: "Billing" },
-  { to: "/reports",   icon: "📈", label: "Reports" },
-  { to: "/users",     icon: "👥", label: "Users" },
-  { to: "/settings",  icon: "⚙️", label: "Settings" },
+  { to: "/dashboard",  icon: "📊", label: "Dashboard" },
+  { to: "/inventory",  icon: "📦", label: "Inventory" },
+  { to: "/expiry",     icon: "⏰", label: "Expiry Box" },
+  { to: "/billing",    icon: "🧾", label: "Billing" },
+  { to: "/suppliers",  icon: "🏭", label: "Suppliers" },
+  { to: "/customers",  icon: "👤", label: "Customers" },
+  { to: "/reports",    icon: "📈", label: "Reports" },
+  { to: "/users",      icon: "👥", label: "Users" },
+  { to: "/settings",   icon: "⚙️", label: "Settings" },
 ];
 
 export default function Sidebar() {
