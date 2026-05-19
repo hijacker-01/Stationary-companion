@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState ,Fragment} from "react";
 import axios from "axios";
 import Sidebar from "../components/Sidebar";
 
@@ -19,6 +19,7 @@ export default function Billing() {
   const [paymentMode, setPaymentMode] = useState("cash");
   const [activeBill, setActiveBill] = useState(null);
   const [rowSchemes, setRowSchemes] = useState({}); // { rowIndex: [scheme, ...] }
+  const [allSchemes, setAllSchemes] = useState([]);
 
   const fetchBills = () => {
     axios.get("http://localhost:5000/api/billing", { headers: headers() })
@@ -30,7 +31,11 @@ export default function Billing() {
       .then(res => setItems(res.data));
   };
 
-  useEffect(() => { fetchBills(); fetchItems(); }, []);
+  const fetchSchemes = () =>
+    axios.get("http://localhost:5000/api/schemes", { headers: headers() })
+      .then(res => setAllSchemes(res.data));
+
+  useEffect(() => { fetchBills(); fetchItems(); fetchSchemes(); }, []);
 
   // Check for applicable schemes for a row
   const checkScheme = async (index, itemName, qty) => {
@@ -319,99 +324,101 @@ export default function Billing() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {rows.map((row, i) => (
-                    <tr key={i}>
-                      <td className="px-2 py-2">
-                        <input
-                          list="item-list"
-                          value={row.name}
-                          onChange={e => handleItemSelect(i, e.target.value)}
-                          placeholder="Type or select..."
-                          className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
-                        />
-                        <datalist id="item-list">
-                          {items.map(it => <option key={it.id} value={it.name} />)}
-                        </datalist>
-                      </td>
-                      <td className="px-2 py-2">
-                        {row.availableQty !== null && row.availableQty !== undefined ? (
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
-                            row.availableQty <= 0
-                              ? "bg-red-100 text-red-700"
-                              : row.availableQty < 10
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-green-100 text-green-700"
-                          }`}>
-                            {row.availableQty} {row.unit}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 text-xs">—</span>
-                        )}
-                      </td>
-                      <td className="px-2 py-2">
-                        <input type="number" min="1" value={row.qty}
-                          onChange={e => handleRowChange(i, "qty", e.target.value)}
-                          className={`w-16 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 ${
-                            row.availableQty !== null && parseInt(row.qty) > row.availableQty
-                              ? "border-red-400 focus:ring-red-400 bg-red-50 text-red-700"
-                              : "border-gray-200 focus:ring-blue-400"
-                          }`}
-                        />
-                        {row.availableQty !== null && parseInt(row.qty) > row.availableQty && (
-                          <p className="text-red-500 text-[10px] mt-0.5">Exceeds stock!</p>
-                        )}
-                      </td>
-                      <td className="px-2 py-2">
-                        <input type="text" value={row.unit}
-                          onChange={e => handleRowChange(i, "unit", e.target.value)}
-                          className="w-20 border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
-                        />
-                      </td>
-                      <td className="px-2 py-2">
-                        <input type="number" value={row.mrp}
-                          onChange={e => handleRowChange(i, "mrp", e.target.value)}
-                          className="w-24 border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
-                        />
-                      </td>
-                      <td className="px-2 py-2">
-                        <select value={row.gst}
-                          onChange={e => handleRowChange(i, "gst", e.target.value)}
-                          className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none"
-                        >
-                          {GST_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
-                        </select>
-                      </td>
-                      <td className="px-2 py-2 font-semibold text-gray-700">₹{row.amount}</td>
-                      <td className="px-2 py-2">
-                        {rows.length > 1 && (
-                          <button onClick={() => removeRow(i)} className="text-red-400 hover:text-red-600 text-lg">×</button>
-                        )}
-                      </td>
-                    </tr>
-                    {/* Scheme badge row */}
-                    {rowSchemes[i] && rowSchemes[i].length > 0 && (
-                      <tr className="bg-green-50/70">
-                        <td colSpan={8} className="px-3 py-1.5">
-                          <div className="flex flex-wrap gap-2">
-                            {rowSchemes[i].map((s, si) => (
-                              <span key={si} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                                s.type === "buy_get_free"
-                                  ? "bg-green-100 text-green-700 border border-green-200"
-                                  : "bg-orange-100 text-orange-700 border border-orange-200"
-                              }`}>
-                                🎁 {s.description}
-                                {s.type === "buy_get_free" && s.totalFreeItems > 0 && (
-                                  <span className="font-bold">→ {s.totalFreeItems} FREE (Save ₹{(s.totalFreeItems * parseFloat(row.mrp || 0)).toFixed(2)})</span>
-                                )}
-                                {s.type === "flat_discount" && (
-                                  <span className="font-bold">→ Save ₹{((parseFloat(row.mrp || 0) * parseInt(row.qty || 1) * s.discountPercent) / 100).toFixed(2)}</span>
-                                )}
-                                <span className="text-[10px] opacity-70">({s.company})</span>
-                              </span>
-                            ))}
-                          </div>
+                    <Fragment key={i}> {/* <-- Add Fragment wrapper here with the key */}
+                      <tr> {/* <-- Remove the key from this tr */}
+                        <td className="px-2 py-2">
+                          <input
+                            list="item-list"
+                            value={row.name}
+                            onChange={e => handleItemSelect(i, e.target.value)}
+                            placeholder="Type or select..."
+                            className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                          />
+                          <datalist id="item-list">
+                            {items.map(it => <option key={it.id} value={it.name} />)}
+                          </datalist>
+                        </td>
+                        <td className="px-2 py-2">
+                          {row.availableQty !== null && row.availableQty !== undefined ? (
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
+                              row.availableQty <= 0
+                                ? "bg-red-100 text-red-700"
+                                : row.availableQty < 10
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : "bg-green-100 text-green-700"
+                            }`}>
+                              {row.availableQty} {row.unit}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-xs">—</span>
+                          )}
+                        </td>
+                        <td className="px-2 py-2">
+                          <input type="number" min="1" value={row.qty}
+                            onChange={e => handleRowChange(i, "qty", e.target.value)}
+                            className={`w-16 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 ${
+                              row.availableQty !== null && parseInt(row.qty) > row.availableQty
+                                ? "border-red-400 focus:ring-red-400 bg-red-50 text-red-700"
+                                : "border-gray-200 focus:ring-blue-400"
+                            }`}
+                          />
+                          {row.availableQty !== null && parseInt(row.qty) > row.availableQty && (
+                            <p className="text-red-500 text-[10px] mt-0.5">Exceeds stock!</p>
+                          )}
+                        </td>
+                        <td className="px-2 py-2">
+                          <input type="text" value={row.unit}
+                            onChange={e => handleRowChange(i, "unit", e.target.value)}
+                            className="w-20 border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <input type="number" value={row.mrp}
+                            onChange={e => handleRowChange(i, "mrp", e.target.value)}
+                            className="w-24 border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <select value={row.gst}
+                            onChange={e => handleRowChange(i, "gst", e.target.value)}
+                            className="border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none"
+                          >
+                            {GST_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
+                          </select>
+                        </td>
+                        <td className="px-2 py-2 font-semibold text-gray-700">₹{row.amount}</td>
+                        <td className="px-2 py-2">
+                          {rows.length > 1 && (
+                            <button onClick={() => removeRow(i)} className="text-red-400 hover:text-red-600 text-lg">×</button>
+                          )}
                         </td>
                       </tr>
-                    )}
+                      {/* Scheme badge row */}
+                      {rowSchemes[i] && rowSchemes[i].length > 0 && (
+                        <tr className="bg-green-50/70">
+                          <td colSpan={8} className="px-3 py-1.5">
+                            <div className="flex flex-wrap gap-2">
+                              {rowSchemes[i].map((s, si) => (
+                                <span key={si} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                  s.type === "buy_get_free"
+                                    ? "bg-green-100 text-green-700 border border-green-200"
+                                    : "bg-orange-100 text-orange-700 border border-orange-200"
+                                }`}>
+                                  🎁 {s.description}
+                                  {s.type === "buy_get_free" && s.totalFreeItems > 0 && (
+                                    <span className="font-bold">→ {s.totalFreeItems} FREE (Save ₹{(s.totalFreeItems * parseFloat(row.mrp || 0)).toFixed(2)})</span>
+                                  )}
+                                  {s.type === "flat_discount" && (
+                                    <span className="font-bold">→ Save ₹{((parseFloat(row.mrp || 0) * parseInt(row.qty || 1) * s.discountPercent) / 100).toFixed(2)}</span>
+                                  )}
+                                  <span className="text-[10px] opacity-70">({s.company})</span>
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment> 
                   ))}
                 </tbody>
               </table>
@@ -476,6 +483,49 @@ export default function Billing() {
                 ))}
               </div>
             </div>
+
+            {/* Available Schemes Panel */}
+            {allSchemes.filter(s => s.isActive).length > 0 && (
+              <div className="bg-white rounded-2xl shadow p-6">
+                <h2 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  🎁 Available Schemes
+                  <span className="text-xs font-normal text-gray-400">({allSchemes.filter(s => s.isActive).length} active)</span>
+                </h2>
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                  {allSchemes.filter(s => s.isActive).map(s => (
+                    <div key={s.id} className={`rounded-xl p-3 border text-xs ${
+                      s.type === "buy_get_free"
+                        ? "bg-green-50 border-green-200"
+                        : "bg-orange-50 border-orange-200"
+                    }`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-semibold text-gray-800 text-sm">{s.name}</p>
+                          <p className="text-purple-600 font-medium mt-0.5">🏭 {s.company}</p>
+                        </div>
+                        <span className={`shrink-0 px-2 py-0.5 rounded-full font-semibold ${
+                          s.type === "buy_get_free"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-orange-100 text-orange-700"
+                        }`}>
+                          {s.type === "buy_get_free"
+                            ? `${s.buyQty}+${s.freeQty} Free`
+                            : `${s.discountPercent}% Off`}
+                        </span>
+                      </div>
+                      {s.applicableItems?.length > 0 && (
+                        <p className="text-gray-500 mt-1">Items: {s.applicableItems.join(", ")}</p>
+                      )}
+                      {s.startDate && s.endDate && (
+                        <p className="text-gray-400 mt-0.5">
+                          📅 {new Date(s.startDate).toLocaleDateString("en-IN",{day:"2-digit",month:"short"})} — {new Date(s.endDate).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <button
               onClick={handleSaveBill}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import axios from "axios";
 import Sidebar from "../components/Sidebar";
 
@@ -33,13 +33,34 @@ export default function Suppliers() {
   const [activeOrder, setActiveOrder] = useState(null);
   const [receiveAmount, setReceiveAmount] = useState(0);
   const [search, setSearch] = useState("");
+  const [allSchemes, setAllSchemes] = useState([]);
+  const [poItemSchemes, setPoItemSchemes] = useState({});
 
   const fetchSuppliers = () =>
     axios.get("http://localhost:5000/api/suppliers", { headers: headers() }).then(r => setSuppliers(r.data));
   const fetchOrders = () =>
     axios.get("http://localhost:5000/api/suppliers/orders", { headers: headers() }).then(r => setOrders(r.data));
+  const fetchSchemes = () =>
+    axios.get("http://localhost:5000/api/schemes", { headers: headers() }).then(r => setAllSchemes(r.data));
 
-  useEffect(() => { fetchSuppliers(); fetchOrders(); }, []);
+  useEffect(() => { fetchSuppliers(); fetchOrders(); fetchSchemes(); }, []);
+
+  // Check scheme for a PO item
+  const checkPOScheme = async (index, itemName, qty) => {
+    if (!itemName) {
+      setPoItemSchemes(prev => { const n = { ...prev }; delete n[index]; return n; });
+      return;
+    }
+    try {
+      const res = await axios.get("http://localhost:5000/api/schemes/check", {
+        params: { itemName, qty },
+        headers: headers(),
+      });
+      setPoItemSchemes(prev => ({ ...prev, [index]: res.data }));
+    } catch {
+      setPoItemSchemes(prev => { const n = { ...prev }; delete n[index]; return n; });
+    }
+  };
 
   // PO Calculations
   const subtotal = poItems.reduce((s, i) => s + parseFloat(i.costPrice || 0) * parseInt(i.qty || 1), 0);
@@ -82,6 +103,7 @@ export default function Suppliers() {
       setShowPOModal(false);
       setPoItems([{ ...emptyItem }]);
       setPoSupplier(""); setPoNotes(""); setPoExpected("");
+      setPoItemSchemes({});
       fetchOrders();
     } catch(err) { alert(err.response?.data?.error || "Error"); }
   };
@@ -355,6 +377,38 @@ export default function Suppliers() {
                 </div>
               </div>
 
+              {/* Supplier Schemes Banner */}
+              {(() => {
+                const supplierSchemes = allSchemes.filter(s => s.isActive && poSupplier && (
+                  s.company.toLowerCase() === poSupplier.toLowerCase()
+                ));
+                if (supplierSchemes.length === 0) return null;
+                return (
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 mb-6">
+                    <h3 className="text-sm font-semibold text-green-800 mb-2 flex items-center gap-2">
+                      🎁 Schemes available from {poSupplier}
+                      <span className="text-xs font-normal text-green-600">({supplierSchemes.length} active)</span>
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {supplierSchemes.map(s => (
+                        <span key={s.id} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+                          s.type === "buy_get_free"
+                            ? "bg-green-100 text-green-700 border border-green-200"
+                            : "bg-orange-100 text-orange-700 border border-orange-200"
+                        }`}>
+                          {s.type === "buy_get_free"
+                            ? `🎁 ${s.name}: Buy ${s.buyQty} Get ${s.freeQty} Free`
+                            : `💰 ${s.name}: ${s.discountPercent}% Off`}
+                          {s.applicableItems?.length > 0 && (
+                            <span className="opacity-70">({s.applicableItems.join(", ")})</span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Items */}
               <table className="w-full text-sm mb-3">
                 <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
@@ -375,36 +429,70 @@ export default function Suppliers() {
                   {poItems.map((item, i) => {
                     const base = parseFloat(item.costPrice||0)*parseInt(item.qty||1);
                     const amt = (base + (base*item.gst)/100).toFixed(2);
+                    const schemes = poItemSchemes[i] || [];
                     return (
-                      <tr key={i}>
-                        {["name","batch","qty","unit","costPrice","mrp"].map(f => (
-                          <td key={f} className="px-1 py-1">
-                            <input type={["qty","costPrice","mrp"].includes(f)?"number":"text"}
-                              value={item[f]} placeholder={f}
-                              onChange={e => { const u=[...poItems]; u[i]={...u[i],[f]:e.target.value}; setPoItems(u); }}
-                              className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400" />
+                      <Fragment key={i}>
+                        <tr>
+                          {["name","batch","qty","unit","costPrice","mrp"].map(f => (
+                            <td key={f} className="px-1 py-1">
+                              <input type={["qty","costPrice","mrp"].includes(f)?"number":"text"}
+                                value={item[f]} placeholder={f}
+                                onChange={e => {
+                                  const u=[...poItems]; u[i]={...u[i],[f]:e.target.value}; setPoItems(u);
+                                  if (f === "name") checkPOScheme(i, e.target.value, u[i].qty);
+                                  if (f === "qty") checkPOScheme(i, u[i].name, e.target.value);
+                                }}
+                                className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400" />
+                            </td>
+                          ))}
+                          <td className="px-1 py-1">
+                            <select value={item.gst}
+                              onChange={e => { const u=[...poItems]; u[i]={...u[i],gst:e.target.value}; setPoItems(u); }}
+                              className="border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none">
+                              {GST_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
+                            </select>
                           </td>
-                        ))}
-                        <td className="px-1 py-1">
-                          <select value={item.gst}
-                            onChange={e => { const u=[...poItems]; u[i]={...u[i],gst:e.target.value}; setPoItems(u); }}
-                            className="border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none">
-                            {GST_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
-                          </select>
-                        </td>
-                        <td className="px-1 py-1">
-                          <input type="date" value={item.expiry}
-                            onChange={e => { const u=[...poItems]; u[i]={...u[i],expiry:e.target.value}; setPoItems(u); }}
-                            className="border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none" />
-                        </td>
-                        <td className="px-2 py-1 text-xs font-semibold text-gray-700">₹{amt}</td>
-                        <td className="px-1 py-1">
-                          {poItems.length > 1 && (
-                            <button onClick={() => setPoItems(poItems.filter((_,idx)=>idx!==i))}
-                              className="text-red-400 hover:text-red-600 text-lg">×</button>
-                          )}
-                        </td>
-                      </tr>
+                          <td className="px-1 py-1">
+                            <input type="date" value={item.expiry}
+                              onChange={e => { const u=[...poItems]; u[i]={...u[i],expiry:e.target.value}; setPoItems(u); }}
+                              className="border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none" />
+                          </td>
+                          <td className="px-2 py-1 text-xs font-semibold text-gray-700">₹{amt}</td>
+                          <td className="px-1 py-1">
+                            {poItems.length > 1 && (
+                              <button onClick={() => {
+                                setPoItems(poItems.filter((_,idx)=>idx!==i));
+                                setPoItemSchemes(prev => { const n = { ...prev }; delete n[i]; return n; });
+                              }}
+                                className="text-red-400 hover:text-red-600 text-lg">×</button>
+                            )}
+                          </td>
+                        </tr>
+                        {schemes.length > 0 && (
+                          <tr className="bg-green-50/70">
+                            <td colSpan={10} className="px-3 py-1.5">
+                              <div className="flex flex-wrap gap-2">
+                                {schemes.map((s, si) => (
+                                  <span key={si} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                    s.type === "buy_get_free"
+                                      ? "bg-green-100 text-green-700 border border-green-200"
+                                      : "bg-orange-100 text-orange-700 border border-orange-200"
+                                  }`}>
+                                    🎁 {s.description}
+                                    {s.type === "buy_get_free" && s.totalFreeItems > 0 && (
+                                      <span className="font-bold">→ {s.totalFreeItems} FREE</span>
+                                    )}
+                                    {s.type === "flat_discount" && (
+                                      <span className="font-bold">→ {s.discountPercent}% Off</span>
+                                    )}
+                                    <span className="text-[10px] opacity-70">({s.company})</span>
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
                     );
                   })}
                 </tbody>
