@@ -167,6 +167,7 @@ router.delete("/orders/:id", protect, async (req, res) => {
 // ── SMART PURCHASE BILL ENTRY ──
 const stringSimilarity = require("string-similarity");
 
+<<<<<<< Updated upstream
 router.post(
   "/extract-invoice",
   protect,
@@ -379,6 +380,165 @@ router.post(
             "Failed to extract line items. OCR Output for debugging:\n" +
             text.substring(0, 500),
         });
+=======
+// Real AI OCR Extraction Endpoint using Tesseract.js
+router.post("/extract-invoice", protect, upload.single("invoice"), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+
+  const filePath = req.file.path;
+  let worker = null;
+
+  try {
+    // Initialize Tesseract worker
+    worker = await createWorker("eng");
+    
+    // Recognize text
+    // Save copy for local debugging/testing
+    fs.copyFileSync(filePath, path.join(__dirname, "../test-bill.png"));
+    
+    // Recognize text
+    const { data: { text } } = await worker.recognize(filePath);
+    
+    // Clean up file
+    fs.unlinkSync(filePath);
+    fs.writeFileSync(path.join(__dirname, "../debug_ocr.txt"), text);
+
+    // Parse the extracted text
+    const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+    
+    let supplierName = "Apex Pharmaceuticals Ltd.";
+    let invoiceNo = "INV-2026-" + Math.floor(1000 + Math.random() * 9000);
+    let date = new Date().toISOString().split("T")[0];
+    let items = [];
+
+    // 1. Try to find Supplier (usually in first 5 lines)
+    for (let i = 0; i < Math.min(5, lines.length); i++) {
+      const line = lines[i];
+      if (line.match(/(?:Ltd|Corp|Pharmacy|Pharma|Laboratories|Labs|Distributors|Medicose|Medical|Agency|Enterprises)/i)) {
+        supplierName = line.replace(/[|:]/g, "").trim();
+        break;
+      }
+    }
+
+    // 2. Try to find Invoice Number & Date
+    for (const line of lines) {
+      const invMatch = line.match(/(?:Invoice|Inv|Bill|voice|No)\s*(?:No|Num|Number)?[:.-]?\s*([A-Za-z0-9-]+)/i);
+      if (invMatch && invMatch[1] && invMatch[1].length > 4) {
+        invoiceNo = invMatch[1];
+      }
+      const dateMatch = line.match(/(?:Date)[:.-]?\s*(\d{2,4}[-/.]\d{2}[-/.]\d{2,4})/i);
+      if (dateMatch && dateMatch[1]) {
+        const parsedDate = dateMatch[1].replace(/[^\d-/.]/g, "");
+        if (parsedDate.length >= 8) date = parsedDate;
+      }
+    }
+
+    // 3. Match line items using the robust token-based parser:
+    let headerIdx = -1;
+    let footerIdx = -1;
+
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].match(/(?:HSN|Product|Pack|Qty|Free|Batch|Exp|MRP|Rate)/i)) {
+        headerIdx = i;
+      }
+      if (lines[i].match(/(?:SUB TOTAL|Discount|GRAND TOTAL|Terms)/i) && footerIdx === -1 && headerIdx !== -1) {
+        footerIdx = i;
+      }
+    }
+
+    if (headerIdx !== -1 && footerIdx !== -1) {
+      const itemLines = lines.slice(headerIdx + 1, footerIdx);
+      for (const line of itemLines) {
+        const cleanLine = line.replace(/[|[\]\\/{}’]/g, " ").replace(/\s+/g, " ").trim();
+        
+        if (cleanLine.match(/(?:TOTAL|CA\d+|RT TGR)/i)) continue;
+        if (cleanLine.length < 10) continue;
+
+        const tokens = cleanLine.split(" ");
+        const numTokens = tokens.filter(t => !isNaN(t.replace(/[^\d.-]/g, "")));
+        
+        if (numTokens.length >= 3) {
+          const sNo = !isNaN(tokens[0]) ? tokens[0] : "";
+          const hsn = tokens[1] && tokens[1].match(/^\d{4}$/) ? tokens[1] : "3004";
+          const expIdx = tokens.findIndex(t => t.includes("/"));
+          
+          let exp = "12/27";
+          let batch = "BATCH";
+          let qty = 1;
+          let free = 0;
+          let mrp = 100;
+          let rate = 80;
+          let sgst = 2.5;
+          let cgst = 2.5;
+          let amount = 0;
+
+          const len = tokens.length;
+          amount = parseFloat(tokens[len - 1].replace(/[^\d.]/g, "")) || 0;
+          
+          if (expIdx !== -1) {
+            exp = tokens[expIdx];
+            batch = tokens[expIdx - 1] || "BATCH";
+            free = parseFloat(tokens[expIdx - 2]) || 0;
+            qty = parseFloat(tokens[expIdx - 3]) || 1;
+            mrp = parseFloat(tokens[expIdx + 1]) || 100;
+            rate = parseFloat(tokens[expIdx + 2]) || mrp;
+            cgst = parseFloat(tokens[len - 2]) || 2.5;
+            sgst = parseFloat(tokens[len - 3]) || 2.5;
+          } else {
+            cgst = parseFloat(tokens[len - 2]) || 2.5;
+            sgst = parseFloat(tokens[len - 3]) || 2.5;
+            rate = parseFloat(tokens[len - 6]) || parseFloat(tokens[len - 7]) || 100;
+            mrp = parseFloat(tokens[len - 7]) || parseFloat(tokens[len - 8]) || rate;
+            qty = parseFloat(tokens[len - 10]) || 1;
+            batch = tokens[len - 9] || "BATCH";
+          }
+
+          if (cgst > 30) cgst = 2.5;
+          if (sgst > 30) sgst = 2.5;
+
+          const nameEndIdx = expIdx !== -1 ? expIdx - 4 : len - 11;
+          const prodStart = sNo ? 2 : 1;
+          const name = tokens.slice(prodStart, nameEndIdx > prodStart ? nameEndIdx : prodStart + 2).join(" ");
+
+          let standardExpiry = null;
+          const parts = exp.split(/[-/]/);
+          if (parts.length === 2) {
+            const first = parts[0];
+            const second = parts[1];
+            if (second.length === 4) {
+              standardExpiry = `${second}-${first.padStart(2, "0")}-01`;
+            } else if (second.length === 2) {
+              standardExpiry = `20${second}-${first.padStart(2, "0")}-01`;
+            } else if (first.length === 4) {
+              standardExpiry = `${first}-${second.padStart(2, "0")}-01`;
+            }
+          }
+
+          items.push({
+            sNo,
+            name,
+            batch,
+            category: "General Pharma",
+            hsn,
+            pack: "10s",
+            qty,
+            free,
+            schemeQty: free,
+            unit: "Strips",
+            exp,
+            expiry: standardExpiry || new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString().split('T')[0],
+            mrp,
+            rate,
+            selling_price: mrp,
+            costPrice: rate,
+            sgst,
+            cgst,
+            taxPercent: sgst + cgst
+          });
+        }
+>>>>>>> Stashed changes
       }
 
       const subtotal = items.reduce(
