@@ -130,8 +130,9 @@ router.delete("/orders/:id", protect, async (req, res) => {
 });
 
 // ── SMART PURCHASE BILL ENTRY ──
+const stringSimilarity = require("string-similarity");
 
-// Real AI OCR Extraction Endpoint using Tesseract.js
+// Real AI OCR Extraction Endpoint using Tesseract.js & Template Engine
 router.post("/extract-invoice", protect, upload.single("invoice"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
@@ -151,113 +152,114 @@ router.post("/extract-invoice", protect, upload.single("invoice"), async (req, r
     fs.unlinkSync(filePath);
 
     // Parse the extracted text
-    const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+    const lines = text.split("\n").map(l => l.replace(/\|/g, " ").replace(/\s+/g, " ").trim()).filter(Boolean);
     
-    let supplierName = "Apex Pharmaceuticals Ltd.";
+    let supplierName = "SUBHASH MEDICOSE"; // Default based on template
     let invoiceNo = "INV-2026-" + Math.floor(1000 + Math.random() * 9000);
     let date = new Date().toISOString().split("T")[0];
     let items = [];
 
-    // 1. Try to find Supplier (usually in first 5 lines)
-    for (let i = 0; i < Math.min(5, lines.length); i++) {
-      const line = lines[i];
-      if (line.match(/(?:Ltd|Corp|Pharmacy|Pharma|Laboratories|Labs|Distributors)/i)) {
-        supplierName = line.replace(/[|:]/g, "").trim();
-        break;
-      }
-    }
-
-    // 2. Try to find Invoice Number & Date
+    // 1. Find Supplier, Invoice Number, and Date from Header
     for (const line of lines) {
-      const invMatch = line.match(/(?:Invoice|Inv|Bill)\s*(?:No|Num|Number)?[:.-]?\s*([A-Za-z0-9-]+)/i);
-      if (invMatch && invMatch[1]) {
-        invoiceNo = invMatch[1];
+      if (line.match(/(?:SUBHASH MEDICOSE|SUBHASH MEDICAL STORE)/i)) {
+        supplierName = "SUBHASH MEDICOSE";
       }
-      const dateMatch = line.match(/(?:Date)[:.-]?\s*(\d{2,4}[-/.]\d{2}[-/.]\d{2,4})/i);
+      
+      const invMatch = line.match(/(?:Invoice No|Inv No|Bill No)\s*[:.-]?\s*([A-Za-z0-9-]+)/i);
+      if (invMatch && invMatch[1]) invoiceNo = invMatch[1];
+      
+      const dateMatch = line.match(/(?:Date)\s*[:.-]?\s*(\d{2}[-/.]\d{2}[-/.]\d{2,4})/i);
       if (dateMatch && dateMatch[1]) {
-        // Clean and parse date if found
-        const parsedDate = dateMatch[1].replace(/[^\d-/.]/g, "");
-        if (parsedDate.length >= 8) date = parsedDate;
+        // Convert DD/MM/YYYY to YYYY-MM-DD
+        const parts = dateMatch[1].split(/[-/.]/);
+        if (parts.length === 3) {
+          const d = parts[0];
+          const m = parts[1];
+          const y = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+          date = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+        }
       }
     }
 
-    // 3. Match line items using general pharma column format:
-    // [Product Name] [Batch] [Expiry] [Qty] [Cost] [MRP] [GST%]
-    const itemRegex = /([\w\s\d.-]{4,})\s+([A-Za-z0-9-]+)\s+(\d{2}[-/]\d{2,4}|\d{4}[-/]\d{2})\s+(\d+)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)(?:\s+(\d+))?/i;
+    // 2. Custom Template Engine Parsing for the Line Items
+    // The specific template format: S | HSN | Product | Pack | Qty | Free | Batch | Exp | MRP | Rate | DIS | SCH | SGST | CGST | Amount
+    // Regex matches 15 distinct columns containing decimals and strings perfectly.
+    const templateRegex = /^\s*(\d{1,3})\s+(\d{4,8})\s+(.+?)\s+([\w*.-]+)\s+(\d+\.\d{2})\s+(\d+\.\d{2})\s+([A-Za-z0-9-]+)\s+(\d{1,2}\/\d{2,4})\s+(\d+\.\d{2})\s+(\d+\.\d{2})\s+(\d+\.\d{2})\s+(\d+\.\d{2})\s+(\d+\.\d{2})\s+(\d+\.\d{2})\s+(\d+\.\d{2})\s*$/i;
 
     for (const line of lines) {
-      const match = line.match(itemRegex);
+      const match = line.match(templateRegex);
       if (match) {
-        const name = match[1].trim();
-        // Skip header matching
-        if (name.match(/(?:Product|Description|Item|Name|Qty|Price|Total|Subtotal|Invoice|Date|Supplier|Batch|Expiry|Rate|MRP|GST)/i)) continue;
+        const name = match[3].trim();
+        if (name.match(/(?:Product|Description|Item|Name)/i)) continue; // Skip header
         
-        const batch = match[2];
-        const expiry = match[3];
-        const qty = parseInt(match[4], 10);
-        const costPrice = parseFloat(match[5]);
-        const mrp = parseFloat(match[6]);
-        const taxPercent = match[7] ? parseInt(match[7], 10) : 12;
+        const hsn = match[2];
+        const pack = match[4];
+        const qty = parseInt(match[5], 10);
+        const schemeQty = parseInt(match[6], 10);
+        const batch = match[7];
+        const expiryRaw = match[8];
+        const mrp = parseFloat(match[9]);
+        const rate = parseFloat(match[10]);
+        const sgst = parseFloat(match[13]);
+        const cgst = parseFloat(match[14]);
+        
+        const taxPercent = Math.round(sgst + cgst);
 
-        let standardExpiry = null;
-        if (expiry) {
-          const parts = expiry.split(/[-/]/);
-          if (parts.length === 2) {
-            const first = parts[0];
-            const second = parts[1];
-            if (second.length === 4) {
-              standardExpiry = `${second}-${first.padStart(2, "0")}-01`;
-            } else if (second.length === 2) {
-              standardExpiry = `20${second}-${first.padStart(2, "0")}-01`;
-            } else if (first.length === 4) {
-              standardExpiry = `${first}-${second.padStart(2, "0")}-01`;
-            }
-          }
+        // Convert MM/YY to YYYY-MM-DD
+        let expiry = null;
+        const expParts = expiryRaw.split('/');
+        if (expParts.length === 2) {
+          const m = expParts[0];
+          const y = expParts[1].length === 2 ? `20${expParts[1]}` : expParts[1];
+          expiry = `${y}-${m.padStart(2, "0")}-01`;
         }
 
         items.push({
           name,
           batch,
-          category: "General Pharma",
-          hsn: "3004",
-          pack: "10s",
+          category: "Medicines",
+          hsn,
+          pack,
           qty,
-          schemeQty: 0,
-          unit: "Strips",
-          expiry: standardExpiry || new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString().split('T')[0],
+          schemeQty,
+          unit: "Units",
+          expiry: expiry || new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString().split('T')[0],
           mrp,
           selling_price: mrp,
-          costPrice,
+          costPrice: rate,
           taxPercent
         });
       }
     }
 
-    // Fallback if OCR returned text but format parsing couldn't map line items
-    if (items.length === 0) {
-      items = [
-        {
-          name: "Amoxicillin 500mg Capsule",
-          batch: "AMX-OCR-" + Math.floor(100 + Math.random() * 900),
-          category: "Antibiotics",
-          hsn: "3004",
-          pack: "10x10",
-          qty: 100,
-          schemeQty: 10,
-          unit: "Strips",
-          expiry: new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString().split('T')[0],
-          mrp: 120.00,
-          selling_price: 120.00,
-          costPrice: 85.00,
-          taxPercent: 12
+    // 3. Fuzzy Matching against Database Suppliers
+    // Fetch all suppliers to find the best match mathematically
+    const suppliers = await Supplier.findAll({ attributes: ['id', 'name'] });
+    let matchedSupplierId = "";
+    
+    if (suppliers.length > 0) {
+      const supplierNames = suppliers.map(s => s.name);
+      const bestMatch = stringSimilarity.findBestMatch(supplierName, supplierNames);
+      
+      // If we are over 40% confident, map it automatically
+      if (bestMatch.bestMatch.rating > 0.4) {
+        const target = suppliers.find(s => s.name === bestMatch.bestMatch.target);
+        if (target) {
+          matchedSupplierId = target.id;
+          supplierName = target.name; // Use perfect DB name
         }
-      ];
+      }
+    }
+
+    if (items.length === 0) {
+      return res.status(400).json({ error: "Failed to extract line items. Please ensure the image is clear and matches the standard format." });
     }
 
     const subtotal = items.reduce((acc, curr) => acc + (curr.qty * curr.costPrice), 0);
     const gstAmount = items.reduce((acc, curr) => acc + ((curr.qty * curr.costPrice) * (curr.taxPercent/100)), 0);
 
     res.json({
+      supplierId: matchedSupplierId,
       supplierName,
       invoiceNo,
       date,
