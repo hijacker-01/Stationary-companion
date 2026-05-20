@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import Sidebar from "../components/Sidebar";
 import {
@@ -8,16 +8,34 @@ import {
 import { 
   TrendingUp, AlertTriangle, AlertCircle, Award, Zap, 
   ChevronRight, Users, ClipboardList, IndianRupee, 
-  ArrowUpRight, ArrowDownLeft, ShieldAlert
+  ArrowUpRight, ArrowDownLeft, ShieldAlert, Search
 } from "lucide-react";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
 const COLORS = ["#2563eb", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#14b8a6"];
 
+// Centralized navigation dictionary for pages, actions, and features
+const SEARCHABLE_FEATURES = [
+  { name: "Create New Invoice", href: "/billing", category: "Actions", keywords: ["billing", "invoice", "sale", "new bill", "sell", "gst"] },
+  { name: "Log Purchase Billing", href: "/purchase-bills", category: "Actions", keywords: ["purchase", "vendor", "buy", "stock in", "bill entry"] },
+  { name: "Log Sales Return", href: "/sales-return", category: "Actions", keywords: ["return", "refund", "credit note", "sales return"] },
+  { name: "Update Inventory Stock", href: "/inventory", category: "Management", keywords: ["inventory", "stock", "items", "medicines", "drugs", "products", "quantity"] },
+  { name: "Outstanding Ledger", href: "/customers", category: "Management", keywords: ["customers", "ledger", "outstanding", "dues", "balance", "credit", "money"] },
+  { name: "Inspect Expiring Items", href: "/expiry", category: "Management", keywords: ["expiry", "expiring", "drugs", "medicines", "date", "box check"] },
+  { name: "Generate Tax Reports", href: "/reports", category: "Analytics", keywords: ["reports", "tax", "gst", "analytics", "financials", "sales summary"] },
+  { name: "Main Dashboard Overview", href: "/", category: "Navigation", keywords: ["home", "dashboard", "overview", "analytics", "main"] }
+];
+
 export default function Dashboard() {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Search Bar States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const searchContainerRef = useRef(null);
+
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   useEffect(() => {
@@ -25,6 +43,17 @@ export default function Dashboard() {
       .then(r => setData(r.data))
       .catch(() => {})
       .finally(() => setLoading(false));
+  }, []);
+
+  // Closes the auto-suggest window if you click completely outside the search layout
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const hour = new Date().getHours();
@@ -48,18 +77,76 @@ export default function Dashboard() {
 
   const d = data || {};
 
+  // Auto-suggest logic filtering names & tag keywords
+  const filteredSuggestions = SEARCHABLE_FEATURES.filter(item => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return false;
+    return (
+      item.name.toLowerCase().includes(query) ||
+      item.category.toLowerCase().includes(query) ||
+      item.keywords.some(keyword => keyword.toLowerCase().includes(query))
+    );
+  });
+
   return (
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
       <main className="flex-1 p-8 overflow-y-auto max-h-screen">
 
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
+        {/* Header Container with Integrated Autosuggest Search */}
+        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-5">
           <div>
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{greeting}, {user.name || "User"}</h1>
             <p className="text-slate-500 text-sm mt-1">Here is a quick overview of your business performance today.</p>
           </div>
-          <div className="text-right text-xs text-slate-400 bg-white border border-slate-200 rounded-lg px-3 py-1.5 shadow-sm font-medium">
+
+          {/* Dynamic Omnibox Search Bar */}
+          <div ref={searchContainerRef} className="relative w-full md:w-80 lg:w-96 z-50">
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsOpen(true);
+                }}
+                onFocus={() => setIsOpen(true)}
+                placeholder="Search actions, reports, or pages (e.g., 'gst')..."
+                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all duration-150 shadow-sm"
+              />
+            </div>
+
+            {/* Suggestions Menu */}
+            {isOpen && filteredSuggestions.length > 0 && (
+              <div className="absolute left-0 mt-2 w-full bg-white border border-slate-200 rounded-xl shadow-xl max-h-64 overflow-y-auto divide-y divide-slate-50 animate-in fade-in duration-100">
+                {filteredSuggestions.map((item, index) => (
+                  <a
+                    key={index}
+                    href={item.href}
+                    className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors duration-150"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700">{item.name}</p>
+                      <p className="text-xs text-slate-400 font-medium mt-0.5">Route: {item.href}</p>
+                    </div>
+                    <span className="text-[10px] uppercase tracking-wider font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">
+                      {item.category}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            )}
+
+            {/* Suggestions Empty State */}
+            {isOpen && searchQuery.trim() !== "" && filteredSuggestions.length === 0 && (
+              <div className="absolute left-0 mt-2 w-full bg-white border border-slate-200 rounded-xl shadow-xl p-4 text-center">
+                <p className="text-sm text-slate-400 font-medium">No system features matched your search.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="text-right text-xs text-slate-400 bg-white border border-slate-200 rounded-lg px-3 py-1.5 shadow-sm font-medium self-start md:self-center">
             📅 {new Date().toLocaleDateString("en-IN", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </div>
         </div>
