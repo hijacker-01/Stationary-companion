@@ -1,25 +1,31 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import { 
+  LayoutDashboard, Package, Clock, Receipt, Undo2, 
+  CornerUpRight, Tag, Factory, Users, Briefcase, 
+  DollarSign, Truck, MessageSquare, Wallet, BookOpen, 
+  BarChart3, UserCheck, Settings, LogOut, Inbox
+} from "lucide-react";
 
 const links = [
-  { to: "/dashboard",       icon: "📊", label: "Dashboard" },
-  { to: "/inventory",       icon: "📦", label: "Inventory" },
-  { to: "/expiry",          icon: "⏰", label: "Expiry Box" },
-  { to: "/billing",         icon: "🧾", label: "Billing" },
-  { to: "/sales-return",    icon: "↩️", label: "Sales Return" },
-  { to: "/purchase-return", icon: "📤", label: "Purchase Return" },
-  { to: "/purchase-bills",  icon: "📥", label: "Purchase Entry" },
-  { to: "/schemes",         icon: "🎁", label: "Schemes" },
-  { to: "/suppliers",       icon: "🏭", label: "Suppliers" },
-  { to: "/customers",       icon: "👤", label: "Customers" },
-  { to: "/salesman",        icon: "🧑‍💼", label: "Salesman" },
-  { to: "/vouchers",        icon: "💵", label: "Vouchers" },
-  { to: "/delivery-man",    icon: "🚚", label: "Delivery Man" },
-  { to: "/messages",        icon: "💬", label: "Team Chat" },
-  { to: "/expenses",        icon: "🧾", label: "Expenses" },
-  { to: "/journal-vouchers",icon: "📓", label: "Journal Vouchers" },
-  { to: "/reports",         icon: "📈", label: "Reports" },
-  { to: "/users",           icon: "👥", label: "Users" },
-  { to: "/settings",        icon: "⚙️", label: "Settings" },
+  { to: "/dashboard",       icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/inventory",       icon: Package, label: "Inventory" },
+  { to: "/expiry",          icon: Clock, label: "Expiry Box" },
+  { to: "/billing",         icon: Receipt, label: "Billing" },
+  { to: "/sales-return",    icon: Undo2, label: "Sales Return" },
+  { to: "/purchase-return", icon: CornerUpRight, label: "Purchase Return" },
+  { to: "/purchase-bills",  icon: Inbox, label: "Purchase Entry" },
+  { to: "/schemes",         icon: Tag, label: "Schemes" },
+  { to: "/suppliers",       icon: Factory, label: "Suppliers" },
+  { to: "/customers",       icon: Users, label: "Customers" },
+  { to: "/salesman",        icon: Briefcase, label: "Salesman" },
+  { to: "/vouchers",        icon: DollarSign, label: "Vouchers" },
+  { to: "/delivery-man",    icon: Truck, label: "Delivery Man" },
+  { to: "/messages",        icon: MessageSquare, label: "Team Chat" },
+  { to: "/expenses",        icon: Wallet, label: "Expenses" },
+  { to: "/journal-vouchers",icon: BookOpen, label: "Journal Vouchers" },
+  { to: "/reports",         icon: BarChart3, label: "Reports" },
+  { to: "/users",           icon: UserCheck, label: "Users" },
+  { to: "/settings",        icon: Settings, label: "Settings" },
 ];
 
 export default function Sidebar() {
@@ -32,79 +38,61 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="w-64 min-h-screen bg-blue-900 text-white flex flex-col">
+    <div className="w-64 min-h-screen bg-slate-950 text-slate-100 flex flex-col border-r border-slate-800">
 
       {/* Logo */}
-      <div className="px-6 py-6 border-b border-blue-800">
+      <div className="px-6 py-6 border-b border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
-            <span className="text-blue-700 font-bold text-lg">M</span>
+          <div className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
+            <span className="text-white font-extrabold text-lg">M</span>
           </div>
           <div>
-            <p className="font-bold text-lg leading-none">Marg ERP</p>
-            <p className="text-blue-300 text-xs">Management Suite</p>
+            <p className="font-bold text-lg leading-none text-white">Marg ERP</p>
+            <p className="text-slate-400 text-xs mt-1">Management Suite</p>
           </div>
         </div>
       </div>
 
       {/* Nav Links */}
-      <nav className="flex-1 px-4 py-6 space-y-1">
-        {links.filter((link) => {
-          if (user.role === "admin") return true;
-          const p = user.permissions || [];
-          const req = {
-            "/inventory": "view_inventory",
-            "/expiry": "view_expiry",
-            "/billing": "view_billing",
-            "/sales-return": "create_billing",
-            "/purchase-return": "create_billing",
-            "/purchase-bills": "create_billing",
-            "/reports": "view_reports",
-            "/users": "manage_users",
-            "/settings": "manage_users",
-            "/schemes": "edit_inventory",
-            "/suppliers": "view_inventory",
-            "/customers": "view_billing",
-            "/salesman": "manage_users",
-            "/vouchers": "view_reports",
-            "/delivery-man": "view_billing",
-          }[link.to];
-          if (!req) return true; // Dashboard, Messages
-          return p.includes(req) || p.includes("admin");
-        }).map((link) => (
-          <NavLink
-            key={link.to}
-            to={link.to}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
-                isActive
-                  ? "bg-white text-blue-900 shadow"
-                  : "text-blue-200 hover:bg-blue-800 hover:text-white"
-              }`
-            }
-          >
-            <span className="text-lg">{link.icon}</span>
-            {link.label}
-          </NavLink>
-        ))}
+      <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto max-h-[calc(100vh-200px)]">
+        {links.map((link) => {
+          const Icon = link.icon;
+          return (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+                  isActive
+                    ? "bg-teal-600 text-white shadow-md font-semibold border-l-4 border-teal-400"
+                    : "text-slate-400 hover:bg-slate-900 hover:text-slate-200"
+                }`
+              }
+            >
+              <Icon className="w-4.5 h-4.5 shrink-0" />
+              {link.label}
+            </NavLink>
+          );
+        })}
       </nav>
 
       {/* User + Logout */}
-      <div className="px-4 py-5 border-t border-blue-800">
+      <div className="px-4 py-5 border-t border-slate-800">
         <div className="flex items-center gap-3 mb-4 px-2">
-          <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold uppercase">
+          <div className="w-9 h-9 rounded-full bg-teal-600 flex items-center justify-center text-sm font-bold uppercase text-white shadow-inner">
             {user.name?.[0] || "U"}
           </div>
-          <div>
-            <p className="text-sm font-semibold">{user.name || "User"}</p>
-            <p className="text-blue-400 text-xs capitalize">{user.role || "staff"}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-white truncate">{user.name || "User"}</p>
+            <p className="text-slate-400 text-xs capitalize truncate">{user.role || "staff"}</p>
           </div>
         </div>
         <button
           onClick={handleLogout}
-          className="w-full text-sm text-blue-300 hover:text-white hover:bg-blue-800 py-2 px-4 rounded-lg transition"
+          className="w-full flex items-center justify-center gap-2 text-sm text-slate-400 hover:text-white hover:bg-slate-900 py-2.5 px-4 rounded-lg transition-all duration-150 border border-slate-800 hover:border-slate-700 cursor-pointer"
         >
-          🚪 Logout
+          <LogOut className="w-4 h-4" />
+          Logout
         </button>
       </div>
     </div>

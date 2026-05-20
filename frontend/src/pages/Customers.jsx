@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Sidebar from "../components/Sidebar";
+import {
+  Users, IndianRupee, AlertTriangle, CheckCircle2, Search,
+  BookOpen, Wallet, Pencil, Trash2, Mail, Landmark, CreditCard,
+  ShoppingCart, Plus, Smartphone, X
+} from "lucide-react";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
@@ -75,64 +80,82 @@ export default function Customers() {
 
   const totalDue = customers.reduce((s, c) => s + (c.balance || 0), 0);
 
-  return (
-    <div className="flex min-h-screen bg-gray-100">
-      <Sidebar />
-      <main className="flex-1 p-8">
+  const summaryCards = [
+    { label:"Total Customers", value: customers.length, icon: Users, borderColor:"border-l-teal-500", color:"bg-teal-50 text-teal-600" },
+    { label:"Total Due", value:`₹${totalDue.toFixed(2)}`, icon: IndianRupee, borderColor:"border-l-red-500", color:"bg-red-50 text-red-600" },
+    { label:"With Balance", value: customers.filter(c=>c.balance>0).length, icon: AlertTriangle, borderColor:"border-l-amber-500", color:"bg-amber-50 text-amber-600" },
+    { label:"Clear Accounts", value: customers.filter(c=>c.balance<=0).length, icon: CheckCircle2, borderColor:"border-l-emerald-500", color:"bg-emerald-50 text-emerald-600" },
+  ];
 
-        <div className="flex items-center justify-between mb-6">
+  const filterTabs = [
+    { key:"all", label:"All", icon: Users },
+    { key:"due", label:"Has Balance", icon: AlertTriangle },
+    { key:"clear", label:"Clear", icon: CheckCircle2 },
+  ];
+
+  return (
+    <div className="flex min-h-screen bg-slate-50">
+      <Sidebar />
+      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
+
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">👤 Customers & Ledger</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage customers, credit and payment history</p>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Customers & Ledger</h1>
+            <p className="text-sm text-slate-500 mt-1">Manage customers, credit and payment history</p>
           </div>
           <button onClick={() => { setForm(emptyCustomer); setEditId(null); setShowModal(true); }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow">
-            + Add Customer
+            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
+            <Plus className="w-4.5 h-4.5" /> Add Customer
           </button>
         </div>
 
         {/* Summary */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          {[
-            { label:"Total Customers", value: customers.length, icon:"👥", color:"bg-blue-600" },
-            { label:"Total Due", value:`₹${totalDue.toFixed(2)}`, icon:"💸", color:"bg-red-500" },
-            { label:"With Balance", value: customers.filter(c=>c.balance>0).length, icon:"⚠️", color:"bg-orange-500" },
-            { label:"Clear Accounts", value: customers.filter(c=>c.balance<=0).length, icon:"✅", color:"bg-green-600" },
-          ].map(c => (
-            <div key={c.label} className={`${c.color} text-white rounded-2xl p-5 shadow`}>
-              <div className="text-3xl mb-2">{c.icon}</div>
-              <div className="text-2xl font-bold">{c.value}</div>
-              <div className="text-sm opacity-80 mt-1">{c.label}</div>
-            </div>
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {summaryCards.map((c, i) => {
+            const Icon = c.icon;
+            return (
+              <div key={i} className={`bg-white border-l-4 ${c.borderColor} border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between`}>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{c.value}</p>
+                  <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mt-1">{c.label}</p>
+                </div>
+                <div className={`p-2.5 rounded-lg ${c.color}`}>
+                  <Icon className="w-5 h-5" />
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Filter */}
-        <div className="bg-white rounded-2xl shadow p-4 mb-6 flex flex-wrap gap-4 items-center">
-          <input type="text" placeholder="🔍 Search by name or phone..."
-            value={search} onChange={e => setSearch(e.target.value)}
-            className="border border-gray-200 rounded-lg px-4 py-2 text-sm flex-1 min-w-48 focus:outline-none focus:ring-2 focus:ring-blue-400" />
-          <div className="flex gap-2">
-            {[
-              { key:"all", label:"All" },
-              { key:"due", label:"⚠️ Has Balance" },
-              { key:"clear", label:"✅ Clear" },
-            ].map(f => (
-              <button key={f.key} onClick={() => setFilterBalance(f.key)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  filterBalance === f.key ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}>
-                {f.label}
-              </button>
-            ))}
+        <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm flex flex-wrap gap-4 items-center">
+          <div className="flex items-center gap-3 flex-1 min-w-48">
+            <Search className="w-5 h-5 text-slate-400" />
+            <input type="text" placeholder="Search by name or phone..."
+              value={search} onChange={e => setSearch(e.target.value)}
+              className="flex-1 bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none" />
           </div>
-          <span className="text-sm text-gray-400 ml-auto">{filtered.length} customers</span>
+          <div className="flex gap-2">
+            {filterTabs.map(f => {
+              const FIcon = f.icon;
+              return (
+                <button key={f.key} onClick={() => setFilterBalance(f.key)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition cursor-pointer ${
+                    filterBalance === f.key ? "bg-teal-600 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+                  }`}>
+                  <FIcon className="w-4 h-4" />
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+          <span className="text-sm text-slate-400 ml-auto">{filtered.length} customers</span>
         </div>
 
         {/* Customer Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(c => (
-            <div key={c.id} className="bg-white rounded-2xl shadow p-6 hover:shadow-md transition">
+            <div key={c.id} className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-150">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-lg ${
@@ -141,48 +164,48 @@ export default function Customers() {
                     {c.name[0].toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-bold text-gray-800">{c.name}</p>
-                    <p className="text-gray-400 text-xs">{c.phone || "No phone"}</p>
+                    <p className="font-bold text-slate-900">{c.name}</p>
+                    <p className="text-slate-400 text-xs">{c.phone || "No phone"}</p>
                   </div>
                 </div>
-                <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
-                  c.balance > 0 ? "bg-red-100 text-red-600" : "bg-green-100 text-green-600"
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase ${
+                  c.balance > 0 ? "bg-red-50 text-red-600 border-red-200" : "bg-green-50 text-green-600 border-green-200"
                 }`}>
                   {c.balance > 0 ? `Due ₹${c.balance.toFixed(2)}` : "Clear"}
                 </span>
               </div>
 
-              <div className="space-y-1.5 text-sm text-gray-500 mb-4">
-                {c.email && <p>📧 {c.email}</p>}
-                {c.gstNumber && <p>🏛️ {c.gstNumber}</p>}
-                <p>💳 Credit Limit: ₹{c.creditLimit} / {c.creditDays} days</p>
-                <p>🛒 Total Purchased: <span className="font-semibold text-gray-700">₹{c.totalPurchased || 0}</span></p>
-                <p>💵 Total Paid: <span className="font-semibold text-green-600">₹{c.totalPaid || 0}</span></p>
+              <div className="space-y-1.5 text-sm text-slate-500 mb-4">
+                {c.email && <p className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-slate-400" /> {c.email}</p>}
+                {c.gstNumber && <p className="flex items-center gap-2"><Landmark className="w-3.5 h-3.5 text-slate-400" /> {c.gstNumber}</p>}
+                <p className="flex items-center gap-2"><CreditCard className="w-3.5 h-3.5 text-slate-400" /> Credit Limit: ₹{c.creditLimit} / {c.creditDays} days</p>
+                <p className="flex items-center gap-2"><ShoppingCart className="w-3.5 h-3.5 text-slate-400" /> Total Purchased: <span className="font-semibold text-slate-700">₹{c.totalPurchased || 0}</span></p>
+                <p className="flex items-center gap-2"><IndianRupee className="w-3.5 h-3.5 text-slate-400" /> Total Paid: <span className="font-semibold text-green-600">₹{c.totalPaid || 0}</span></p>
               </div>
 
-              <div className="flex gap-2 pt-3 border-t border-gray-100">
+              <div className="flex gap-2 pt-3 border-t border-slate-100">
                 <button onClick={() => fetchLedger(c)}
-                  className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-600 py-2 rounded-lg text-xs font-semibold">
-                  📒 Ledger
+                  className="flex-1 flex items-center justify-center gap-1.5 bg-teal-50 hover:bg-teal-100 text-teal-600 py-2 rounded-lg text-xs font-semibold cursor-pointer transition">
+                  <BookOpen className="w-3.5 h-3.5" /> Ledger
                 </button>
                 <button onClick={() => { setActiveCustomer(c); setPayForm(emptyPayment); setShowPayment(true); }}
-                  className="flex-1 bg-green-50 hover:bg-green-100 text-green-600 py-2 rounded-lg text-xs font-semibold">
-                  💵 Payment
+                  className="flex-1 flex items-center justify-center gap-1.5 bg-green-50 hover:bg-green-100 text-green-600 py-2 rounded-lg text-xs font-semibold cursor-pointer transition">
+                  <IndianRupee className="w-3.5 h-3.5" /> Payment
                 </button>
                 <button onClick={() => { setForm(c); setEditId(c.id); setShowModal(true); }}
-                  className="bg-gray-50 hover:bg-gray-100 text-gray-500 px-3 py-2 rounded-lg text-xs font-semibold">
-                  ✏️
+                  className="flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-500 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition">
+                  <Pencil className="w-3.5 h-3.5" />
                 </button>
                 <button onClick={() => handleDelete(c.id)}
-                  className="bg-red-50 hover:bg-red-100 text-red-500 px-3 py-2 rounded-lg text-xs font-semibold">
-                  🗑️
+                  className="flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-500 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition">
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
           ))}
           {filtered.length === 0 && (
-            <div className="col-span-3 text-center py-16 text-gray-400">
-              <div className="text-5xl mb-3">👤</div>
+            <div className="col-span-3 text-center py-16 text-slate-400">
+              <Users className="w-12 h-12 mx-auto mb-3 text-slate-300" />
               <p>No customers found. Add your first customer!</p>
             </div>
           )}
@@ -190,11 +213,13 @@ export default function Customers() {
 
         {/* ── ADD/EDIT MODAL ── */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-bold text-gray-800">{editId?"Edit":"Add"} Customer</h2>
-                <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+                <h2 className="text-lg font-bold text-slate-900">{editId?"Edit":"Add"} Customer</h2>
+                <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {[
@@ -207,28 +232,28 @@ export default function Customers() {
                   { key:"openingBalance", label:"Opening Balance ₹", placeholder:"0" },
                 ].map(f => (
                   <div key={f.key} className={f.key==="name"?"col-span-2":""}>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{f.label}</label>
                     <input type="text" placeholder={f.placeholder}
                       value={form[f.key] || ""}
                       onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                      className="form-input" />
                   </div>
                 ))}
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Address</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Address</label>
                   <textarea rows={2} placeholder="Full address"
                     value={form.address || ""}
                     onChange={e => setForm({ ...form, address: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    className="form-input" />
                 </div>
               </div>
               <div className="flex gap-3 mt-6">
                 <button onClick={handleSave}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold text-sm">
+                  className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
                   {editId?"Update":"Add"} Customer
                 </button>
                 <button onClick={() => setShowModal(false)}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold text-sm">
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
                   Cancel
                 </button>
               </div>
@@ -238,59 +263,68 @@ export default function Customers() {
 
         {/* ── PAYMENT MODAL ── */}
         {showPayment && activeCustomer && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-bold text-gray-800">💵 Collect Payment</h2>
-                <button onClick={() => setShowPayment(false)} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+                <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
+                  <IndianRupee className="w-5 h-5 text-green-600" /> Collect Payment
+                </h2>
+                <button onClick={() => setShowPayment(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                <p className="font-bold text-gray-800">{activeCustomer.name}</p>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
+                <p className="font-bold text-slate-900">{activeCustomer.name}</p>
                 <p className="text-red-500 text-sm mt-1">Outstanding: ₹{activeCustomer.balance?.toFixed(2) || "0.00"}</p>
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Amount ₹ *</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Amount ₹ *</label>
                   <input type="number" placeholder="Enter amount"
                     value={payForm.amount}
                     onChange={e => setPayForm({ ...payForm, amount: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    className="form-input" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Payment Mode</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Payment Mode</label>
                   <div className="grid grid-cols-4 gap-2">
-                    {["cash","upi","card","bank"].map(m => (
-                      <button key={m} onClick={() => setPayForm({ ...payForm, mode: m })}
-                        className={`py-2 rounded-lg text-xs font-medium capitalize border transition ${
-                          payForm.mode === m ? "bg-blue-600 text-white border-blue-600" : "bg-gray-50 text-gray-600 border-gray-200"
-                        }`}>
-                        {m === "cash"?"💵":m === "upi"?"📱":m === "card"?"💳":"🏦"} {m}
-                      </button>
-                    ))}
+                    {["cash","upi","card","bank"].map(m => {
+                      const icons = { cash: Wallet, upi: Smartphone, card: CreditCard, bank: Landmark };
+                      const MIcon = icons[m];
+                      return (
+                        <button key={m} onClick={() => setPayForm({ ...payForm, mode: m })}
+                          className={`flex flex-col items-center justify-center py-2.5 rounded-lg text-xs font-bold border cursor-pointer transition-all duration-150 ${
+                            payForm.mode === m ? "bg-teal-50 border-teal-500 text-teal-700" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                          }`}>
+                          <MIcon className="w-4 h-4 mb-1" />
+                          {m}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Reference / Cheque No</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Reference / Cheque No</label>
                   <input type="text" placeholder="Optional"
                     value={payForm.reference}
                     onChange={e => setPayForm({ ...payForm, reference: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    className="form-input" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Note</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Note</label>
                   <input type="text" placeholder="Optional note"
                     value={payForm.note}
                     onChange={e => setPayForm({ ...payForm, note: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    className="form-input" />
                 </div>
               </div>
               <div className="flex gap-3 mt-6">
                 <button onClick={handlePayment}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold text-sm">
-                  ✅ Collect ₹{payForm.amount || 0}
+                  className="flex-1 flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
+                  <CheckCircle2 className="w-4 h-4" /> Collect ₹{payForm.amount || 0}
                 </button>
                 <button onClick={() => setShowPayment(false)}
-                  className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold text-sm">
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
                   Cancel
                 </button>
               </div>
@@ -300,21 +334,23 @@ export default function Customers() {
 
         {/* ── LEDGER MODAL ── */}
         {showLedger && ledger && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-              <div className="p-8">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto border border-slate-100">
+              <div className="p-6">
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <h2 className="text-lg font-bold text-gray-800">📒 Customer Ledger</h2>
-                    <p className="text-blue-600 font-semibold mt-1">{ledger.customer?.name}</p>
-                    <p className="text-gray-400 text-xs">{ledger.customer?.phone}</p>
+                    <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
+                      <BookOpen className="w-5 h-5 text-teal-600" /> Customer Ledger
+                    </h2>
+                    <p className="text-teal-600 font-semibold mt-1">{ledger.customer?.name}</p>
+                    <p className="text-slate-400 text-xs">{ledger.customer?.phone}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-gray-500">Closing Balance</p>
+                    <p className="text-xs text-slate-500">Closing Balance</p>
                     <p className={`text-2xl font-bold ${ledger.finalBalance > 0 ? "text-red-600" : "text-green-600"}`}>
                       ₹{ledger.finalBalance?.toFixed(2)}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-slate-400">
                       {ledger.finalBalance > 0 ? "Amount Due" : "Advance / Clear"}
                     </p>
                   </div>
@@ -327,67 +363,67 @@ export default function Customers() {
                     { label:"Total Paid", value:`₹${ledger.entries?.filter(e=>e.credit>0).reduce((s,e)=>s+e.credit,0).toFixed(2)}`, color:"text-green-600" },
                     { label:"Balance Due", value:`₹${ledger.finalBalance?.toFixed(2)}`, color: ledger.finalBalance>0?"text-red-600":"text-green-600" },
                   ].map(s => (
-                    <div key={s.label} className="bg-gray-50 rounded-xl p-4 text-center">
+                    <div key={s.label} className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
                       <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-                      <p className="text-xs text-gray-500 mt-1">{s.label}</p>
+                      <p className="text-xs text-slate-500 mt-1">{s.label}</p>
                     </div>
                   ))}
                 </div>
 
                 {/* Ledger Table */}
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
-                    <tr>
-                      <th className="px-4 py-3 text-left">Date</th>
-                      <th className="px-4 py-3 text-left">Type</th>
-                      <th className="px-4 py-3 text-left">Reference</th>
-                      <th className="px-4 py-3 text-right">Debit (Dr)</th>
-                      <th className="px-4 py-3 text-right">Credit (Cr)</th>
-                      <th className="px-4 py-3 text-right">Balance</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {ledger.entries?.map((entry, i) => (
-                      <tr key={i} className={`hover:bg-gray-50 ${
-                        entry.type==="Payment" ? "bg-green-50/30" : ""
-                      }`}>
-                        <td className="px-4 py-3 text-gray-500 text-xs">
-                          {new Date(entry.date).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                            entry.type==="Payment" ? "bg-green-100 text-green-700" :
-                            entry.type==="Invoice" ? "bg-blue-100 text-blue-700" :
-                            "bg-gray-100 text-gray-600"
-                          }`}>
-                            {entry.type}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 font-mono text-xs text-gray-600">{entry.ref}</td>
-                        <td className="px-4 py-3 text-right text-red-600 font-medium">
-                          {entry.debit > 0 ? `₹${entry.debit.toFixed(2)}` : "—"}
-                        </td>
-                        <td className="px-4 py-3 text-right text-green-600 font-medium">
-                          {entry.credit > 0 ? `₹${entry.credit.toFixed(2)}` : "—"}
-                        </td>
-                        <td className={`px-4 py-3 text-right font-bold ${entry.balance>0?"text-red-600":"text-green-600"}`}>
-                          ₹{entry.balance?.toFixed(2)}
-                        </td>
+                <div className="data-table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Reference</th>
+                        <th className="text-right">Debit (Dr)</th>
+                        <th className="text-right">Credit (Cr)</th>
+                        <th className="text-right">Balance</th>
                       </tr>
-                    ))}
-                    {!ledger.entries?.length && (
-                      <tr><td colSpan={6} className="text-center py-10 text-gray-400">No transactions yet</td></tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {ledger.entries?.map((entry, i) => (
+                        <tr key={i} className={entry.type==="Payment" ? "bg-green-50/30" : ""}>
+                          <td className="text-slate-500 text-xs">
+                            {new Date(entry.date).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}
+                          </td>
+                          <td>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase ${
+                              entry.type==="Payment" ? "bg-green-50 text-green-700 border-green-200" :
+                              entry.type==="Invoice" ? "bg-teal-50 text-teal-700 border-teal-200" :
+                              "bg-slate-50 text-slate-600 border-slate-200"
+                            }`}>
+                              {entry.type}
+                            </span>
+                          </td>
+                          <td className="font-mono text-xs text-slate-600">{entry.ref}</td>
+                          <td className="text-right text-red-600 font-medium">
+                            {entry.debit > 0 ? `₹${entry.debit.toFixed(2)}` : "—"}
+                          </td>
+                          <td className="text-right text-green-600 font-medium">
+                            {entry.credit > 0 ? `₹${entry.credit.toFixed(2)}` : "—"}
+                          </td>
+                          <td className={`text-right font-bold ${entry.balance>0?"text-red-600":"text-green-600"}`}>
+                            ₹{entry.balance?.toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                      {!ledger.entries?.length && (
+                        <tr><td colSpan={6} className="text-center py-10 text-slate-400">No transactions yet</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
                 <div className="flex gap-3 mt-6">
                   <button onClick={() => { setActiveCustomer(ledger.customer); setPayForm(emptyPayment); setShowPayment(true); }}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold text-sm">
-                    💵 Collect Payment
+                    className="flex-1 flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
+                    <IndianRupee className="w-4 h-4" /> Collect Payment
                   </button>
                   <button onClick={() => setShowLedger(false)}
-                    className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold text-sm">
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
                     Close
                   </button>
                 </div>

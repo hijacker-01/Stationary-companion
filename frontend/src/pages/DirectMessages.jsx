@@ -92,30 +92,30 @@ export default function DirectMessages() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
-      <main className="flex-1 flex p-6 gap-6">
+      <main className="flex-1 flex p-8 gap-6 overflow-y-auto max-h-screen">
         
         {/* User List Panel */}
-        <div className="w-80 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
-          <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-blue-600" />
-            <h2 className="font-bold text-gray-800">Team Chat</h2>
+        <div className="w-80 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+          <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-teal-600" />
+            <h2 className="font-bold text-slate-900">Team Chat</h2>
           </div>
           <div className="overflow-y-auto flex-1 p-2">
             {users.map(u => (
               <button
                 key={u.id}
                 onClick={() => selectUser(u)}
-                className={`w-full flex items-center justify-between p-3 mb-1 rounded-xl transition ${selectedUser?.id === u.id ? "bg-blue-50 border border-blue-100" : "hover:bg-gray-50 border border-transparent"}`}
+                className={`w-full flex items-center justify-between p-3 mb-1 rounded-xl transition cursor-pointer ${selectedUser?.id === u.id ? "bg-teal-50 border border-teal-200" : "hover:bg-slate-50 border border-transparent"}`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${selectedUser?.id === u.id ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${selectedUser?.id === u.id ? "bg-teal-600 text-white" : "bg-slate-100 text-slate-600"}`}>
                     {u.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-semibold text-gray-800">{u.name}</p>
-                    <p className="text-xs text-gray-500 capitalize">{u.role}</p>
+                    <p className="text-sm font-semibold text-slate-900">{u.name}</p>
+                    <p className="text-xs text-slate-500 capitalize">{u.role}</p>
                   </div>
                 </div>
                 {unreads[u.id] > 0 && (
@@ -129,24 +129,24 @@ export default function DirectMessages() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
+        <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
           {selectedUser ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 border-b border-gray-100 flex items-center gap-3 bg-gray-50">
-                <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+              <div className="p-4 border-b border-slate-200 flex items-center gap-3 bg-slate-50">
+                <div className="w-10 h-10 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center font-bold">
                   {selectedUser.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-800">{selectedUser.name}</h3>
-                  <p className="text-xs text-gray-500 capitalize">{selectedUser.role}</p>
+                  <h3 className="font-bold text-slate-900">{selectedUser.name}</h3>
+                  <p className="text-xs text-slate-500 capitalize">{selectedUser.role}</p>
                 </div>
               </div>
 
               {/* Chat Messages */}
               <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
                 {messages.length === 0 && (
-                  <div className="text-center text-gray-400 mt-20 text-sm">
+                  <div className="text-center text-slate-400 mt-20 text-sm">
                     No messages yet. Start the conversation!
                   </div>
                 )}
@@ -154,9 +154,9 @@ export default function DirectMessages() {
                   const isMine = m.senderId === currentUser.id;
                   return (
                     <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm ${isMine ? "bg-blue-600 text-white rounded-tr-sm" : "bg-white border border-gray-200 text-gray-800 rounded-tl-sm shadow-sm"}`}>
+                      <div className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm ${isMine ? "bg-teal-600 text-white rounded-tr-sm" : "bg-white border border-slate-200 text-slate-900 rounded-tl-sm shadow-sm"}`}>
                         <p>{m.message}</p>
-                        <p className={`text-[10px] mt-1 text-right ${isMine ? "text-blue-200" : "text-gray-400"}`}>
+                        <p className={`text-[10px] mt-1 text-right ${isMine ? "text-teal-200" : "text-slate-400"}`}>
                           {new Date(m.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                         </p>
                       </div>
@@ -167,23 +167,23 @@ export default function DirectMessages() {
               </div>
 
               {/* Chat Input */}
-              <div className="p-4 border-t border-gray-100 bg-white">
+              <div className="p-4 border-t border-slate-200 bg-white">
                 <form onSubmit={handleSend} className="flex items-center gap-2">
                   <input
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Type a message..."
-                    className="flex-1 border border-gray-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="form-input flex-1 !rounded-full"
                   />
-                  <button type="submit" className="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center transition shadow-md">
+                  <button type="submit" className="w-10 h-10 bg-teal-600 hover:bg-teal-700 text-white rounded-full flex items-center justify-center transition shadow-sm cursor-pointer">
                     <Send className="w-4 h-4 ml-0.5" />
                   </button>
                 </form>
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
               <MessageSquare className="w-16 h-16 mb-4 opacity-20" />
               <p>Select a team member to start chatting</p>
             </div>
