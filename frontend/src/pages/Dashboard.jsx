@@ -24,7 +24,11 @@ const SEARCHABLE_FEATURES = [
   { name: "Outstanding Ledger", href: "/customers", category: "Management", keywords: ["customers", "ledger", "outstanding", "dues", "balance", "credit", "money"] },
   { name: "Inspect Expiring Items", href: "/expiry", category: "Management", keywords: ["expiry", "expiring", "drugs", "medicines", "date", "box check"] },
   { name: "Generate Tax Reports", href: "/reports", category: "Analytics", keywords: ["reports", "tax", "gst", "analytics", "financials", "sales summary"] },
-  { name: "Main Dashboard Overview", href: "/", category: "Navigation", keywords: ["home", "dashboard", "overview", "analytics", "main"] }
+  { name: "Main Dashboard Overview", href: "/dashboard", category: "Navigation", keywords: ["home", "dashboard", "overview", "analytics", "main"] },
+  // ── AI Pages ──
+  { name: "AI Smart Ledger", href: "/ai-ledger", category: "AI Tools", keywords: ["ai", "scan", "photo", "invoice", "ocr", "smart", "ledger", "camera", "upload", "langchain"] },
+  { name: "AI Reorder Center", href: "/reorder-center", category: "AI Tools", keywords: ["reorder", "ai", "purchase order", "low stock", "auto", "predict", "agent", "langchain"] },
+  { name: "AI Expiry Guard", href: "/expiry-guard", category: "AI Tools", keywords: ["expiry", "ai", "guard", "protect", "discount", "risk", "fefo", "expire", "agent"] },
 ];
 
 export default function Dashboard() {
@@ -299,6 +303,21 @@ export default function Dashboard() {
                   <ChevronRight className="w-4 h-4" />
                 </a>
               ))}
+
+              <div className="mt-3 pt-3 border-t border-slate-100">
+                <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2 px-1">AI Tools</p>
+                {[
+                  { label: "AI Smart Ledger", href: "/ai-ledger", color: "text-violet-700 bg-violet-50 hover:bg-violet-100 border-violet-100", icon: "📷" },
+                  { label: "AI Reorder Center", href: "/reorder-center", color: "text-orange-700 bg-orange-50 hover:bg-orange-100 border-orange-100", icon: "🔄" },
+                  { label: "AI Expiry Guard", href: "/expiry-guard", color: "text-red-700 bg-red-50 hover:bg-red-100 border-red-100", icon: "🛡️" },
+                ].map(a => (
+                  <a key={a.label} href={a.href}
+                    className={`flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-150 border mb-1.5 ${a.color}`}>
+                    <span>{a.icon} {a.label}</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -352,6 +371,72 @@ export default function Dashboard() {
             ) : (
               <p className="text-slate-400 text-sm text-center py-8 font-medium">All items adequately stocked</p>
             )}
+          </div>
+        </div>
+
+        {/* ── AI Tools Section ─────────────────────────────────── */}
+        <div className="mt-8">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-1 h-6 bg-gradient-to-b from-violet-500 to-indigo-600 rounded-full" />
+            <h2 className="font-extrabold text-slate-800 text-lg">AI-Powered Tools</h2>
+            <span className="text-[10px] uppercase tracking-widest font-bold bg-violet-100 text-violet-600 px-2.5 py-1 rounded-full border border-violet-200">Beta</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+            {/* AI Smart Ledger */}
+            <a href="/ai-ledger" className="group bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:border-violet-300 transition-all duration-200 block">
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl flex items-center justify-center text-2xl shadow-md">📷</div>
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-violet-50 text-violet-600 border border-violet-200 px-2 py-0.5 rounded-full">AI Tools</span>
+              </div>
+              <h3 className="font-bold text-slate-800 text-base mb-1.5 group-hover:text-violet-700 transition-colors">AI Smart Ledger</h3>
+              <p className="text-slate-500 text-sm leading-relaxed mb-4">Snap a photo of any purchase invoice. AI reads, extracts, and saves it directly to your ERP — no manual typing.</p>
+              <div className="flex flex-wrap gap-1.5">
+                {["OCR", "LLM", "RAG", "Auto-Entry"].map(t => (
+                  <span key={t} className="text-[10px] font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md border border-slate-200">{t}</span>
+                ))}
+              </div>
+              <div className="mt-4 flex items-center text-violet-600 text-sm font-bold group-hover:gap-2 gap-1 transition-all">
+                Open <ChevronRight className="w-4 h-4" />
+              </div>
+            </a>
+
+            {/* AI Reorder Center */}
+            <a href="/reorder-center" className="group bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:border-orange-300 transition-all duration-200 block">
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl flex items-center justify-center text-2xl shadow-md">🔄</div>
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-orange-50 text-orange-600 border border-orange-200 px-2 py-0.5 rounded-full">AI Tools</span>
+              </div>
+              <h3 className="font-bold text-slate-800 text-base mb-1.5 group-hover:text-orange-700 transition-colors">AI Reorder Center</h3>
+              <p className="text-slate-500 text-sm leading-relaxed mb-4">AI agent monitors stock levels, learns from 90-day purchase velocity, and auto-drafts purchase orders before you run out.</p>
+              <div className="flex flex-wrap gap-1.5">
+                {["LangChain", "ReAct Agent", "Auto-PO", "Predictive"].map(t => (
+                  <span key={t} className="text-[10px] font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md border border-slate-200">{t}</span>
+                ))}
+              </div>
+              <div className="mt-4 flex items-center text-orange-600 text-sm font-bold group-hover:gap-2 gap-1 transition-all">
+                Open <ChevronRight className="w-4 h-4" />
+              </div>
+            </a>
+
+            {/* AI Expiry Guard */}
+            <a href="/expiry-guard" className="group bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:border-red-300 transition-all duration-200 block">
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl flex items-center justify-center text-2xl shadow-md">🛡️</div>
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded-full">AI Tools</span>
+              </div>
+              <h3 className="font-bold text-slate-800 text-base mb-1.5 group-hover:text-red-700 transition-colors">AI Expiry Guard</h3>
+              <p className="text-slate-500 text-sm leading-relaxed mb-4">Tracks every item's expiry. AI scores risk levels and suggests smart actions — discount, return to supplier, or FIFO reallocation.</p>
+              <div className="flex flex-wrap gap-1.5">
+                {["Risk Score", "FIFO", "LLM Actions", "Alerts"].map(t => (
+                  <span key={t} className="text-[10px] font-semibold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md border border-slate-200">{t}</span>
+                ))}
+              </div>
+              <div className="mt-4 flex items-center text-red-600 text-sm font-bold group-hover:gap-2 gap-1 transition-all">
+                Open <ChevronRight className="w-4 h-4" />
+              </div>
+            </a>
+
           </div>
         </div>
 

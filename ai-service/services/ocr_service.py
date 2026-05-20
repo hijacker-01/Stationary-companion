@@ -23,11 +23,12 @@ def _preprocess_image(image_bytes: bytes) -> np.ndarray:
     """
     img = Image.open(io.BytesIO(image_bytes)).convert("L")  # grayscale
 
-    # Resize width to 1800px, keep aspect ratio
+    # Resize width to 1200px, keep aspect ratio (optimal balance of speed and accuracy on CPU)
     w, h = img.size
-    if w < 1800:
-        ratio = 1800 / w
-        img   = img.resize((1800, int(h * ratio)), Image.LANCZOS)
+    target_width = 1200
+    if w != target_width:
+        ratio = target_width / w
+        img   = img.resize((target_width, int(h * ratio)), Image.LANCZOS)
 
     # Contrast boost
     img = ImageEnhance.Contrast(img).enhance(2.0)

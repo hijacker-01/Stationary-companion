@@ -14,11 +14,23 @@ bin-release/
 *.apk
 
 # Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-# should NOT be excluded as they contain compiler settings and other important
-# information for Eclipse / Flash Builder.
 node_modules/
 .DS_Store
 .env
-node_modules/
-.DS_Store
-.env
+*.log
+
+# ── Python & AI Service Exclusions ──
+ai-service/venv/
+ai-service/.venv/
+venv/
+.venv/
+env/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.pytest_cache/
+
+# ChromaDB persistence folder
+ai-service/chroma_db/
+**/chroma_db/

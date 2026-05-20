@@ -22,6 +22,7 @@
     "node-fetch": "^3.3.2",
     "pg": "^8.20.0",
     "sequelize": "^6.37.8",
+    "sharp": "^0.34.5",
     "string-similarity": "^4.0.4",
     "tesseract.js": "^7.0.0"
   },
