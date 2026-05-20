@@ -24,10 +24,6 @@ require("./models/JournalVoucher");
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  next();
-});
 
 app.use("/api/auth",           require("./routes/auth"));
 app.use("/api/items",          require("./routes/items"));
@@ -50,6 +46,7 @@ app.use("/api/delivery-man",   require("./routes/deliveryMan"));
 app.use("/api/messages",       require("./routes/messages"));
 app.use("/api/expenses",       require("./routes/expenses"));
 app.use("/api/journal",        require("./routes/journal"));
+app.use("/api/ai",             require("./routes/ai-proxy"));   // 🤖 AI microservice proxy
 
 const PORT = process.env.PORT || 5000;
 
