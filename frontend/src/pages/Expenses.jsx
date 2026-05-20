@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Sidebar from "../components/Sidebar";
-import { Receipt, Plus, Trash2 } from "lucide-react";
+import { Receipt, Plus, Trash2, IndianRupee } from "lucide-react";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
@@ -47,81 +47,95 @@ export default function Expenses() {
   const total = expenses.reduce((acc, curr) => acc + curr.amount, 0);
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto">
-        <div className="flex justify-between items-center mb-8">
+      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-              <Receipt className="w-6 h-6 text-rose-500" /> Daily Expenses
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">Record and track operational business expenses</p>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Daily Expenses</h1>
+            <p className="text-sm text-slate-500 mt-1">Record and track operational business expenses</p>
           </div>
           <button 
             onClick={() => setShowModal(true)} 
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2 shadow"
+            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> Add Expense
+            <Plus className="w-4.5 h-4.5" /> Add Expense
           </button>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6 flex justify-between items-center">
-          <h2 className="text-gray-500 font-semibold">Total Expenses Recorded</h2>
-          <span className="text-3xl font-extrabold text-rose-600">₹{total.toFixed(2)}</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white border-l-4 border-l-rose-500 border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold text-slate-900">₹{total.toFixed(2)}</p>
+              <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mt-1">Total Expenses</p>
+            </div>
+            <div className="p-2.5 rounded-lg bg-rose-50 text-rose-600">
+              <IndianRupee className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="bg-white border-l-4 border-l-teal-500 border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold text-slate-900">{expenses.length}</p>
+              <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mt-1">Records</p>
+            </div>
+            <div className="p-2.5 rounded-lg bg-teal-50 text-teal-600">
+              <Receipt className="w-5 h-5" />
+            </div>
+          </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+        <div className="data-table-container">
+          <table className="data-table">
+            <thead>
               <tr>
-                <th className="px-6 py-4">Date</th>
-                <th className="px-6 py-4">Category</th>
-                <th className="px-6 py-4">Description / Note</th>
-                <th className="px-6 py-4">Payment Mode</th>
-                <th className="px-6 py-4 text-right">Amount (₹)</th>
-                <th className="px-6 py-4 text-center">Action</th>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Description / Note</th>
+                <th>Payment Mode</th>
+                <th className="text-right">Amount (₹)</th>
+                <th className="text-center">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody>
               {expenses.map((e) => (
-                <tr key={e.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium text-gray-700">
+                <tr key={e.id}>
+                  <td className="font-medium text-slate-700">
                     {new Date(e.date).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric'})}
                   </td>
-                  <td className="px-6 py-4 font-semibold text-gray-800">{e.category}</td>
-                  <td className="px-6 py-4 text-gray-500">{e.note || "—"}</td>
-                  <td className="px-6 py-4">
-                    <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-semibold uppercase">
+                  <td className="font-semibold text-slate-900">{e.category}</td>
+                  <td className="text-slate-500">{e.note || "—"}</td>
+                  <td>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase bg-slate-50 text-slate-600 border-slate-200">
                       {e.paymentMode}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right font-bold text-rose-600">₹{e.amount.toFixed(2)}</td>
-                  <td className="px-6 py-4 text-center">
-                    <button onClick={() => handleDelete(e.id)} className="text-red-400 hover:text-red-600 transition">
+                  <td className="text-right font-bold text-rose-600">₹{e.amount.toFixed(2)}</td>
+                  <td className="text-center">
+                    <button onClick={() => handleDelete(e.id)} className="text-rose-600 hover:text-rose-800 text-xs font-semibold cursor-pointer">
                       <Trash2 className="w-4 h-4 mx-auto" />
                     </button>
                   </td>
                 </tr>
               ))}
               {expenses.length === 0 && (
-                <tr><td colSpan={6} className="text-center py-12 text-gray-400">No expenses recorded yet.</td></tr>
+                <tr><td colSpan={6} className="text-center py-12 text-slate-400">No expenses recorded yet.</td></tr>
               )}
             </tbody>
           </table>
         </div>
 
         {showModal && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
-              <h2 className="text-lg font-bold text-gray-800 mb-6">Add New Expense</h2>
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 border border-slate-100 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+              <h2 className="text-lg font-bold text-slate-900 mb-6">Add New Expense</h2>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
-                  <input type="date" required value={form.date} onChange={e=>setForm({...form, date:e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-400" />
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Date</label>
+                  <input type="date" required value={form.date} onChange={e=>setForm({...form, date:e.target.value})} className="form-input" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Category</label>
-                  <select value={form.category} onChange={e=>setForm({...form, category:e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Category</label>
+                  <select value={form.category} onChange={e=>setForm({...form, category:e.target.value})} className="form-input bg-white">
                     <option value="Rent">Rent</option>
                     <option value="Salary">Salary / Wages</option>
                     <option value="Electricity">Electricity / Utilities</option>
@@ -132,12 +146,12 @@ export default function Expenses() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Amount (₹)</label>
-                  <input type="number" step="0.01" required value={form.amount} onChange={e=>setForm({...form, amount:parseFloat(e.target.value)||""})} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-400" placeholder="0.00" />
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Amount (₹)</label>
+                  <input type="number" step="0.01" required value={form.amount} onChange={e=>setForm({...form, amount:parseFloat(e.target.value)||""})} className="form-input" placeholder="0.00" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Payment Mode</label>
-                  <select value={form.paymentMode} onChange={e=>setForm({...form, paymentMode:e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Payment Mode</label>
+                  <select value={form.paymentMode} onChange={e=>setForm({...form, paymentMode:e.target.value})} className="form-input bg-white">
                     <option value="cash">Cash</option>
                     <option value="bank">Bank Transfer / Cheque</option>
                     <option value="upi">UPI / QR</option>
@@ -145,12 +159,12 @@ export default function Expenses() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Note / Description</label>
-                  <textarea rows="2" value={form.note} onChange={e=>setForm({...form, note:e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-400" placeholder="Optional details..."></textarea>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Note / Description</label>
+                  <textarea rows="2" value={form.note} onChange={e=>setForm({...form, note:e.target.value})} className="form-input" placeholder="Optional details..."></textarea>
                 </div>
                 <div className="flex gap-3 pt-4">
-                  <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-sm font-semibold transition">Save Expense</button>
-                  <button type="button" onClick={()=>setShowModal(false)} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-xl text-sm font-semibold transition">Cancel</button>
+                  <button type="submit" className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">Save Expense</button>
+                  <button type="button" onClick={()=>setShowModal(false)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold cursor-pointer">Cancel</button>
                 </div>
               </form>
             </div>

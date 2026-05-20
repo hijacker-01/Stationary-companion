@@ -64,25 +64,25 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center relative overflow-hidden selection:bg-blue-200">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center relative overflow-hidden selection:bg-teal-200">
       {/* Background blobs */}
-      <div className="absolute top-0 -left-4 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-2xl opacity-30 animate-blob"></div>
+      <div className="absolute top-0 -left-4 w-72 h-72 bg-teal-400 rounded-full mix-blend-multiply filter blur-2xl opacity-30 animate-blob"></div>
       <div className="absolute top-0 -right-4 w-72 h-72 bg-indigo-400 rounded-full mix-blend-multiply filter blur-2xl opacity-30 animate-blob animation-delay-2000"></div>
       
       <div className="w-full max-w-4xl mx-4 z-10">
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[550px]">
           
           {/* Brand Panel */}
-          <div className="md:w-5/12 bg-gradient-to-br from-blue-700 to-indigo-900 text-white p-10 flex flex-col justify-between relative overflow-hidden">
+          <div className="md:w-5/12 bg-gradient-to-br from-teal-700 to-indigo-900 text-white p-10 flex flex-col justify-between relative overflow-hidden">
             <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full border-4 border-white/10 opacity-30"></div>
             
             <div className="relative z-10">
               <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 bg-white text-blue-700 rounded-xl flex items-center justify-center font-bold text-xl shadow">M</div>
+                <div className="w-10 h-10 bg-white text-teal-700 rounded-xl flex items-center justify-center font-bold text-xl shadow">M</div>
                 <span className="text-xl font-bold tracking-wide">Marg ERP</span>
               </div>
               <h2 className="text-3xl font-extrabold mb-4 leading-tight">Create Company & Account</h2>
-              <p className="text-blue-100 text-sm font-light leading-relaxed">
+              <p className="text-teal-100 text-sm font-light leading-relaxed">
                 Setup your pharma distribution business workspace with professional compliance tracking and billing systems in a few simple steps.
               </p>
             </div>
@@ -97,22 +97,22 @@ export default function Register() {
                 <div key={item.s} className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border transition-all ${
                     step === item.s 
-                      ? "bg-white text-blue-700 border-white shadow" 
+                      ? "bg-white text-teal-700 border-white shadow" 
                       : step > item.s 
                         ? "bg-emerald-500 text-white border-emerald-500" 
-                        : "bg-white/10 text-blue-200 border-white/20"
+                        : "bg-white/10 text-teal-200 border-white/20"
                   }`}>
                     {step > item.s ? <Check className="w-4 h-4" /> : item.s}
                   </div>
                   <div>
-                    <p className={`text-xs font-bold leading-none ${step === item.s ? "text-white" : "text-blue-200/70"}`}>{item.title}</p>
-                    <p className="text-[10px] text-blue-200/50 mt-0.5">{item.desc}</p>
+                    <p className={`text-xs font-bold leading-none ${step === item.s ? "text-white" : "text-teal-200/70"}`}>{item.title}</p>
+                    <p className="text-[10px] text-teal-200/50 mt-0.5">{item.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="relative z-10 text-xs text-blue-200/80">
+            <div className="relative z-10 text-xs text-teal-200/80">
               © {new Date().getFullYear()} Marg ERP Suite.
             </div>
           </div>
@@ -121,7 +121,7 @@ export default function Register() {
           <div className="md:w-7/12 p-8 lg:p-12 flex flex-col justify-center bg-white">
             <div className="w-full max-w-md mx-auto">
               <div className="mb-6">
-                <span className="text-[10px] uppercase tracking-wider text-blue-600 font-bold">Step {step} of 3</span>
+                <span className="text-[10px] uppercase tracking-wider text-teal-600 font-bold">Step {step} of 3</span>
                 <h3 className="text-2xl font-bold text-gray-800 mt-1">
                   {step === 1 && "Create Admin Account"}
                   {step === 2 && "Company Basic Info"}
@@ -154,7 +154,7 @@ export default function Register() {
                           placeholder="John Doe"
                           value={form.name}
                           onChange={e => setForm({ ...form, name: e.target.value })}
-                          className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                         />
                       </div>
                     </div>
@@ -169,7 +169,7 @@ export default function Register() {
                           placeholder="admin@company.com"
                           value={form.email}
                           onChange={e => setForm({ ...form, email: e.target.value })}
-                          className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                         />
                       </div>
                     </div>
@@ -185,7 +185,7 @@ export default function Register() {
                             placeholder="••••••••"
                             value={form.password}
                             onChange={e => setForm({ ...form, password: e.target.value })}
-                            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                           />
                         </div>
                       </div>
@@ -199,7 +199,7 @@ export default function Register() {
                             placeholder="••••••••"
                             value={form.confirmPassword}
                             onChange={e => setForm({ ...form, confirmPassword: e.target.value })}
-                            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                           />
                         </div>
                       </div>
@@ -220,7 +220,7 @@ export default function Register() {
                           placeholder="e.g. BPartner Pharma Wholesalers"
                           value={form.companyName}
                           onChange={e => setForm({ ...form, companyName: e.target.value })}
-                          className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                         />
                       </div>
                     </div>
@@ -236,7 +236,7 @@ export default function Register() {
                             placeholder="Phone No"
                             value={form.companyPhone}
                             onChange={e => setForm({ ...form, companyPhone: e.target.value })}
-                            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                           />
                         </div>
                       </div>
@@ -249,7 +249,7 @@ export default function Register() {
                             placeholder="billing@company.com"
                             value={form.companyEmail}
                             onChange={e => setForm({ ...form, companyEmail: e.target.value })}
-                            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                           />
                         </div>
                       </div>
@@ -265,7 +265,7 @@ export default function Register() {
                           placeholder="Full Street address, building number, area..."
                           value={form.companyAddress}
                           onChange={e => setForm({ ...form, companyAddress: e.target.value })}
-                          className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                         />
                       </div>
                     </div>
@@ -283,7 +283,7 @@ export default function Register() {
                           placeholder="22AAAAA0000A1Z5"
                           value={form.gstNumber}
                           onChange={e => setForm({ ...form, gstNumber: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono"
                         />
                       </div>
                       <div>
@@ -293,7 +293,7 @@ export default function Register() {
                           placeholder="ABCDE1234F"
                           value={form.panNumber}
                           onChange={e => setForm({ ...form, panNumber: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono"
                         />
                       </div>
                     </div>
@@ -308,7 +308,7 @@ export default function Register() {
                             placeholder="DL-12345"
                             value={form.dlNumber}
                             onChange={e => setForm({ ...form, dlNumber: e.target.value })}
-                            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                           />
                         </div>
                       </div>
@@ -317,7 +317,7 @@ export default function Register() {
                         <select
                           value={form.financialYear}
                           onChange={e => setForm({ ...form, financialYear: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
                         >
                           <option value="2025-26">2025-26</option>
                           <option value="2026-27">2026-27</option>
@@ -334,7 +334,7 @@ export default function Register() {
                           placeholder="e.g. Delhi"
                           value={form.stateName}
                           onChange={e => setForm({ ...form, stateName: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                         />
                       </div>
                       <div>
@@ -344,7 +344,7 @@ export default function Register() {
                           placeholder="e.g. 07"
                           value={form.stateCode}
                           onChange={e => setForm({ ...form, stateCode: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono"
                         />
                       </div>
                     </div>
@@ -366,7 +366,7 @@ export default function Register() {
                     <button
                       type="button"
                       onClick={handleNext}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition shadow-lg shadow-blue-500/20"
+                      className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition shadow-lg shadow-teal-500/20"
                     >
                       Next <ArrowRight className="w-4 h-4" />
                     </button>
@@ -389,7 +389,7 @@ export default function Register() {
               <div className="mt-6 text-center">
                 <p className="text-xs text-gray-500">
                   Already have an account?{" "}
-                  <button onClick={() => navigate("/")} className="text-blue-600 hover:underline font-bold">Sign In</button>
+                  <button onClick={() => navigate("/")} className="text-teal-600 hover:underline font-bold">Sign In</button>
                 </p>
               </div>
             </div>

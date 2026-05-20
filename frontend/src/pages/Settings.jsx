@@ -1,21 +1,32 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Sidebar from "../components/Sidebar";
+import {
+  Settings as SettingsIcon,
+  Building2,
+  Landmark,
+  Receipt,
+  Bell,
+  ClipboardList,
+  CheckCircle2,
+  Save,
+  Download,
+} from "lucide-react";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
 
 const TABS = [
-  { key: "company", label: "🏢 Company" },
-  { key: "gst", label: "🏛️ GST" },
-  { key: "billing", label: "🧾 Billing" },
-  { key: "alerts", label: "🔔 Alerts" },
-  { key: "gstr1", label: "📋 GSTR-1" },
+  { key: "company", label: "Company", icon: Building2 },
+  { key: "gst", label: "GST", icon: Landmark },
+  { key: "billing", label: "Billing", icon: Receipt },
+  { key: "alerts", label: "Alerts", icon: Bell },
+  { key: "gstr1", label: "GSTR-1", icon: ClipboardList },
 ];
 
 const Field = ({ label, type = "text", placeholder = "", value, onChange }) => (
   <div>
-    <label className="block text-xs font-medium text-gray-600 mb-1">
+    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
       {label}
     </label>
     <input
@@ -23,7 +34,7 @@ const Field = ({ label, type = "text", placeholder = "", value, onChange }) => (
       placeholder={placeholder}
       value={value || ""}
       onChange={onChange}
-      className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+      className="form-input"
     />
   </div>
 );
@@ -140,62 +151,66 @@ export default function Settings() {
 
   if (!settings)
     return (
-      <div className="flex min-h-screen bg-gray-100">
+      <div className="flex min-h-screen bg-slate-50">
         <Sidebar />
-        <main className="flex-1 flex items-center justify-center text-gray-400">
+        <main className="flex-1 flex items-center justify-center text-slate-400">
           Loading settings...
         </main>
       </div>
     );
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">⚙️ Settings</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Settings</h1>
+            <p className="text-sm text-slate-500 mt-1">
               Configure your business and system preferences
             </p>
           </div>
           {tab !== "gstr1" && (
             <button
               onClick={handleSave}
-              className={`px-6 py-2.5 rounded-xl text-sm font-semibold shadow transition ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer ${
                 saved
                   ? "bg-green-500 text-white"
-                  : "bg-blue-600 hover:bg-blue-700 text-white"
+                  : "bg-teal-600 hover:bg-teal-700 text-white"
               }`}
             >
-              {saved ? "✅ Saved!" : "💾 Save Settings"}
+              {saved ? <><CheckCircle2 className="w-4 h-4" /> Saved!</> : <><Save className="w-4 h-4" /> Save Settings</>}
             </button>
           )}
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 flex-wrap">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition ${
-                tab === t.key
-                  ? "bg-blue-600 text-white shadow"
-                  : "bg-white text-gray-600 hover:bg-gray-50 shadow-sm"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap gap-2 mb-8 border-b border-slate-200 pb-4">
+          {TABS.map((t) => {
+            const Icon = t.icon;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition cursor-pointer ${
+                  tab === t.key
+                    ? "bg-teal-600 text-white shadow-sm"
+                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+                }`}
+              >
+                <Icon className="w-4.5 h-4.5" />
+                {t.label}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="bg-white rounded-2xl shadow p-8 max-w-3xl">
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-8 max-w-3xl">
           {/* ── COMPANY TAB ── */}
           {tab === "company" && (
             <div className="space-y-5">
-              <h2 className="font-semibold text-gray-700 text-lg mb-4">
+              <h2 className="font-semibold text-slate-900 text-lg mb-4">
                 Company Information
               </h2>
               <Field
@@ -233,7 +248,7 @@ export default function Settings() {
               />
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                     State
                   </label>
                   <select
@@ -246,7 +261,7 @@ export default function Settings() {
                         stateCode: s?.code || "",
                       });
                     }}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="form-input bg-white"
                   >
                     <option value="">Select State</option>
                     {STATES.map((s) => (
@@ -269,7 +284,7 @@ export default function Settings() {
           {/* ── GST TAB ── */}
           {tab === "gst" && (
             <div className="space-y-5">
-              <h2 className="font-semibold text-gray-700 text-lg mb-4">
+              <h2 className="font-semibold text-slate-900 text-lg mb-4">
                 GST Configuration
               </h2>
               <Field
@@ -286,7 +301,7 @@ export default function Settings() {
               />
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                     Financial Year
                   </label>
                   <select
@@ -297,7 +312,7 @@ export default function Settings() {
                         financialYear: e.target.value,
                       })
                     }
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="form-input bg-white"
                   >
                     {["2022-23", "2023-24", "2024-25", "2025-26"].map((y) => (
                       <option key={y} value={y}>
@@ -307,7 +322,7 @@ export default function Settings() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                     Currency
                   </label>
                   <select
@@ -315,7 +330,7 @@ export default function Settings() {
                     onChange={(e) =>
                       setSettings({ ...settings, currency: e.target.value })
                     }
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="form-input bg-white"
                   >
                     <option value="INR">INR — Indian Rupee (₹)</option>
                     <option value="USD">USD — US Dollar ($)</option>
@@ -325,11 +340,11 @@ export default function Settings() {
               </div>
 
               {/* GST Info Box */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
-                <p className="text-sm font-semibold text-blue-700 mb-2">
-                  🏛️ GST Rate Reference
+              <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 mt-4">
+                <p className="text-sm font-semibold text-teal-700 mb-2 flex items-center gap-2">
+                  <Landmark className="w-4 h-4" /> GST Rate Reference
                 </p>
-                <div className="grid grid-cols-3 gap-3 text-xs text-blue-600">
+                <div className="grid grid-cols-3 gap-3 text-xs text-teal-600">
                   {[
                     { rate: "0%", items: "Essential food, healthcare" },
                     { rate: "5%", items: "Packaged food, medicines" },
@@ -339,9 +354,9 @@ export default function Settings() {
                   ].map((g) => (
                     <div
                       key={g.rate}
-                      className="bg-white rounded-lg p-2 border border-blue-100"
+                      className="bg-white rounded-lg p-2 border border-teal-100"
                     >
-                      <p className="font-bold text-blue-800">{g.rate}</p>
+                      <p className="font-bold text-teal-800">{g.rate}</p>
                       <p className="opacity-70 mt-0.5">{g.items}</p>
                     </div>
                   ))}
@@ -353,7 +368,7 @@ export default function Settings() {
           {/* ── BILLING TAB ── */}
           {tab === "billing" && (
             <div className="space-y-5">
-              <h2 className="font-semibold text-gray-700 text-lg mb-4">
+              <h2 className="font-semibold text-slate-900 text-lg mb-4">
                 Billing Preferences
               </h2>
               <Field
@@ -369,26 +384,26 @@ export default function Settings() {
                 placeholder="Thank you for your business!"
               />
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Bank Details (For Invoice)</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Bank Details (For Invoice)</label>
                 <textarea rows={3} value={settings.bankDetails || ""} onChange={setField("bankDetails")}
-                  placeholder="Bank Name: XYZ Bank&#10;A/C No: 123456789&#10;IFSC: XYZB000123"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  placeholder={"Bank Name: XYZ Bank\nA/C No: 123456789\nIFSC: XYZB000123"}
+                  className="form-input" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Terms & Conditions</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Terms & Conditions</label>
                 <textarea rows={3} value={settings.termsConditions || ""} onChange={setField("termsConditions")}
-                  placeholder="1. Goods once sold will not be taken back.&#10;2. Subject to local jurisdiction."
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  placeholder={"1. Goods once sold will not be taken back.\n2. Subject to local jurisdiction."}
+                  className="form-input" />
               </div>
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <p className="text-sm font-semibold text-gray-700 mb-2">Bill Number Preview</p>
-                <p className="text-xs text-gray-500 mb-1">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <p className="text-sm font-semibold text-slate-700 mb-2">Bill Number Preview</p>
+                <p className="text-xs text-slate-500 mb-1">
                   Bills are numbered <strong>sequentially per financial year</strong> (Apr–Mar):
                 </p>
-                <div className="font-mono text-blue-600 font-bold text-sm bg-white border border-blue-100 rounded-lg px-3 py-2 mt-1">
+                <div className="font-mono text-teal-600 font-bold text-sm bg-white border border-teal-100 rounded-lg px-3 py-2 mt-1">
                   INV-2526-0001 → INV-2526-0002 → INV-2526-0003…
                 </div>
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-slate-400 mt-2">
                   The <strong>INV</strong> prefix can be customised using the "Invoice Prefix" field above (e.g. set "MED" to get MED-2526-0001).
                 </p>
               </div>
@@ -398,12 +413,12 @@ export default function Settings() {
           {/* ── ALERTS TAB ── */}
           {tab === "alerts" && (
             <div className="space-y-5">
-              <h2 className="font-semibold text-gray-700 text-lg mb-4">
+              <h2 className="font-semibold text-slate-900 text-lg mb-4">
                 Alert Preferences
               </h2>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                   Low Stock Alert Threshold (qty)
                 </label>
                 <input
@@ -413,16 +428,16 @@ export default function Settings() {
                   onChange={(e) =>
                     setSettings({ ...settings, lowStockAlert: e.target.value })
                   }
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="form-input"
                 />
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-slate-400 mt-1">
                   Items with qty at or below this number will be flagged as low
                   stock.
                 </p>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                   Expiry Alert — Days Before Expiry
                 </label>
                 <input
@@ -435,17 +450,17 @@ export default function Settings() {
                       expiryAlertDays: e.target.value,
                     })
                   }
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="form-input"
                 />
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-slate-400 mt-1">
                   Items expiring within this many days will appear in expiry
                   alerts.
                 </p>
               </div>
 
               <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                <p className="text-sm font-semibold text-yellow-700 mb-1">
-                  🔔 Alert Summary
+                <p className="text-sm font-semibold text-yellow-700 mb-1 flex items-center gap-2">
+                  <Bell className="w-4 h-4" /> Alert Summary
                 </p>
                 <ul className="text-xs text-yellow-600 space-y-1 mt-2">
                   <li>
@@ -469,20 +484,20 @@ export default function Settings() {
           {/* ── GSTR-1 TAB ── */}
           {tab === "gstr1" && (
             <div className="space-y-6">
-              <h2 className="font-semibold text-gray-700 text-lg">
+              <h2 className="font-semibold text-slate-900 text-lg">
                 GSTR-1 Filing Report
               </h2>
 
               {/* Period Selector */}
               <div className="flex gap-4 items-end">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                     Month
                   </label>
                   <select
                     value={gstMonth}
                     onChange={(e) => setGstMonth(e.target.value)}
-                    className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="form-input bg-white"
                   >
                     {MONTHS.map((m, i) => (
                       <option key={i + 1} value={i + 1}>
@@ -492,13 +507,13 @@ export default function Settings() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                     Year
                   </label>
                   <select
                     value={gstYear}
                     onChange={(e) => setGstYear(e.target.value)}
-                    className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="form-input bg-white"
                   >
                     {[2023, 2024, 2025, 2026].map((y) => (
                       <option key={y} value={y}>
@@ -510,16 +525,16 @@ export default function Settings() {
                 <button
                   onClick={fetchGSTR1}
                   disabled={loadingGst}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg text-sm font-semibold"
+                  className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
                 >
                   {loadingGst ? "Loading..." : "Generate Report"}
                 </button>
                 {gstr1 && (
                   <button
                     onClick={exportCSV}
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg text-sm font-semibold"
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
                   >
-                    ⬇️ Export CSV
+                    <Download className="w-4 h-4" /> Export CSV
                   </button>
                 )}
               </div>
@@ -527,136 +542,150 @@ export default function Settings() {
               {gstr1 && (
                 <div className="space-y-6">
                   {/* Summary */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     {[
                       {
                         label: "Total Bills",
                         value: gstr1.totalBills,
-                        color: "bg-blue-600",
+                        borderColor: "border-l-teal-500",
+                        color: "bg-teal-50 text-teal-600",
+                        icon: ClipboardList,
                       },
                       {
                         label: "Taxable Value",
                         value: `₹${gstr1.totalTaxable?.toFixed(2)}`,
-                        color: "bg-indigo-600",
+                        borderColor: "border-l-indigo-500",
+                        color: "bg-indigo-50 text-indigo-600",
+                        icon: Receipt,
                       },
                       {
                         label: "Total GST",
                         value: `₹${gstr1.totalGst?.toFixed(2)}`,
-                        color: "bg-purple-600",
+                        borderColor: "border-l-purple-500",
+                        color: "bg-purple-50 text-purple-600",
+                        icon: Landmark,
                       },
                       {
                         label: "Total Revenue",
                         value: `₹${gstr1.totalRevenue?.toFixed(2)}`,
-                        color: "bg-green-600",
+                        borderColor: "border-l-green-500",
+                        color: "bg-green-50 text-green-600",
+                        icon: CheckCircle2,
                       },
-                    ].map((c) => (
-                      <div
-                        key={c.label}
-                        className={`${c.color} text-white rounded-xl p-4 shadow`}
-                      >
-                        <p className="text-xl font-bold">{c.value}</p>
-                        <p className="text-xs opacity-80 mt-1">{c.label}</p>
-                      </div>
-                    ))}
+                    ].map((c) => {
+                      const Icon = c.icon;
+                      return (
+                        <div
+                          key={c.label}
+                          className={`bg-white border-l-4 ${c.borderColor} border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between`}
+                        >
+                          <div>
+                            <p className="text-2xl font-bold text-slate-900">{c.value}</p>
+                            <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mt-1">{c.label}</p>
+                          </div>
+                          <div className={`p-2.5 rounded-lg ${c.color}`}>
+                            <Icon className="w-5 h-5" />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Rate Wise Breakup */}
                   <div>
-                    <h3 className="font-semibold text-gray-700 mb-3">
+                    <h3 className="font-semibold text-slate-900 mb-3">
                       GST Rate-wise Breakup
                     </h3>
-                    <table className="w-full text-sm border border-gray-100 rounded-xl overflow-hidden">
-                      <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
-                        <tr>
-                          <th className="px-4 py-3 text-left">GST Rate</th>
-                          <th className="px-4 py-3 text-right">
-                            Taxable Value
-                          </th>
-                          <th className="px-4 py-3 text-right">CGST</th>
-                          <th className="px-4 py-3 text-right">SGST</th>
-                          <th className="px-4 py-3 text-right">Total GST</th>
-                          <th className="px-4 py-3 text-right">
-                            Invoice Value
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {gstr1.rateWise?.map((r) => (
-                          <tr key={r.rate} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 font-semibold text-blue-600">
-                              {r.rate}%
-                            </td>
-                            <td className="px-4 py-3 text-right text-gray-700">
-                              ₹{r.taxable?.toFixed(2)}
-                            </td>
-                            <td className="px-4 py-3 text-right text-gray-600">
-                              ₹{(r.gst / 2)?.toFixed(2)}
-                            </td>
-                            <td className="px-4 py-3 text-right text-gray-600">
-                              ₹{(r.gst / 2)?.toFixed(2)}
-                            </td>
-                            <td className="px-4 py-3 text-right font-semibold text-purple-600">
-                              ₹{r.gst?.toFixed(2)}
-                            </td>
-                            <td className="px-4 py-3 text-right font-bold text-green-600">
-                              ₹{r.total?.toFixed(2)}
-                            </td>
-                          </tr>
-                        ))}
-                        {!gstr1.rateWise?.length && (
+                    <div className="data-table-container">
+                      <table className="data-table">
+                        <thead>
                           <tr>
-                            <td
-                              colSpan={6}
-                              className="text-center py-8 text-gray-400"
-                            >
-                              No data for this period
-                            </td>
+                            <th>GST Rate</th>
+                            <th className="text-right">Taxable Value</th>
+                            <th className="text-right">CGST</th>
+                            <th className="text-right">SGST</th>
+                            <th className="text-right">Total GST</th>
+                            <th className="text-right">Invoice Value</th>
                           </tr>
-                        )}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {gstr1.rateWise?.map((r) => (
+                            <tr key={r.rate}>
+                              <td className="font-semibold text-teal-600">
+                                {r.rate}%
+                              </td>
+                              <td className="text-right text-slate-700">
+                                ₹{r.taxable?.toFixed(2)}
+                              </td>
+                              <td className="text-right text-slate-600">
+                                ₹{(r.gst / 2)?.toFixed(2)}
+                              </td>
+                              <td className="text-right text-slate-600">
+                                ₹{(r.gst / 2)?.toFixed(2)}
+                              </td>
+                              <td className="text-right font-semibold text-purple-600">
+                                ₹{r.gst?.toFixed(2)}
+                              </td>
+                              <td className="text-right font-bold text-green-600">
+                                ₹{r.total?.toFixed(2)}
+                              </td>
+                            </tr>
+                          ))}
+                          {!gstr1.rateWise?.length && (
+                            <tr>
+                              <td
+                                colSpan={6}
+                                className="text-center py-8 text-slate-400"
+                              >
+                                No data for this period
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
 
                   {/* B2C Bills */}
                   <div>
-                    <h3 className="font-semibold text-gray-700 mb-3">
+                    <h3 className="font-semibold text-slate-900 mb-3">
                       B2C Sales Detail
                     </h3>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm border border-gray-100 rounded-xl overflow-hidden">
-                        <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                    <div className="data-table-container">
+                      <table className="data-table">
+                        <thead>
                           <tr>
-                            <th className="px-4 py-3 text-left">Bill No</th>
-                            <th className="px-4 py-3 text-left">Date</th>
-                            <th className="px-4 py-3 text-left">Customer</th>
-                            <th className="px-4 py-3 text-right">Taxable</th>
-                            <th className="px-4 py-3 text-right">GST</th>
-                            <th className="px-4 py-3 text-right">Total</th>
-                            <th className="px-4 py-3 text-left">Mode</th>
+                            <th>Bill No</th>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th className="text-right">Taxable</th>
+                            <th className="text-right">GST</th>
+                            <th className="text-right">Total</th>
+                            <th>Mode</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody>
                           {gstr1.b2c?.map((b, i) => (
-                            <tr key={i} className="hover:bg-gray-50">
-                              <td className="px-4 py-3 font-mono text-blue-600 text-xs">
+                            <tr key={i}>
+                              <td className="font-mono text-teal-600 text-xs">
                                 {b.billNo}
                               </td>
-                              <td className="px-4 py-3 text-gray-500 text-xs">
+                              <td className="text-slate-500 text-xs">
                                 {b.date}
                               </td>
-                              <td className="px-4 py-3 font-medium text-gray-800">
+                              <td className="font-medium text-slate-900">
                                 {b.customerName}
                               </td>
-                              <td className="px-4 py-3 text-right text-gray-600">
+                              <td className="text-right text-slate-600">
                                 ₹{b.taxableValue?.toFixed(2)}
                               </td>
-                              <td className="px-4 py-3 text-right text-purple-600">
+                              <td className="text-right text-purple-600">
                                 ₹{b.gstAmount?.toFixed(2)}
                               </td>
-                              <td className="px-4 py-3 text-right font-bold text-green-600">
+                              <td className="text-right font-bold text-green-600">
                                 ₹{b.total?.toFixed(2)}
                               </td>
-                              <td className="px-4 py-3 capitalize text-gray-500">
+                              <td className="capitalize text-slate-500">
                                 {b.paymentMode}
                               </td>
                             </tr>
@@ -665,7 +694,7 @@ export default function Settings() {
                             <tr>
                               <td
                                 colSpan={7}
-                                className="text-center py-8 text-gray-400"
+                                className="text-center py-8 text-slate-400"
                               >
                                 No bills for this period
                               </td>

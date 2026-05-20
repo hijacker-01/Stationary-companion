@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Sidebar from "../components/Sidebar";
+import { 
+  Search, Package, DollarSign, AlertTriangle, AlertCircle, 
+  Trash2, Edit3, Settings, Plus, Play, Info, ArrowUpRight, ArrowDownLeft 
+} from "lucide-react";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
@@ -96,141 +100,157 @@ export default function Inventory() {
   const totalStockValue = items.reduce((sum, i) => sum + (i.stock_qty * (i.selling_price || i.mrp || 0)), 0);
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">📦 Inventory</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage all your stock items</p>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Inventory Stock</h1>
+            <p className="text-sm text-slate-500 mt-1">Manage and track your products, stock counts, and compliance drug schedules.</p>
           </div>
           <button
             onClick={() => { setForm(empty); setEditId(null); setShowModal(true); }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow"
+            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
           >
-            + Add Item
+            <Plus className="w-4.5 h-4.5" />
+            Add New Item
           </button>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[
-            { label: "Total Items", value: items.length, color: "bg-blue-600", icon: "📦" },
-            { label: "Stock Value", value: `₹${totalStockValue.toFixed(2)}`, color: "bg-green-600", icon: "💰" },
-            { label: "Low Stock", value: lowStockItems.length, color: "bg-yellow-500", icon: "⚠️" },
-            { label: "Out of Stock", value: outOfStockItems.length, color: "bg-red-500", icon: "🚫" },
-          ].map(c => (
-            <div key={c.label} className={`${c.color} text-white rounded-2xl p-5 shadow`}>
-              <p className="text-3xl font-bold">{c.icon} {c.value}</p>
-              <p className="text-sm opacity-80 mt-1">{c.label}</p>
-            </div>
-          ))}
+            { label: "Total Items", value: items.length, icon: Package, borderColor: "border-teal-500", color: "text-teal-600 bg-teal-50" },
+            { label: "Stock Value", value: `₹${totalStockValue.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: DollarSign, borderColor: "border-emerald-500", color: "text-emerald-600 bg-emerald-50" },
+            { label: "Low Stock Alert", value: lowStockItems.length, icon: AlertTriangle, borderColor: "border-amber-500", color: "text-amber-600 bg-amber-50" },
+            { label: "Out of Stock", value: outOfStockItems.length, icon: AlertCircle, borderColor: "border-rose-500", color: "text-rose-600 bg-rose-50" },
+          ].map((c, i) => {
+            const Icon = c.icon;
+            return (
+              <div key={i} className={`bg-white border-l-4 ${c.borderColor} border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between`}>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{c.value}</p>
+                  <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mt-1">{c.label}</p>
+                </div>
+                <div className={`p-2.5 rounded-lg ${c.color}`}>
+                  <Icon className="w-5 h-5" />
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Search */}
-        <div className="bg-white rounded-2xl shadow p-4 mb-6">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm flex items-center gap-3">
+          <Search className="w-5 h-5 text-slate-400" />
           <input
             type="text"
-            placeholder="🔍 Search by name or batch..."
+            placeholder="Search products by name, batch number, or manufacturer..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="flex-1 bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
           />
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-2xl shadow overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
+        <div className="data-table-container">
+          <table className="data-table">
+            <thead>
               <tr>
-                <th className="px-6 py-4 text-left">#</th>
-                <th className="px-6 py-4 text-left">Name</th>
-                <th className="px-6 py-4 text-left">Batch</th>
-                <th className="px-6 py-4 text-left">HSN</th>
-                <th className="px-6 py-4 text-left">Pack</th>
-                <th className="px-6 py-4 text-left">Category</th>
-                <th className="px-6 py-4 text-left">Company</th>
-                <th className="px-6 py-4 text-left">Stock Qty</th>
-                <th className="px-6 py-4 text-left">Scheme Qty</th>
-                <th className="px-6 py-4 text-left">Total Qty</th>
-                <th className="px-6 py-4 text-left">MRP</th>
-                <th className="px-6 py-4 text-left">Expiry</th>
-                <th className="px-6 py-4 text-left">Actions</th>
+                <th>#</th>
+                <th>Name</th>
+                <th>Batch</th>
+                <th>HSN</th>
+                <th>Pack</th>
+                <th>Category</th>
+                <th>Company</th>
+                <th>Stock Qty</th>
+                <th>Scheme Qty</th>
+                <th>Total Qty</th>
+                <th>MRP</th>
+                <th>Expiry</th>
+                <th className="text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody>
               {filtered.map((item, i) => (
-                <tr key={item.id} className={`hover:bg-gray-50 ${item.stock_qty <= 0 ? "bg-red-50/50" : ""}`}>
-                  <td className="px-6 py-4 text-gray-400">{i + 1}</td>
-                  <td className="px-6 py-4">
-                    <span className="font-semibold text-gray-800">{item.name}</span>
+                <tr key={item.id} className={item.stock_qty <= 0 ? "bg-rose-50/20" : ""}>
+                  <td className="text-slate-400 font-medium">{i + 1}</td>
+                  <td>
+                    <span className="font-semibold text-slate-900">{item.name}</span>
                     {item.schedule && item.schedule !== "None" && (
-                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-700 border border-rose-200">
-                        💊 {item.schedule}
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-700 border border-rose-200 uppercase">
+                        Schedule {item.schedule}
                       </span>
                     )}
                     {item.purchaseScheme && (
-                      <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 border border-green-200">
-                        🎁 {item.purchaseScheme}
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                        Scheme: {item.purchaseScheme}
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-gray-500">{item.batch || "—"}</td>
-                  <td className="px-6 py-4 text-gray-500">{item.hsn || "—"}</td>
-                  <td className="px-6 py-4 text-gray-500">{item.pack || "—"}</td>
-                  <td className="px-6 py-4 text-gray-500">{item.category || "—"}</td>
-                  <td className="px-6 py-4">
+                  <td className="text-slate-600 font-medium">{item.batch || "—"}</td>
+                  <td className="text-slate-500">{item.hsn || "—"}</td>
+                  <td className="text-slate-500">{item.pack || "—"}</td>
+                  <td className="text-slate-500">{item.category || "—"}</td>
+                  <td>
                     {item.company ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                         {item.company}
                       </span>
                     ) : (
-                      <span className="text-gray-400">—</span>
+                      <span className="text-slate-400">—</span>
                     )}
                   </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                  <td>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
                       item.stock_qty <= 0
-                        ? "bg-red-100 text-red-700 border border-red-200"
+                        ? "bg-rose-50 text-rose-700 border-rose-200"
                         : item.stock_qty <= (item.reorderPoint || 10)
-                          ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
-                          : "bg-green-100 text-green-700 border border-green-200"
+                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          : "bg-emerald-50 text-emerald-700 border-emerald-200"
                     }`}>
                       {item.stock_qty} {item.unit}
                     </span>
                     {item.stock_qty <= 0 && (
-                      <span className="ml-2 text-red-500 text-[10px] font-semibold uppercase">Out of Stock</span>
+                      <span className="ml-2 text-rose-600 text-[10px] font-bold uppercase tracking-wider">Out of Stock</span>
                     )}
                     {item.stock_qty > 0 && item.stock_qty <= (item.reorderPoint || 10) && (
-                      <span className="ml-2 text-yellow-600 text-[10px] font-semibold uppercase">Low (Min: {item.reorderPoint || 10})</span>
+                      <span className="ml-2 text-amber-600 text-[10px] font-bold uppercase tracking-wider">Low</span>
                     )}
                   </td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
-                      🎁 {item.scheme_qty || 0}
+                  <td>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200">
+                      {item.scheme_qty || 0}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className="font-bold text-gray-800 text-base">
+                  <td>
+                    <span className="font-bold text-slate-800">
                       {(item.stock_qty || 0) + (item.scheme_qty || 0)}
                     </span>
-                    <span className="text-gray-500 text-xs ml-1">{item.unit}</span>
+                    <span className="text-slate-400 text-xs ml-1">{item.unit}</span>
                   </td>
-                  <td className="px-6 py-4 text-green-600 font-medium">₹{item.selling_price || item.mrp || 0}</td>
-                  <td className="px-6 py-4 text-gray-600">
+                  <td className="text-slate-900 font-bold">₹{(item.selling_price || item.mrp || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                  <td className="text-slate-600">
                     {item.expiry ? new Date(item.expiry).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
                   </td>
-                  <td className="px-6 py-4 flex gap-2.5">
-                    <button onClick={() => handleEdit(item)} className="text-blue-600 hover:underline text-xs font-semibold">Edit</button>
-                    <button onClick={() => openAdjustment(item)} className="text-emerald-600 hover:underline text-xs font-semibold">🛠️ Adjust</button>
-                    <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:underline text-xs font-semibold">Delete</button>
+                  <td>
+                    <div className="flex items-center justify-end gap-3">
+                      <button onClick={() => handleEdit(item)} className="text-teal-600 hover:text-teal-800 text-xs font-semibold cursor-pointer">Edit</button>
+                      <button onClick={() => openAdjustment(item)} className="text-emerald-600 hover:text-emerald-800 text-xs font-semibold cursor-pointer">Adjust</button>
+                      <button onClick={() => handleDelete(item.id)} className="text-rose-600 hover:text-rose-800 text-xs font-semibold cursor-pointer">Delete</button>
+                    </div>
                   </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={9} className="text-center py-12 text-gray-400">No items found. Add your first item!</td></tr>
+                <tr>
+                  <td colSpan={13} className="text-center py-12 text-slate-400 font-medium">
+                    No products matching filter. Add your first item.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
@@ -238,43 +258,43 @@ export default function Inventory() {
 
         {/* Modal */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 max-h-[90vh] overflow-y-auto">
-              <h2 className="text-lg font-bold text-gray-800 mb-6">
-                {editId ? "Edit Item" : "Add New Item"}
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+              <h2 className="text-xl font-bold text-slate-900 mb-5">
+                {editId ? "Edit Item Record" : "Add New Item to Inventory"}
               </h2>
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { key: "name", label: "Item Name *", type: "text" },
-                  { key: "batch", label: "Batch No", type: "text" },
+                  { key: "batch", label: "Batch Number", type: "text" },
                   { key: "hsn", label: "HSN Code", type: "text" },
-                  { key: "pack", label: "Pack (e.g. 10x10)", type: "text" },
+                  { key: "pack", label: "Packaging (e.g. 10x10 Table)", type: "text" },
                   { key: "category", label: "Category", type: "text" },
-                  { key: "company", label: "Company / Manufacturer", type: "text" },
-                  { key: "stock_qty", label: "Stock Quantity", type: "number" },
-                  { key: "scheme_qty", label: "Scheme Quantity", type: "number" },
-                  { key: "unit", label: "Unit", type: "text" },
+                  { key: "company", label: "Company / Brand Name", type: "text" },
+                  { key: "stock_qty", label: "Initial Stock Quantity", type: "number" },
+                  { key: "scheme_qty", label: "Initial Scheme Quantity", type: "number" },
+                  { key: "unit", label: "Unit (e.g. Strips, Bottles)", type: "text" },
                   { key: "expiry", label: "Expiry Date *", type: "date" },
-                  { key: "location", label: "Location/Rack", type: "text" },
+                  { key: "location", label: "Warehouse Location/Rack", type: "text" },
                   { key: "selling_price", label: "Selling Price (₹)", type: "number" },
-                  { key: "mrp", label: "MRP (₹) [Reference]", type: "number" },
-                  { key: "cost_price", label: "Cost Price (₹)", type: "number" },
-                  { key: "purchaseScheme", label: "Purchase Scheme Note", type: "text" }
+                  { key: "mrp", label: "MRP (₹)", type: "number" },
+                  { key: "cost_price", label: "Cost Price (₹)", type: "number" }
                 ].map(f => (
                   <div key={f.key} className={f.key === "name" ? "col-span-2" : ""}>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{f.label}</label>
                     <input
                       type={f.type}
                       value={form[f.key]}
                       onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="form-input"
                     />
                   </div>
                 ))}
+
                 {/* Purchase Scheme Field */}
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    🎁 Purchase Scheme <span className="text-gray-400 font-normal">(scheme received when buying this item)</span>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Purchase Scheme Note
                   </label>
                   <input
                     type="text"
@@ -282,7 +302,7 @@ export default function Inventory() {
                     placeholder="e.g. Buy 10 Get 2 Free, 15% discount, etc."
                     value={form.purchaseScheme}
                     onChange={(e) => setForm({ ...form, purchaseScheme: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                    className="form-input"
                   />
                   <datalist id="scheme-suggestions">
                     {allSchemes.filter(s => s.isActive).map(s => (
@@ -294,8 +314,8 @@ export default function Inventory() {
                     ))}
                   </datalist>
                   {form.company && allSchemes.filter(s => s.isActive && s.company.toLowerCase() === (form.company || "").toLowerCase()).length > 0 && (
-                    <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-2.5">
-                      <p className="text-[10px] font-semibold text-green-700 uppercase mb-1">Schemes from {form.company}:</p>
+                    <div className="mt-2.5 bg-slate-50 border border-slate-200 rounded-lg p-3">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase mb-1.5">Available Schemes from {form.company}:</p>
                       <div className="flex flex-wrap gap-1.5">
                         {allSchemes.filter(s => s.isActive && s.company.toLowerCase() === (form.company || "").toLowerCase()).map(s => (
                           <button
@@ -306,9 +326,9 @@ export default function Inventory() {
                                 ? `Buy ${s.buyQty} Get ${s.freeQty} Free`
                                 : `${s.discountPercent}% Off`
                             })}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 transition cursor-pointer border border-green-200"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition cursor-pointer border border-emerald-200"
                           >
-                            🎁 {s.type === "buy_get_free" ? `Buy ${s.buyQty}+${s.freeQty} Free` : `${s.discountPercent}% Off`}
+                            {s.type === "buy_get_free" ? `Buy ${s.buyQty}+${s.freeQty} Free` : `${s.discountPercent}% Off`}
                           </button>
                         ))}
                       </div>
@@ -318,11 +338,11 @@ export default function Inventory() {
 
                 {/* Drug Schedule Input */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Drug Schedule</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Drug Schedule</label>
                   <select
                     value={form.schedule || "None"}
                     onChange={(e) => setForm({ ...form, schedule: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                    className="form-input bg-white"
                   >
                     <option value="None">None (General)</option>
                     <option value="H">Schedule H</option>
@@ -333,22 +353,22 @@ export default function Inventory() {
 
                 {/* Reorder Point Input */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Reorder Level (Min Qty)</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Reorder Level (Min Qty)</label>
                   <input
                     type="number"
                     min="0"
                     placeholder="e.g. 10"
                     value={form.reorderPoint || ""}
                     onChange={(e) => setForm({ ...form, reorderPoint: parseInt(e.target.value) || 0 })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="form-input"
                   />
                 </div>
               </div>
               <div className="flex gap-3 mt-6">
-                <button onClick={handleSubmit} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold">
+                <button onClick={handleSubmit} className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
                   {editId ? "Update Item" : "Add Item"}
                 </button>
-                <button onClick={() => setShowModal(false)} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold">
+                <button onClick={() => setShowModal(false)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
                   Cancel
                 </button>
               </div>
@@ -358,56 +378,56 @@ export default function Inventory() {
 
         {/* Stock Adjustment Modal */}
         {showAdjModal && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold text-gray-800">🛠️ Stock Adjustment</h2>
-                <button onClick={() => setShowAdjModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+                <h2 className="text-lg font-bold text-slate-900">Stock Level Adjustment</h2>
+                <button onClick={() => setShowAdjModal(false)} className="text-slate-400 hover:text-slate-600 text-xl font-bold cursor-pointer">&times;</button>
               </div>
               
-              <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-4 text-xs">
-                <p className="font-semibold text-blue-800">Item: {adjForm.itemName}</p>
-                {adjForm.batch && <p className="text-blue-600 mt-0.5">Batch: {adjForm.batch}</p>}
+              <div className="bg-teal-50 border border-teal-100 rounded-lg p-3.5 mb-4 text-xs">
+                <p className="font-semibold text-teal-800">Product: {adjForm.itemName}</p>
+                {adjForm.batch && <p className="text-teal-600 mt-1 font-medium">Batch No: {adjForm.batch}</p>}
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Adjustment Type</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Adjustment Direction</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setAdjForm({ ...adjForm, type: "increase" })}
-                      className={`py-2 rounded-lg text-sm font-semibold border ${adjForm.type === "increase" ? "bg-emerald-50 border-emerald-500 text-emerald-700 font-bold" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                      className={`py-2 rounded-lg text-sm font-semibold border cursor-pointer transition-all duration-150 ${adjForm.type === "increase" ? "bg-emerald-50 border-emerald-500 text-emerald-700 font-bold" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
                     >
-                      ➕ Add Stock
+                      Add Stock
                     </button>
                     <button
                       type="button"
                       onClick={() => setAdjForm({ ...adjForm, type: "decrease" })}
-                      className={`py-2 rounded-lg text-sm font-semibold border ${adjForm.type === "decrease" ? "bg-rose-50 border-rose-500 text-rose-700 font-bold" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}
+                      className={`py-2 rounded-lg text-sm font-semibold border cursor-pointer transition-all duration-150 ${adjForm.type === "decrease" ? "bg-rose-50 border-rose-500 text-rose-700 font-bold" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
                     >
-                      ➖ Deduct Stock
+                      Deduct Stock
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Quantity</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Adjustment Quantity</label>
                   <input
                     type="number"
                     min="1"
                     value={adjForm.quantity}
                     onChange={(e) => setAdjForm({ ...adjForm, quantity: Math.max(1, parseInt(e.target.value) || 1) })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="form-input"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Reason</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Audit Reason</label>
                   <select
                     value={adjForm.reason}
                     onChange={(e) => setAdjForm({ ...adjForm, reason: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                    className="form-input bg-white"
                   >
                     <option value="audit">Physical Verification Audit</option>
                     <option value="damage">Damaged Goods</option>
@@ -418,13 +438,13 @@ export default function Inventory() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Remarks / Note</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Detailed Remarks</label>
                   <textarea
                     rows="3"
                     value={adjForm.note}
-                    placeholder="Provide context for this adjustment..."
+                    placeholder="Provide compliance or audit comments..."
                     onChange={(e) => setAdjForm({ ...adjForm, note: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="form-input"
                   />
                 </div>
               </div>
@@ -432,14 +452,14 @@ export default function Inventory() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={handleAdjustmentSubmit}
-                  className={`flex-1 text-white py-2.5 rounded-xl text-sm font-semibold shadow ${adjForm.type === "increase" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"}`}
+                  className={`flex-1 text-white py-2.5 rounded-lg text-sm font-semibold shadow-sm cursor-pointer transition ${adjForm.type === "increase" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"}`}
                 >
-                  Adjust Stock
+                  Confirm Adjustment
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowAdjModal(false)}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold"
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>

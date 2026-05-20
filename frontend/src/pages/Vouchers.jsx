@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Sidebar from "../components/Sidebar";
+import { 
+  Plus, Search, Trash2, ArrowUpRight, ArrowDownLeft, 
+  FileText, Landmark, Wallet, CreditCard, ClipboardList, User 
+} from "lucide-react";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
@@ -86,73 +90,82 @@ export default function Vouchers() {
   );
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">💵 Voucher Accounting</h1>
-            <p className="text-sm text-gray-500 mt-1">Receipt Vouchers & Payment Vouchers</p>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Voucher Accounting</h1>
+            <p className="text-sm text-slate-500 mt-1">Manage receipt vouchers, supplier payment payouts, and ledger balance adjustments.</p>
           </div>
           <button
             onClick={() => { setForm(emptyForm); setShowModal(true); }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow transition"
+            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
           >
-            + Create Voucher
+            <Plus className="w-4.5 h-4.5" />
+            Create Voucher
           </button>
         </div>
 
         {/* Search */}
-        <div className="bg-white rounded-2xl shadow p-4 mb-6">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm flex items-center gap-3">
+          <Search className="w-5 h-5 text-slate-400" />
           <input
             type="text"
-            placeholder="🔍 Search vouchers by number, party name, or ref..."
+            placeholder="Search vouchers by voucher number, account ledger name, or transaction reference..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="flex-1 bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
           />
         </div>
 
         {/* Vouchers Table */}
-        <div className="bg-white rounded-2xl shadow overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
+        <div className="data-table-container">
+          <table className="data-table">
+            <thead>
               <tr>
-                <th className="px-6 py-4 text-left">Voucher No</th>
-                <th className="px-6 py-4 text-left">Date</th>
-                <th className="px-6 py-4 text-left">Party Type</th>
-                <th className="px-6 py-4 text-left">Party Name</th>
-                <th className="px-6 py-4 text-left">Direction</th>
-                <th className="px-6 py-4 text-left">Mode</th>
-                <th className="px-6 py-4 text-left">Reference No</th>
-                <th className="px-6 py-4 text-right">Amount</th>
-                <th className="px-6 py-4 text-center">Actions</th>
+                <th>Voucher No</th>
+                <th>Date</th>
+                <th>Party Ledger</th>
+                <th>Account Name</th>
+                <th>Type</th>
+                <th>Settlement</th>
+                <th>Reference No</th>
+                <th>Amount</th>
+                <th className="text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody>
               {filtered.map(v => (
-                <tr key={v.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 font-mono text-blue-600 text-xs font-semibold">{v.voucherNo}</td>
-                  <td className="px-6 py-4 text-gray-500 text-xs">
+                <tr key={v.id}>
+                  <td className="font-mono text-teal-600 font-bold text-xs">{v.voucherNo}</td>
+                  <td className="text-slate-600 font-medium text-xs">
                     {new Date(v.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                   </td>
-                  <td className="px-6 py-4 text-gray-600 capitalize">{v.type}</td>
-                  <td className="px-6 py-4 font-semibold text-gray-800">{v.partyName}</td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold ${
-                      v.direction === "in" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
+                  <td className="text-slate-600 font-semibold capitalize text-xs">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                      v.type === "customer" ? "bg-indigo-50 text-indigo-700 border-indigo-200" : "bg-purple-50 text-purple-700 border-purple-200"
                     }`}>
-                      {v.direction === "in" ? "📥 Receipt" : "📤 Payment"}
+                      {v.type}
                     </span>
                   </td>
-                  <td className="px-6 py-4 capitalize text-gray-600 font-medium">{v.mode}</td>
-                  <td className="px-6 py-4 text-gray-400 font-mono text-xs">{v.reference || "—"}</td>
-                  <td className="px-6 py-4 text-right font-black text-gray-900 text-base">₹{v.amount?.toFixed(2)}</td>
-                  <td className="px-6 py-4 text-center">
+                  <td className="font-semibold text-slate-900">{v.partyName}</td>
+                  <td>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                      v.direction === "in" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"
+                    }`}>
+                      {v.direction === "in" ? <ArrowDownLeft className="w-3.5 h-3.5" /> : <ArrowUpRight className="w-3.5 h-3.5" />}
+                      {v.direction === "in" ? "Receipt" : "Payment"}
+                    </span>
+                  </td>
+                  <td className="capitalize text-slate-600 font-semibold text-xs">{v.mode}</td>
+                  <td className="text-slate-400 font-mono text-xs">{v.reference || "—"}</td>
+                  <td className="font-extrabold text-slate-950 text-sm">₹{v.amount?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                  <td className="text-center">
                     <button
                       onClick={() => handleDeleteVoucher(v.id)}
-                      className="text-red-500 hover:text-red-700 hover:underline text-xs font-bold"
+                      className="text-rose-600 hover:text-rose-800 text-xs font-bold cursor-pointer"
                     >
                       Delete/Reverse
                     </button>
@@ -161,8 +174,8 @@ export default function Vouchers() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="text-center py-12 text-gray-400 font-medium">
-                    No vouchers recorded yet.
+                  <td colSpan={9} className="text-center py-12 text-slate-400 font-medium">
+                    No accounting vouchers found. Create your first transaction.
                   </td>
                 </tr>
               )}
@@ -172,55 +185,55 @@ export default function Vouchers() {
 
         {/* Create Voucher Modal */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-bold text-gray-800">💵 Record Account Voucher</h2>
-                <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex justify-between items-center mb-5">
+                <h2 className="text-xl font-bold text-slate-900">Record Account Voucher</h2>
+                <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 text-2xl font-bold cursor-pointer">&times;</button>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 {/* Direction */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Direction</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Direction</label>
                   <select
                     value={form.direction}
                     onChange={e => setForm({ ...form, direction: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                    className="form-input bg-white"
                   >
-                    <option value="in">📥 Receipt (Cash In)</option>
-                    <option value="out">📤 Payment (Cash Out)</option>
+                    <option value="in">Receipt (Cash Inward)</option>
+                    <option value="out">Payment (Cash Outward)</option>
                   </select>
                 </div>
 
                 {/* Party Type */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Party Type</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Party Type</label>
                   <select
                     value={form.type}
                     onChange={e => setForm({ ...form, type: e.target.value, partyId: "" })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                    className="form-input bg-white"
                   >
-                    <option value="customer">Customer (Ledger)</option>
-                    <option value="supplier">Supplier (Ledger)</option>
+                    <option value="customer">Customer Ledger</option>
+                    <option value="supplier">Supplier Ledger</option>
                   </select>
                 </div>
 
                 {/* Selected Party */}
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Select Party</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Select Party Account</label>
                   <select
                     value={form.partyId}
                     onChange={e => setForm({ ...form, partyId: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                    className="form-input bg-white"
                   >
-                    <option value="">-- Choose Party --</option>
+                    <option value="">-- Choose Party Ledger Account --</option>
                     {form.type === "customer"
                       ? customers.map(c => (
-                          <option key={c.id} value={c.id}>{c.name} (Outstanding: ₹{c.balance?.toFixed(2)})</option>
+                          <option key={c.id} value={c.id}>{c.name} (Balance: ₹{c.balance?.toFixed(2)})</option>
                         ))
                       : suppliers.map(s => (
-                          <option key={s.id} value={s.id}>{s.name} (Outstanding: ₹{s.outstanding?.toFixed(2)})</option>
+                          <option key={s.id} value={s.id}>{s.name} (Balance: ₹{s.outstanding?.toFixed(2)})</option>
                         ))
                     }
                   </select>
@@ -228,53 +241,53 @@ export default function Vouchers() {
 
                 {/* Amount */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Amount (₹)</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Amount (₹)</label>
                   <input
                     type="number"
                     min="1"
                     placeholder="Enter amount"
                     value={form.amount}
                     onChange={e => setForm({ ...form, amount: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="form-input font-bold text-slate-800"
                   />
                 </div>
 
                 {/* Mode */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Payment Mode</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Payment Mode</label>
                   <select
                     value={form.mode}
                     onChange={e => setForm({ ...form, mode: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                    className="form-input bg-white"
                   >
                     <option value="cash">Cash</option>
-                    <option value="upi">UPI / QR Code</option>
-                    <option value="card">Credit/Debit Card</option>
-                    <option value="bank">Bank Transfer</option>
+                    <option value="upi">UPI / QR Transfer</option>
+                    <option value="card">POS Terminal Card</option>
+                    <option value="bank">Direct Bank NetBanking</option>
                   </select>
                 </div>
 
                 {/* Reference No */}
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Reference/Instrument No (Optional)</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Reference/Instrument ID (Optional)</label>
                   <input
                     type="text"
-                    placeholder="Txn ID, Check No, Cheque No, etc."
+                    placeholder="Transaction ID, Cheque No, Bank reference, etc."
                     value={form.reference}
                     onChange={e => setForm({ ...form, reference: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="form-input"
                   />
                 </div>
 
                 {/* Note */}
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Notes / Remarks</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Accounting Remarks / Notes</label>
                   <textarea
                     rows="3"
-                    placeholder="Enter additional description..."
+                    placeholder="Brief description for transaction ledger..."
                     value={form.note}
                     onChange={e => setForm({ ...form, note: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="form-input"
                   />
                 </div>
               </div>
@@ -282,13 +295,13 @@ export default function Vouchers() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={handleCreateVoucher}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold transition"
+                  className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer shadow transition"
                 >
                   Save Voucher
                 </button>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold transition"
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold cursor-pointer transition"
                 >
                   Cancel
                 </button>

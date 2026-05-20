@@ -1,6 +1,24 @@
 import { useEffect, useState, Fragment } from "react";
 import axios from "axios";
 import Sidebar from "../components/Sidebar";
+import {
+  Factory,
+  ClipboardList,
+  Clock,
+  IndianRupee,
+  Search,
+  Phone,
+  Mail,
+  Landmark,
+  CreditCard,
+  Pencil,
+  Trash2,
+  Gift,
+  DollarSign,
+  Package,
+  CheckCircle2,
+  Plus,
+} from "lucide-react";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
@@ -12,7 +30,7 @@ const emptyItem = { name:"", batch:"", hsn:"", pack:"", category:"", qty:1, sche
 const STATUS_COLOR = {
   pending:   "bg-yellow-100 text-yellow-700 border-yellow-200",
   received:  "bg-green-100 text-green-700 border-green-200",
-  partial:   "bg-blue-100 text-blue-700 border-blue-200",
+  partial:   "bg-teal-100 text-teal-700 border-teal-200",
   cancelled: "bg-red-100 text-red-700 border-red-200",
 };
 
@@ -136,103 +154,126 @@ export default function Suppliers() {
     s.phone?.includes(search)
   );
 
-  return (
-    <div className="flex min-h-screen bg-gray-100">
-      <Sidebar />
-      <main className="flex-1 p-8">
+  const summaryCards = [
+    { label: "Total Suppliers", value: suppliers.length, icon: Factory, color: "bg-teal-50 text-teal-600", borderColor: "border-teal-500" },
+    { label: "Total Orders", value: orders.length, icon: ClipboardList, color: "bg-indigo-50 text-indigo-600", borderColor: "border-indigo-500" },
+    { label: "Pending Orders", value: orders.filter(o=>o.status==="pending").length, icon: Clock, color: "bg-yellow-50 text-yellow-600", borderColor: "border-yellow-500" },
+    { label: "Amount Due", value: `₹${orders.reduce((s,o)=>s+(o.balanceDue||0),0).toFixed(2)}`, icon: IndianRupee, color: "bg-rose-50 text-rose-600", borderColor: "border-rose-500" },
+  ];
 
-        <div className="flex items-center justify-between mb-6">
+  const tabs = [
+    { key: "suppliers", label: "Suppliers", icon: Factory },
+    { key: "orders", label: "Purchase Orders", icon: ClipboardList },
+  ];
+
+  return (
+    <div className="flex min-h-screen bg-slate-50">
+      <Sidebar />
+      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
+
+        {/* Page Header */}
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">🏭 Suppliers & Purchase Orders</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage suppliers and incoming stock orders</p>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Suppliers & Purchase Orders</h1>
+            <p className="text-sm text-slate-500 mt-1">Manage suppliers and incoming stock orders</p>
           </div>
           <div className="flex gap-3">
             <button onClick={() => { setSupForm(emptySupplier); setEditSupId(null); setShowSupModal(true); }}
-              className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm">
-              + Add Supplier
+              className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
+              <Plus className="w-4.5 h-4.5" /> Add Supplier
             </button>
             <button onClick={() => setShowPOModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow">
-              + New Purchase Order
+              className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
+              <Plus className="w-4.5 h-4.5" /> New Purchase Order
             </button>
           </div>
         </div>
 
-        {/* Summary */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          {[
-            { label: "Total Suppliers", value: suppliers.length, icon: "🏭", color: "bg-blue-600" },
-            { label: "Total Orders", value: orders.length, icon: "📋", color: "bg-indigo-600" },
-            { label: "Pending Orders", value: orders.filter(o=>o.status==="pending").length, icon: "⏳", color: "bg-yellow-500" },
-            { label: "Amount Due", value: `₹${orders.reduce((s,o)=>s+(o.balanceDue||0),0).toFixed(2)}`, icon: "💸", color: "bg-red-500" },
-          ].map(c => (
-            <div key={c.label} className={`${c.color} text-white rounded-2xl p-5 shadow`}>
-              <div className="text-3xl mb-2">{c.icon}</div>
-              <div className="text-2xl font-bold">{c.value}</div>
-              <div className="text-sm opacity-80 mt-1">{c.label}</div>
-            </div>
-          ))}
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {summaryCards.map((c, i) => {
+            const Icon = c.icon;
+            return (
+              <div key={i} className={`bg-white border-l-4 ${c.borderColor} border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between`}>
+                <div>
+                  <p className="text-2xl font-bold text-slate-900">{c.value}</p>
+                  <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mt-1">{c.label}</p>
+                </div>
+                <div className={`p-2.5 rounded-lg ${c.color}`}>
+                  <Icon className="w-5 h-5" />
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
-          {[{key:"suppliers",label:"🏭 Suppliers"},{key:"orders",label:"📋 Purchase Orders"}].map(t => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition ${
-                tab === t.key ? "bg-blue-600 text-white shadow" : "bg-white text-gray-600 hover:bg-gray-50 shadow-sm"
-              }`}>
-              {t.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap gap-2 mb-8 border-b border-slate-200 pb-4">
+          {tabs.map(t => {
+            const Icon = t.icon;
+            return (
+              <button key={t.key} onClick={() => setTab(t.key)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition cursor-pointer ${
+                  tab === t.key
+                    ? "bg-teal-600 text-white shadow-sm"
+                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+                }`}>
+                <Icon className="w-4.5 h-4.5" />
+                {t.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* ── SUPPLIERS LIST ── */}
         {tab === "suppliers" && (
           <div className="space-y-4">
-            <div className="bg-white rounded-2xl shadow p-4">
-              <input type="text" placeholder="🔍 Search suppliers..."
+            {/* Search Bar */}
+            <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm flex items-center gap-3">
+              <Search className="w-5 h-5 text-slate-400" />
+              <input type="text" placeholder="Search suppliers..."
                 value={search} onChange={e => setSearch(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                className="flex-1 bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredSuppliers.map(sup => (
-                <div key={sup.id} className="bg-white rounded-2xl shadow p-6 hover:shadow-md transition">
+                <div key={sup.id} className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-150">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                      <div className="w-11 h-11 bg-teal-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
                         {sup.name[0].toUpperCase()}
                       </div>
                       <div>
-                        <p className="font-bold text-gray-800">{sup.name}</p>
-                        <p className="text-gray-400 text-xs">{sup.contactPerson || "—"}</p>
+                        <p className="font-bold text-slate-900">{sup.name}</p>
+                        <p className="text-slate-400 text-xs">{sup.contactPerson || "—"}</p>
                       </div>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      sup.status === "active" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-500"
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase ${
+                      sup.status === "active" ? "bg-green-100 text-green-600 border-green-200" : "bg-red-100 text-red-500 border-red-200"
                     }`}>{sup.status}</span>
                   </div>
-                  <div className="space-y-1.5 text-sm text-gray-500 mb-4">
-                    {sup.phone && <p>📞 {sup.phone}</p>}
-                    {sup.email && <p>📧 {sup.email}</p>}
-                    {sup.gstNumber && <p>🏛️ {sup.gstNumber}</p>}
-                    <p>💳 Credit: ₹{sup.creditLimit} / {sup.creditDays} days</p>
-                    {sup.balance > 0 && <p className="text-red-500 font-semibold">💸 Due: ₹{sup.balance}</p>}
+                  <div className="space-y-1.5 text-sm text-slate-500 mb-4">
+                    {sup.phone && <p className="flex items-center gap-2"><Phone className="w-3.5 h-3.5" /> {sup.phone}</p>}
+                    {sup.email && <p className="flex items-center gap-2"><Mail className="w-3.5 h-3.5" /> {sup.email}</p>}
+                    {sup.gstNumber && <p className="flex items-center gap-2"><Landmark className="w-3.5 h-3.5" /> {sup.gstNumber}</p>}
+                    <p className="flex items-center gap-2"><CreditCard className="w-3.5 h-3.5" /> Credit: ₹{sup.creditLimit} / {sup.creditDays} days</p>
+                    {sup.balance > 0 && <p className="text-red-500 font-semibold flex items-center gap-2"><IndianRupee className="w-3.5 h-3.5" /> Due: ₹{sup.balance}</p>}
                   </div>
-                  <div className="flex gap-2 pt-3 border-t border-gray-100">
+                  <div className="flex gap-2 pt-3 border-t border-slate-200">
                     <button onClick={() => { setSupForm(sup); setEditSupId(sup.id); setShowSupModal(true); }}
-                      className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-600 py-2 rounded-lg text-xs font-semibold">
-                      ✏️ Edit
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-teal-50 hover:bg-teal-100 text-teal-600 py-2 rounded-lg text-xs font-semibold cursor-pointer">
+                      <Pencil className="w-3.5 h-3.5" /> Edit
                     </button>
                     <button onClick={() => handleDeleteSupplier(sup.id)}
-                      className="flex-1 bg-red-50 hover:bg-red-100 text-red-500 py-2 rounded-lg text-xs font-semibold">
-                      🗑️ Delete
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-500 py-2 rounded-lg text-xs font-semibold cursor-pointer">
+                      <Trash2 className="w-3.5 h-3.5" /> Delete
                     </button>
                   </div>
                 </div>
               ))}
               {filteredSuppliers.length === 0 && (
-                <div className="col-span-3 text-center py-16 text-gray-400">
-                  <div className="text-5xl mb-3">🏭</div>
+                <div className="col-span-3 text-center py-16 text-slate-400">
+                  <Factory className="w-12 h-12 mx-auto mb-3 text-slate-300" />
                   <p>No suppliers yet. Add your first supplier!</p>
                 </div>
               )}
@@ -242,52 +283,52 @@ export default function Suppliers() {
 
         {/* ── ORDERS LIST ── */}
         {tab === "orders" && (
-          <div className="bg-white rounded-2xl shadow overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
+          <div className="data-table-container">
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <th className="px-6 py-4 text-left">PO Number</th>
-                  <th className="px-6 py-4 text-left">Supplier</th>
-                  <th className="px-6 py-4 text-left">Date</th>
-                  <th className="px-6 py-4 text-left">Items</th>
-                  <th className="px-6 py-4 text-right">Total</th>
-                  <th className="px-6 py-4 text-right">Balance Due</th>
-                  <th className="px-6 py-4 text-left">Status</th>
-                  <th className="px-6 py-4 text-left">Actions</th>
+                  <th>PO Number</th>
+                  <th>Supplier</th>
+                  <th>Date</th>
+                  <th>Items</th>
+                  <th className="text-right">Total</th>
+                  <th className="text-right">Balance Due</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody>
                 {orders.map(o => (
-                  <tr key={o.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-mono text-blue-600 text-xs font-medium">{o.poNumber}</td>
-                    <td className="px-6 py-4 font-semibold text-gray-800">{o.supplierName}</td>
-                    <td className="px-6 py-4 text-gray-500 text-xs">
+                  <tr key={o.id}>
+                    <td className="font-mono text-teal-600 text-xs font-medium">{o.poNumber}</td>
+                    <td className="font-semibold text-slate-900">{o.supplierName}</td>
+                    <td className="text-slate-500 text-xs">
                       {new Date(o.createdAt).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}
                     </td>
-                    <td className="px-6 py-4 text-gray-500">{o.items?.length || 0} items</td>
-                    <td className="px-6 py-4 text-right font-bold text-gray-800">₹{o.total}</td>
-                    <td className="px-6 py-4 text-right font-bold text-red-500">₹{o.balanceDue || 0}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border capitalize ${STATUS_COLOR[o.status]}`}>
+                    <td className="text-slate-500">{o.items?.length || 0} items</td>
+                    <td className="text-right font-bold text-slate-900">₹{o.total}</td>
+                    <td className="text-right font-bold text-red-500">₹{o.balanceDue || 0}</td>
+                    <td>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase ${STATUS_COLOR[o.status]}`}>
                         {o.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 flex gap-2">
+                    <td className="flex gap-2">
                       {o.status === "pending" && (
                         <button onClick={() => { setActiveOrder(o); setReceiveAmount(o.total); setShowReceiveModal(true); }}
-                          className="text-green-600 hover:underline text-xs font-medium">
-                          ✅ Receive
+                          className="flex items-center gap-1 text-green-600 hover:text-green-800 text-xs font-semibold cursor-pointer">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Receive
                         </button>
                       )}
                       <button onClick={() => handleDeleteOrder(o.id)}
-                        className="text-red-500 hover:underline text-xs font-medium">
+                        className="text-rose-600 hover:text-rose-800 text-xs font-semibold cursor-pointer">
                         Delete
                       </button>
                     </td>
                   </tr>
                 ))}
                 {orders.length === 0 && (
-                  <tr><td colSpan={8} className="text-center py-12 text-gray-400">No purchase orders yet</td></tr>
+                  <tr><td colSpan={8} className="text-center py-12 text-slate-400">No purchase orders yet</td></tr>
                 )}
               </tbody>
             </table>
@@ -296,11 +337,11 @@ export default function Suppliers() {
 
         {/* ── SUPPLIER MODAL ── */}
         {showSupModal && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-bold text-gray-800">{editSupId ? "Edit" : "Add"} Supplier</h2>
-                <button onClick={() => setShowSupModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+                <h2 className="text-lg font-bold text-slate-900">{editSupId ? "Edit" : "Add"} Supplier</h2>
+                <button onClick={() => setShowSupModal(false)} className="text-slate-400 hover:text-slate-600 text-2xl cursor-pointer">×</button>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {[
@@ -314,28 +355,28 @@ export default function Suppliers() {
                   { key:"creditDays", label:"Credit Days", placeholder:"30" },
                 ].map(f => (
                   <div key={f.key} className={f.key==="name"?"col-span-2":""}>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{f.label}</label>
                     <input type="text" placeholder={f.placeholder}
                       value={supForm[f.key] || ""}
                       onChange={e => setSupForm({ ...supForm, [f.key]: e.target.value })}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                      className="form-input" />
                   </div>
                 ))}
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Address</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Address</label>
                   <textarea rows={2} placeholder="Full address"
                     value={supForm.address || ""}
                     onChange={e => setSupForm({ ...supForm, address: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    className="form-input" />
                 </div>
               </div>
               <div className="flex gap-3 mt-6">
                 <button onClick={handleSaveSupplier}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold text-sm">
+                  className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
                   {editSupId ? "Update" : "Add"} Supplier
                 </button>
                 <button onClick={() => setShowSupModal(false)}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold text-sm">
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
                   Cancel
                 </button>
               </div>
@@ -345,33 +386,33 @@ export default function Suppliers() {
 
         {/* ── PO MODAL ── */}
         {showPOModal && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-bold text-gray-800">New Purchase Order</h2>
-                <button onClick={() => setShowPOModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+                <h2 className="text-lg font-bold text-slate-900">New Purchase Order</h2>
+                <button onClick={() => setShowPOModal(false)} className="text-slate-400 hover:text-slate-600 text-2xl cursor-pointer">×</button>
               </div>
 
               {/* Supplier + Details */}
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Supplier *</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Supplier *</label>
                   <input list="sup-list" value={poSupplier} onChange={e => setPoSupplier(e.target.value)}
                     placeholder="Select or type supplier"
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    className="form-input" />
                   <datalist id="sup-list">
                     {suppliers.map(s => <option key={s.id} value={s.name} />)}
                   </datalist>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Expected Date</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Expected Date</label>
                   <input type="date" value={poExpected} onChange={e => setPoExpected(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    className="form-input" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Payment Mode</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Payment Mode</label>
                   <select value={poPayMode} onChange={e => setPoPayMode(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    className="form-input bg-white">
                     {["cash","upi","card","credit"].map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
                 </div>
@@ -386,7 +427,7 @@ export default function Suppliers() {
                 return (
                   <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 mb-6">
                     <h3 className="text-sm font-semibold text-green-800 mb-2 flex items-center gap-2">
-                      🎁 Schemes available from {poSupplier}
+                      <Gift className="w-4 h-4" /> Schemes available from {poSupplier}
                       <span className="text-xs font-normal text-green-600">({supplierSchemes.length} active)</span>
                     </h3>
                     <div className="flex flex-wrap gap-2">
@@ -397,8 +438,8 @@ export default function Suppliers() {
                             : "bg-orange-100 text-orange-700 border border-orange-200"
                         }`}>
                           {s.type === "buy_get_free"
-                            ? `🎁 ${s.name}: Buy ${s.buyQty} Get ${s.freeQty} Free`
-                            : `💰 ${s.name}: ${s.discountPercent}% Off`}
+                            ? <><Gift className="w-3 h-3 inline" /> {s.name}: Buy {s.buyQty} Get {s.freeQty} Free</>
+                            : <><DollarSign className="w-3 h-3 inline" /> {s.name}: {s.discountPercent}% Off</>}
                           {s.applicableItems?.length > 0 && (
                             <span className="opacity-70">({s.applicableItems.join(", ")})</span>
                           )}
@@ -410,125 +451,129 @@ export default function Suppliers() {
               })()}
 
               {/* Items */}
-              <table className="w-full text-sm mb-3">
-                <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
-                  <tr>
-                    <th className="px-2 py-2 text-left">Item Name</th>
-                    <th className="px-2 py-2 text-left">Batch</th>
-                    <th className="px-2 py-2 text-left">HSN</th>
-                    <th className="px-2 py-2 text-left">Pack</th>
-                    <th className="px-2 py-2 text-left">Qty</th>
-                    <th className="px-2 py-2 text-left">Scheme Qty</th>
-                    <th className="px-2 py-2 text-left">Unit</th>
-                    <th className="px-2 py-2 text-left">Cost ₹</th>
-                    <th className="px-2 py-2 text-left">Selling Price ₹</th>
-                    <th className="px-2 py-2 text-left">MRP ₹</th>
-                    <th className="px-2 py-2 text-left">GST%</th>
-                    <th className="px-2 py-2 text-left">Expiry</th>
-                    <th className="px-2 py-2 text-left">Amount</th>
-                    <th className="px-2 py-2"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {poItems.map((item, i) => {
-                    const base = parseFloat(item.cost_price||0)*parseInt(item.qty||1);
-                    const amt = (base + (base*item.gst)/100).toFixed(2);
-                    const schemes = poItemSchemes[i] || [];
-                    return (
-                      <Fragment key={i}>
-                        <tr>
-                          {["name","batch","hsn","pack","qty","scheme_qty","unit","cost_price","selling_price","mrp"].map(f => (
-                            <td key={f} className="px-1 py-1">
-                              <input type={["qty","scheme_qty","cost_price","selling_price","mrp"].includes(f)?"number":"text"}
-                                value={item[f]} placeholder={f}
-                                onChange={e => {
-                                  const u=[...poItems]; u[i]={...u[i],[f]:e.target.value}; setPoItems(u);
-                                  if (f === "name") checkPOScheme(i, e.target.value, u[i].qty);
-                                  if (f === "qty") checkPOScheme(i, u[i].name, e.target.value);
-                                }}
-                                className="w-full border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400" />
+              <div className="data-table-container mb-3">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Item Name</th>
+                      <th>Batch</th>
+                      <th>HSN</th>
+                      <th>Pack</th>
+                      <th>Qty</th>
+                      <th>Scheme Qty</th>
+                      <th>Unit</th>
+                      <th>Cost ₹</th>
+                      <th>Selling Price ₹</th>
+                      <th>MRP ₹</th>
+                      <th>GST%</th>
+                      <th>Expiry</th>
+                      <th>Amount</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {poItems.map((item, i) => {
+                      const base = parseFloat(item.cost_price||0)*parseInt(item.qty||1);
+                      const amt = (base + (base*item.gst)/100).toFixed(2);
+                      const schemes = poItemSchemes[i] || [];
+                      return (
+                        <Fragment key={i}>
+                          <tr>
+                            {["name","batch","hsn","pack","qty","scheme_qty","unit","cost_price","selling_price","mrp"].map(f => (
+                              <td key={f} className="px-1 py-1">
+                                <input type={["qty","scheme_qty","cost_price","selling_price","mrp"].includes(f)?"number":"text"}
+                                  value={item[f]} placeholder={f}
+                                  onChange={e => {
+                                    const u=[...poItems]; u[i]={...u[i],[f]:e.target.value}; setPoItems(u);
+                                    if (f === "name") checkPOScheme(i, e.target.value, u[i].qty);
+                                    if (f === "qty") checkPOScheme(i, u[i].name, e.target.value);
+                                  }}
+                                  className="w-full border border-slate-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-teal-400" />
+                              </td>
+                            ))}
+                            <td className="px-1 py-1">
+                              <select value={item.gst}
+                                onChange={e => { const u=[...poItems]; u[i]={...u[i],gst:e.target.value}; setPoItems(u); }}
+                                className="border border-slate-200 rounded px-2 py-1.5 text-xs focus:outline-none bg-white">
+                                {GST_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
+                              </select>
                             </td>
-                          ))}
-                          <td className="px-1 py-1">
-                            <select value={item.gst}
-                              onChange={e => { const u=[...poItems]; u[i]={...u[i],gst:e.target.value}; setPoItems(u); }}
-                              className="border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none">
-                              {GST_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
-                            </select>
-                          </td>
-                          <td className="px-1 py-1">
-                            <input type="date" value={item.expiry}
-                              onChange={e => { const u=[...poItems]; u[i]={...u[i],expiry:e.target.value}; setPoItems(u); }}
-                              className="border border-gray-200 rounded px-2 py-1.5 text-xs focus:outline-none" />
-                          </td>
-                          <td className="px-2 py-1 text-xs font-semibold text-gray-700">₹{amt}</td>
-                          <td className="px-1 py-1">
-                            {poItems.length > 1 && (
-                              <button onClick={() => {
-                                setPoItems(poItems.filter((_,idx)=>idx!==i));
-                                setPoItemSchemes(prev => { const n = { ...prev }; delete n[i]; return n; });
-                              }}
-                                className="text-red-400 hover:text-red-600 text-lg">×</button>
-                            )}
-                          </td>
-                        </tr>
-                        {schemes.length > 0 && (
-                          <tr className="bg-green-50/70">
-                            <td colSpan={10} className="px-3 py-1.5">
-                              <div className="flex flex-wrap gap-2">
-                                {schemes.map((s, si) => (
-                                  <span key={si} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                                    s.type === "buy_get_free"
-                                      ? "bg-green-100 text-green-700 border border-green-200"
-                                      : "bg-orange-100 text-orange-700 border border-orange-200"
-                                  }`}>
-                                    🎁 {s.description}
-                                    {s.type === "buy_get_free" && s.totalFreeItems > 0 && (
-                                      <span className="font-bold">→ {s.totalFreeItems} FREE</span>
-                                    )}
-                                    {s.type === "flat_discount" && (
-                                      <span className="font-bold">→ {s.discountPercent}% Off</span>
-                                    )}
-                                    <span className="text-[10px] opacity-70">({s.company})</span>
-                                  </span>
-                                ))}
-                              </div>
+                            <td className="px-1 py-1">
+                              <input type="date" value={item.expiry}
+                                onChange={e => { const u=[...poItems]; u[i]={...u[i],expiry:e.target.value}; setPoItems(u); }}
+                                className="border border-slate-200 rounded px-2 py-1.5 text-xs focus:outline-none" />
+                            </td>
+                            <td className="px-2 py-1 text-xs font-semibold text-slate-700">₹{amt}</td>
+                            <td className="px-1 py-1">
+                              {poItems.length > 1 && (
+                                <button onClick={() => {
+                                  setPoItems(poItems.filter((_,idx)=>idx!==i));
+                                  setPoItemSchemes(prev => { const n = { ...prev }; delete n[i]; return n; });
+                                }}
+                                  className="text-red-400 hover:text-red-600 text-lg cursor-pointer">×</button>
+                              )}
                             </td>
                           </tr>
-                        )}
-                      </Fragment>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          {schemes.length > 0 && (
+                            <tr className="bg-green-50/70">
+                              <td colSpan={10} className="px-3 py-1.5">
+                                <div className="flex flex-wrap gap-2">
+                                  {schemes.map((s, si) => (
+                                    <span key={si} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                      s.type === "buy_get_free"
+                                        ? "bg-green-100 text-green-700 border border-green-200"
+                                        : "bg-orange-100 text-orange-700 border border-orange-200"
+                                    }`}>
+                                      <Gift className="w-3 h-3" /> {s.description}
+                                      {s.type === "buy_get_free" && s.totalFreeItems > 0 && (
+                                        <span className="font-bold">→ {s.totalFreeItems} FREE</span>
+                                      )}
+                                      {s.type === "flat_discount" && (
+                                        <span className="font-bold">→ {s.discountPercent}% Off</span>
+                                      )}
+                                      <span className="text-[10px] opacity-70">({s.company})</span>
+                                    </span>
+                                  ))}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
               <button onClick={() => setPoItems([...poItems,{...emptyItem}])}
-                className="text-blue-600 text-sm hover:underline font-medium mb-6">+ Add Row</button>
+                className="flex items-center gap-1 text-teal-600 text-sm hover:underline font-medium mb-6 cursor-pointer">
+                <Plus className="w-4 h-4" /> Add Row
+              </button>
 
               {/* Totals */}
               <div className="flex justify-end mb-6">
                 <div className="w-56 space-y-2 text-sm">
-                  <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
-                  <div className="flex justify-between text-gray-600"><span>GST</span><span>₹{gstAmount.toFixed(2)}</span></div>
-                  <div className="border-t pt-2 flex justify-between font-bold text-gray-800 text-base">
+                  <div className="flex justify-between text-slate-600"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
+                  <div className="flex justify-between text-slate-600"><span>GST</span><span>₹{gstAmount.toFixed(2)}</span></div>
+                  <div className="border-t border-slate-200 pt-2 flex justify-between font-bold text-slate-900 text-base">
                     <span>Total</span><span className="text-green-600">₹{total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
 
               <div className="mb-6">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Notes</label>
                 <textarea rows={2} value={poNotes} onChange={e => setPoNotes(e.target.value)}
                   placeholder="Any special instructions..."
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  className="form-input" />
               </div>
 
               <div className="flex gap-3">
                 <button onClick={handleSavePO}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold text-sm">
-                  📋 Create Purchase Order
+                  className="flex-1 flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
+                  <ClipboardList className="w-4 h-4" /> Create Purchase Order
                 </button>
                 <button onClick={() => setShowPOModal(false)}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold text-sm">
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
                   Cancel
                 </button>
               </div>
@@ -538,35 +583,37 @@ export default function Suppliers() {
 
         {/* ── RECEIVE MODAL ── */}
         {showReceiveModal && activeOrder && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
-              <h2 className="text-lg font-bold text-gray-800 mb-2">✅ Mark Order Received</h2>
-              <p className="text-sm text-gray-500 mb-6">
-                PO: <span className="font-mono text-blue-600">{activeOrder.poNumber}</span> from {activeOrder.supplierName}
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+              <h2 className="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-green-600" /> Mark Order Received
+              </h2>
+              <p className="text-sm text-slate-500 mb-6">
+                PO: <span className="font-mono text-teal-600">{activeOrder.poNumber}</span> from {activeOrder.supplierName}
               </p>
-              <div className="bg-blue-50 rounded-xl p-4 mb-6 text-sm space-y-1">
-                <div className="flex justify-between"><span className="text-gray-600">Total Amount</span><span className="font-bold">₹{activeOrder.total}</span></div>
-                <div className="flex justify-between"><span className="text-gray-600">Items</span><span>{activeOrder.items?.length} items</span></div>
+              <div className="bg-teal-50 rounded-xl p-4 mb-6 text-sm space-y-1">
+                <div className="flex justify-between"><span className="text-slate-600">Total Amount</span><span className="font-bold">₹{activeOrder.total}</span></div>
+                <div className="flex justify-between"><span className="text-slate-600">Items</span><span>{activeOrder.items?.length} items</span></div>
               </div>
               <div className="mb-6">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Amount Paid Now ₹</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Amount Paid Now ₹</label>
                 <input type="number" value={receiveAmount}
                   onChange={e => setReceiveAmount(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
-                <p className="text-xs text-gray-400 mt-1">
+                  className="form-input" />
+                <p className="text-xs text-slate-400 mt-1">
                   Balance due: ₹{(activeOrder.total - receiveAmount).toFixed(2)}
                 </p>
               </div>
-              <p className="text-xs text-blue-600 bg-blue-50 rounded-lg p-3 mb-4">
-                📦 All items from this PO will be automatically added to your Inventory.
+              <p className="text-xs text-teal-600 bg-teal-50 rounded-lg p-3 mb-4 flex items-center gap-2">
+                <Package className="w-4 h-4" /> All items from this PO will be automatically added to your Inventory.
               </p>
               <div className="flex gap-3">
                 <button onClick={handleReceive}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold text-sm">
-                  ✅ Confirm Received
+                  className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
+                  <CheckCircle2 className="w-4 h-4" /> Confirm Received
                 </button>
                 <button onClick={() => setShowReceiveModal(false)}
-                  className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold text-sm">
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
                   Cancel
                 </button>
               </div>

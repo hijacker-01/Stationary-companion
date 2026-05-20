@@ -3,12 +3,17 @@ import axios from "axios";
 import Sidebar from "../components/Sidebar";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
+  Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
+import { 
+  TrendingUp, AlertTriangle, AlertCircle, Award, Zap, 
+  ChevronRight, Users, ClipboardList, IndianRupee, 
+  ArrowUpRight, ArrowDownLeft, ShieldAlert
+} from "lucide-react";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
-const COLORS = ["#3b82f6","#10b981","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#ec4899","#14b8a6"];
+const COLORS = ["#2563eb", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#14b8a6"];
 
 export default function Dashboard() {
   const [data, setData]       = useState(null);
@@ -26,11 +31,16 @@ export default function Dashboard() {
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   if (loading) return (
-    <div className="flex min-h-screen bg-gray-100"><Sidebar />
+    <div className="flex min-h-screen bg-slate-50"><Sidebar />
       <main className="flex-1 flex items-center justify-center">
-        <div className="text-gray-400 text-center">
-          <div className="text-5xl mb-4 animate-pulse">📊</div>
-          <p className="font-medium">Loading dashboard...</p>
+        <div className="text-slate-400 text-center">
+          <div className="mb-4 animate-spin text-teal-600">
+            <svg className="w-10 h-10 mx-auto" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          </div>
+          <p className="font-medium text-slate-600">Loading dashboard...</p>
         </div>
       </main>
     </div>
@@ -39,178 +49,221 @@ export default function Dashboard() {
   const d = data || {};
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto">
+      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
 
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-800">{greeting}, {user.name || "User"} 👋</h1>
-          <p className="text-gray-500 text-sm mt-1">Here's your business snapshot for today.</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{greeting}, {user.name || "User"}</h1>
+            <p className="text-slate-500 text-sm mt-1">Here is a quick overview of your business performance today.</p>
+          </div>
+          <div className="text-right text-xs text-slate-400 bg-white border border-slate-200 rounded-lg px-3 py-1.5 shadow-sm font-medium">
+            📅 {new Date().toLocaleDateString("en-IN", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </div>
         </div>
 
         {/* Top KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[
-            { label: "Today's Sales",     value: `₹${(d.todaySales||0).toLocaleString("en-IN")}`, icon: "💰", sub: `${d.todayBillCount||0} invoices`, color: "from-green-500 to-emerald-600" },
-            { label: "Total Revenue",     value: `₹${(d.totalRevenue||0).toLocaleString("en-IN")}`, icon: "📈", sub: "All time", color: "from-blue-500 to-blue-700" },
-            { label: "Outstanding Dues",  value: `₹${(d.totalOutstanding||0).toLocaleString("en-IN")}`, icon: "⏳", sub: `${d.unpaidBillCount||0} unpaid bills`, color: "from-red-500 to-rose-600" },
-            { label: "Today's Cash",      value: `₹${(d.todayCash||0).toLocaleString("en-IN")}`, icon: "💵", sub: `Credit: ₹${(d.todayCredit||0).toLocaleString("en-IN")}`, color: "from-violet-500 to-purple-700" },
-          ].map(c => (
-            <div key={c.label} className={`bg-gradient-to-br ${c.color} text-white rounded-2xl p-5 shadow-lg`}>
-              <div className="text-3xl mb-2">{c.icon}</div>
-              <p className="text-2xl font-bold leading-tight">{c.value}</p>
-              <p className="text-xs opacity-80 mt-1">{c.label}</p>
-              <p className="text-xs opacity-60 mt-0.5">{c.sub}</p>
-            </div>
-          ))}
+            { label: "Today's Sales", value: `₹${(d.todaySales||0).toLocaleString("en-IN")}`, icon: ArrowUpRight, sub: `${d.todayBillCount||0} invoices`, borderColor: "border-emerald-500", iconColor: "text-emerald-600 bg-emerald-50" },
+            { label: "Total Revenue", value: `₹${(d.totalRevenue||0).toLocaleString("en-IN")}`, icon: TrendingUp, sub: "All time records", borderColor: "border-teal-500", iconColor: "text-teal-600 bg-teal-50" },
+            { label: "Outstanding Dues", value: `₹${(d.totalOutstanding||0).toLocaleString("en-IN")}`, icon: AlertCircle, sub: `${d.unpaidBillCount||0} unpaid bills`, borderColor: "border-rose-500", iconColor: "text-rose-600 bg-rose-50" },
+            { label: "Today's Cash", value: `₹${(d.todayCash||0).toLocaleString("en-IN")}`, icon: IndianRupee, sub: `Credit: ₹${(d.todayCredit||0).toLocaleString("en-IN")}`, borderColor: "border-violet-500", iconColor: "text-violet-600 bg-violet-50" },
+          ].map((c, i) => {
+            const Icon = c.icon;
+            return (
+              <div key={i} className={`bg-white border-l-4 ${c.borderColor} border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow duration-150 flex items-start justify-between`}>
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">{c.label}</p>
+                  <p className="text-2xl font-bold text-slate-900 leading-tight">{c.value}</p>
+                  <p className="text-xs text-slate-400 font-medium">{c.sub}</p>
+                </div>
+                <div className={`p-2.5 rounded-lg ${c.iconColor}`}>
+                  <Icon className="w-5 h-5" />
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Alert Row */}
         {(d.lowStockCount > 0 || d.nearExpiryCount > 0) && (
-          <div className="flex gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             {d.lowStockCount > 0 && (
-              <div className="flex-1 bg-yellow-50 border border-yellow-300 rounded-2xl p-4 flex items-center gap-3">
-                <span className="text-3xl">⚠️</span>
-                <div>
-                  <p className="font-bold text-yellow-800">{d.lowStockCount} Low Stock Items</p>
-                  <p className="text-xs text-yellow-600">Stock below 10 units — reorder soon</p>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-4">
+                <div className="p-2 bg-amber-100 text-amber-800 rounded-lg">
+                  <AlertTriangle className="w-6 h-6" />
                 </div>
-                <a href="/inventory" className="ml-auto text-xs text-yellow-700 underline font-medium">View →</a>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-amber-900 text-sm">{d.lowStockCount} Low Stock Items</p>
+                  <p className="text-xs text-amber-700 mt-0.5">Some items are running below reorder limit.</p>
+                </div>
+                <a href="/inventory" className="text-xs font-bold text-amber-900 hover:underline bg-white border border-amber-200 px-3 py-1.5 rounded-lg shadow-sm shrink-0">
+                  Manage Stock
+                </a>
               </div>
             )}
             {d.nearExpiryCount > 0 && (
-              <div className="flex-1 bg-red-50 border border-red-300 rounded-2xl p-4 flex items-center gap-3">
-                <span className="text-3xl">⏰</span>
-                <div>
-                  <p className="font-bold text-red-800">{d.nearExpiryCount} Near-Expiry Items</p>
-                  <p className="text-xs text-red-600">Expiring within 60 days</p>
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-start gap-4">
+                <div className="p-2 bg-rose-100 text-rose-800 rounded-lg">
+                  <ShieldAlert className="w-6 h-6" />
                 </div>
-                <a href="/expiry" className="ml-auto text-xs text-red-700 underline font-medium">View →</a>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-rose-900 text-sm">{d.nearExpiryCount} Near-Expiry Items</p>
+                  <p className="text-xs text-rose-700 mt-0.5">Products expiring within the next 60 days.</p>
+                </div>
+                <a href="/expiry" className="text-xs font-bold text-rose-900 hover:underline bg-white border border-rose-200 px-3 py-1.5 rounded-lg shadow-sm shrink-0">
+                  Inspect Box
+                </a>
               </div>
             )}
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Monthly Sales Chart */}
-          <div className="col-span-2 bg-white rounded-2xl shadow p-6">
-            <h2 className="font-semibold text-gray-700 mb-4">📈 Monthly Sales Trend</h2>
+          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-6">
+              <TrendingUp className="w-5 h-5 text-teal-600" />
+              <h2 className="font-bold text-slate-800 text-base">Monthly Sales Trend</h2>
+            </div>
             {(d.monthlySales || []).length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={d.monthlySales}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
-                  <Tooltip formatter={v => [`₹${v.toLocaleString("en-IN")}`, "Sales"]} />
-                  <Line type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 4 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#64748b' }} />
+                  <YAxis tick={{ fontSize: 11, fill: '#64748b' }} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
+                  <Tooltip 
+                    contentStyle={{ background: '#0f172a', borderRadius: '8px', color: '#fff', fontSize: '12px' }}
+                    formatter={v => [`₹${v.toLocaleString("en-IN")}`, "Sales"]} 
+                  />
+                  <Line type="monotone" dataKey="total" stroke="#2563eb" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-48 flex items-center justify-center text-gray-400">No sales data yet</div>
+              <div className="h-48 flex items-center justify-center text-slate-400 text-sm font-medium">No sales transactions found</div>
             )}
           </div>
 
           {/* Top Items Pie */}
-          <div className="bg-white rounded-2xl shadow p-6">
-            <h2 className="font-semibold text-gray-700 mb-4">🏆 Top Items by Revenue</h2>
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-6">
+              <Award className="w-5 h-5 text-teal-600" />
+              <h2 className="font-bold text-slate-800 text-base">Top Items by Revenue</h2>
+            </div>
             {(d.topItems || []).length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
-                  <Pie data={d.topItems} dataKey="sales" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name }) => name.slice(0, 8)}>
+                  <Pie data={d.topItems} dataKey="sales" nameKey="name" cx="50%" cy="50%" outerRadius={75} label={({ name }) => name.slice(0, 8)}>
                     {(d.topItems || []).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
                   <Tooltip formatter={v => `₹${v.toLocaleString("en-IN")}`} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-48 flex items-center justify-center text-gray-400">No data</div>
+              <div className="h-48 flex items-center justify-center text-slate-400 text-sm font-medium">No revenue statistics</div>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Top Items Bar */}
-          <div className="col-span-2 bg-white rounded-2xl shadow p-6">
-            <h2 className="font-semibold text-gray-700 mb-4">📦 Item-wise Sales</h2>
+          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-6">
+              <ClipboardList className="w-5 h-5 text-teal-600" />
+              <h2 className="font-bold text-slate-800 text-base">Product Sales Breakdown</h2>
+            </div>
             {(d.topItems || []).length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={d.topItems} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={90} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis type="number" tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} width={90} />
                   <Tooltip formatter={v => [`₹${v.toLocaleString("en-IN")}`, "Sales"]} />
-                  <Bar dataKey="sales" fill="#3b82f6" radius={[0,4,4,0]} />
+                  <Bar dataKey="sales" fill="#2563eb" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-40 flex items-center justify-center text-gray-400">Bill items will appear here</div>
+              <div className="h-40 flex items-center justify-center text-slate-400 text-sm font-medium">Sales records will appear here</div>
             )}
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-2xl shadow p-6">
-            <h2 className="font-semibold text-gray-700 mb-4">⚡ Quick Actions</h2>
-            <div className="space-y-2">
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-6">
+              <Zap className="w-5 h-5 text-teal-600" />
+              <h2 className="font-bold text-slate-800 text-base">Quick Actions</h2>
+            </div>
+            <div className="grid grid-cols-1 gap-2">
               {[
-                { label: "New Bill", icon: "🧾", href: "/billing", color: "bg-blue-50 hover:bg-blue-100 text-blue-700" },
-                { label: "Sales Return", icon: "↩️", href: "/sales-return", color: "bg-green-50 hover:bg-green-100 text-green-700" },
-                { label: "Add Inventory", icon: "📦", href: "/inventory", color: "bg-purple-50 hover:bg-purple-100 text-purple-700" },
-                { label: "Collect Payment", icon: "💵", href: "/customers", color: "bg-orange-50 hover:bg-orange-100 text-orange-700" },
-                { label: "Check Expiry", icon: "⏰", href: "/expiry", color: "bg-red-50 hover:bg-red-100 text-red-700" },
-                { label: "Reports", icon: "📈", href: "/reports", color: "bg-gray-50 hover:bg-gray-100 text-gray-700" },
+                { label: "Create New Invoice", href: "/billing", color: "text-teal-700 bg-teal-50 hover:bg-teal-100 border-teal-100" },
+                { label: "Log Purchase Billing", href: "/purchase-bills", color: "text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border-indigo-100" },
+                { label: "Log Sales Return", href: "/sales-return", color: "text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-100" },
+                { label: "Update Inventory Stock", href: "/inventory", color: "text-purple-700 bg-purple-50 hover:bg-purple-100 border-purple-100" },
+                { label: "Outstanding Ledger", href: "/customers", color: "text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-100" },
+                { label: "Inspect Expiring Drugs", href: "/expiry", color: "text-rose-700 bg-rose-50 hover:bg-rose-100 border-rose-100" },
+                { label: "Generate Tax Reports", href: "/reports", color: "text-slate-700 bg-slate-100 hover:bg-slate-200 border-slate-200" },
               ].map(a => (
                 <a key={a.label} href={a.href}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition ${a.color}`}>
-                  <span>{a.icon}</span>{a.label}
+                  className={`flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors duration-150 border ${a.color}`}>
+                  <span>{a.label}</span>
+                  <ChevronRight className="w-4 h-4" />
                 </a>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Outstanding Customers */}
-          <div className="bg-white rounded-2xl shadow p-6">
-            <h2 className="font-semibold text-gray-700 mb-4">⏳ Top Outstanding Customers</h2>
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <Users className="w-5 h-5 text-teal-600" />
+              <h2 className="font-bold text-slate-800 text-base">Top Outstanding Dues</h2>
+            </div>
             {(d.outstanding || []).length > 0 ? (
-              <div className="space-y-3">
+              <div className="divide-y divide-slate-100">
                 {(d.outstanding || []).map(c => (
-                  <div key={c.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                  <div key={c.id} className="flex items-center justify-between py-3">
                     <div>
-                      <p className="font-semibold text-gray-800 text-sm">{c.name}</p>
-                      <p className="text-xs text-gray-400">{c.phone || "—"}</p>
+                      <p className="font-semibold text-slate-800 text-sm">{c.name}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{c.phone || "No phone logged"}</p>
                     </div>
-                    <span className="font-bold text-red-600 text-sm">₹{parseFloat(c.balance).toLocaleString("en-IN")}</span>
+                    <span className="font-bold text-rose-600 text-sm">₹{parseFloat(c.balance).toLocaleString("en-IN")}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-400 text-sm text-center py-8">🎉 No outstanding dues</p>
+              <p className="text-slate-400 text-sm text-center py-8 font-medium">All customer balances are clear</p>
             )}
           </div>
 
           {/* Low Stock Alert */}
-          <div className="bg-white rounded-2xl shadow p-6">
-            <h2 className="font-semibold text-gray-700 mb-4">📉 Low Stock Items</h2>
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <AlertTriangle className="w-5 h-5 text-teal-600" />
+              <h2 className="font-bold text-slate-800 text-base">Low Stock Inventory</h2>
+            </div>
             {(d.lowStock || []).length > 0 ? (
-              <div className="space-y-3">
+              <div className="divide-y divide-slate-100">
                 {(d.lowStock || []).map(item => (
-                  <div key={item.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                  <div key={item.id} className="flex items-center justify-between py-3">
                     <div>
-                      <p className="font-semibold text-gray-800 text-sm">{item.name}</p>
-                      <p className="text-xs text-gray-400">Batch: {item.batch || "—"}</p>
+                      <p className="font-semibold text-slate-800 text-sm">{item.name}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">Batch: {item.batch || "—"}</p>
                     </div>
-                    <span className={`font-bold text-sm px-2 py-0.5 rounded-full ${
-                      item.stock_qty === 0 ? "bg-red-100 text-red-600" : "bg-yellow-100 text-yellow-700"
+                    <span className={`font-semibold text-xs px-2.5 py-1 rounded-full border ${
+                      item.stock_qty === 0 ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-amber-50 text-amber-700 border-amber-200"
                     }`}>
-                      {item.stock_qty === 0 ? "OUT" : `${item.stock_qty} left`}
+                      {item.stock_qty === 0 ? "Out of Stock" : `${item.stock_qty} left`}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-400 text-sm text-center py-8">✅ All items adequately stocked</p>
+              <p className="text-slate-400 text-sm text-center py-8 font-medium">All items adequately stocked</p>
             )}
           </div>
         </div>

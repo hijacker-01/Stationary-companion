@@ -26,9 +26,9 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center relative overflow-hidden selection:bg-blue-200">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center relative overflow-hidden selection:bg-teal-200">
       {/* Animated Background Elements */}
-      <div className="absolute top-0 -left-4 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-2xl opacity-30 animate-blob"></div>
+      <div className="absolute top-0 -left-4 w-72 h-72 bg-teal-400 rounded-full mix-blend-multiply filter blur-2xl opacity-30 animate-blob"></div>
       <div className="absolute top-0 -right-4 w-72 h-72 bg-indigo-400 rounded-full mix-blend-multiply filter blur-2xl opacity-30 animate-blob animation-delay-2000"></div>
       <div className="absolute -bottom-8 left-20 w-72 h-72 bg-violet-400 rounded-full mix-blend-multiply filter blur-2xl opacity-30 animate-blob animation-delay-4000"></div>
 
@@ -36,58 +36,58 @@ export default function Login() {
         <div className="glass-panel rounded-3xl overflow-hidden flex flex-col md:flex-row shadow-2xl">
           
           {/* Left Side: Branding & Info */}
-          <div className="md:w-5/12 bg-gradient-to-br from-blue-700 to-indigo-900 text-white p-10 lg:p-12 flex flex-col justify-between relative overflow-hidden">
+          <div className="md:w-5/12 bg-gradient-to-br from-teal-700 to-indigo-900 text-white p-10 lg:p-12 flex flex-col justify-between relative overflow-hidden">
             {/* Overlay Patterns */}
             <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full border-4 border-white/10 opacity-50"></div>
             <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 rounded-full border-4 border-white/10 opacity-50"></div>
             
             <div className="relative z-10">
               <div className="inline-flex items-center gap-3 mb-10">
-                <div className="w-10 h-10 bg-white text-blue-700 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg">
+                <div className="w-10 h-10 bg-white text-teal-700 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg">
                   M
                 </div>
                 <span className="text-2xl font-bold tracking-wide">Marg ERP</span>
               </div>
               
               <h2 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight">
-                Empower your <br/> <span className="text-blue-300">Business</span>
+                Empower your <br/> <span className="text-teal-300">Business</span>
               </h2>
-              <p className="text-blue-100 mb-10 text-lg font-light leading-relaxed">
+              <p className="text-teal-100 mb-10 text-lg font-light leading-relaxed">
                 The all-in-one comprehensive solution for inventory, billing, and accounting management.
               </p>
 
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                    <Zap className="w-5 h-5 text-blue-200" />
+                    <Zap className="w-5 h-5 text-teal-200" />
                   </div>
                   <div>
                     <h4 className="font-semibold text-white">Lightning Fast</h4>
-                    <p className="text-blue-200 text-sm">Optimized for high performance</p>
+                    <p className="text-teal-200 text-sm">Optimized for high performance</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                    <ShieldCheck className="w-5 h-5 text-blue-200" />
+                    <ShieldCheck className="w-5 h-5 text-teal-200" />
                   </div>
                   <div>
                     <h4 className="font-semibold text-white">Bank-level Security</h4>
-                    <p className="text-blue-200 text-sm">Your data is safe with us</p>
+                    <p className="text-teal-200 text-sm">Your data is safe with us</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                    <BarChart3 className="w-5 h-5 text-blue-200" />
+                    <BarChart3 className="w-5 h-5 text-teal-200" />
                   </div>
                   <div>
                     <h4 className="font-semibold text-white">Smart Analytics</h4>
-                    <p className="text-blue-200 text-sm">Real-time business insights</p>
+                    <p className="text-teal-200 text-sm">Real-time business insights</p>
                   </div>
                 </div>
               </div>
             </div>
             
-            <div className="relative z-10 mt-12 text-sm text-blue-200/80">
+            <div className="relative z-10 mt-12 text-sm text-teal-200/80">
               © {new Date().getFullYear()} Marg ERP Clone. All rights reserved.
             </div>
           </div>
@@ -111,7 +111,7 @@ export default function Login() {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                      <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-teal-500 transition-colors" />
                     </div>
                     <input
                       type="email"
@@ -119,7 +119,7 @@ export default function Login() {
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
                       placeholder="admin@company.com"
-                      className="block w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl bg-white/80 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600/50 focus:border-blue-600 transition-all duration-200 shadow-sm"
+                      className="block w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl bg-white/80 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-600/50 focus:border-teal-600 transition-all duration-200 shadow-sm"
                     />
                   </div>
                 </div>
@@ -127,11 +127,11 @@ export default function Login() {
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <label className="block text-sm font-semibold text-gray-700">Password</label>
-                    <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">Forgot password?</a>
+                    <a href="#" className="text-sm font-medium text-teal-600 hover:text-teal-800 transition-colors">Forgot password?</a>
                   </div>
                   <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                      <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-teal-500 transition-colors" />
                     </div>
                     <input
                       type="password"
@@ -139,7 +139,7 @@ export default function Login() {
                       value={form.password}
                       onChange={(e) => setForm({ ...form, password: e.target.value })}
                       placeholder="••••••••"
-                      className="block w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl bg-white/80 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600/50 focus:border-blue-600 transition-all duration-200 shadow-sm"
+                      className="block w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl bg-white/80 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-600/50 focus:border-teal-600 transition-all duration-200 shadow-sm"
                     />
                   </div>
                 </div>
@@ -149,7 +149,7 @@ export default function Login() {
                     id="remember-me"
                     name="remember-me"
                     type="checkbox"
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
                   />
                   <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-600">
                     Remember me for 30 days
@@ -159,7 +159,7 @@ export default function Login() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3.5 px-4 rounded-xl shadow-lg shadow-blue-600/30 transition-all duration-200 flex justify-center items-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed mt-4"
+                  className="w-full bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-semibold py-3.5 px-4 rounded-xl shadow-lg shadow-teal-600/30 transition-all duration-200 flex justify-center items-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed mt-4"
                 >
                   {isLoading ? (
                     <span className="inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
@@ -177,7 +177,7 @@ export default function Login() {
                   Don't have an account?{" "}
                   <button
                     onClick={() => navigate("/register")}
-                    className="font-semibold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
+                    className="font-semibold text-teal-600 hover:text-teal-800 transition-colors cursor-pointer"
                   >
                     Register/Sign Up
                   </button>
