@@ -14,8 +14,8 @@ export default function Approvals() {
     // Simulated fetch
     const fetchApprovals = async () => {
       try {
-        const { data } = await axios.get("/api/workflow/approvals", { headers: headers() });
-        setApprovals(data);
+        const { data } = await axios.get("/api/enterprise/approvals", { headers: headers() });
+        setApprovals(data.data || data);
       } catch (err) {
         setApprovals([
           { id: 'APP-901', type: 'Purchase Order', reference: 'PO-2023-441', requestedBy: 'Admin', amount: 1500000, reason: 'High Value PO (> ₹10L)', date: '2023-10-25 10:30 AM' },

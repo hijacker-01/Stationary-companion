@@ -15,8 +15,8 @@ export default function CRM() {
     // Simulated fetch
     const fetchCRM = async () => {
       try {
-        const { data } = await axios.get("/api/crm/contacts", { headers: headers() });
-        setContacts(data);
+        const { data } = await axios.get("/api/enterprise/crm/leads", { headers: headers() });
+        setContacts(data.data || data);
       } catch (err) {
         setContacts([
           { id: 'C001', name: 'Dr. Sharma', type: 'Doctor', specialty: 'Cardiology', phone: '9876543210', location: 'City Center', lastVisit: '2023-10-10', nextAction: 'Pitch new heart health supplement combo', status: 'Warm' },

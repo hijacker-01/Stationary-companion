@@ -11,12 +11,14 @@ export default function Warehouse() {
   const [hierarchy, setHierarchy] = useState([]);
   const [pendingTasks, setPendingTasks] = useState([]);
   const [selectedNode, setSelectedNode] = useState(null);
+  const [bins, setBins] = useState([]);
 
   useEffect(() => {
     // Simulate API fetch
     const fetchWMS = async () => {
       try {
-        const { data } = await axios.get("/api/wms/dashboard", { headers: headers() });
+        const { data } = await axios.get("/api/enterprise/wms/bins", { headers: headers() });
+        setBins(data.data || data);
         setHierarchy(data.hierarchy);
         setPendingTasks(data.pendingTasks);
       } catch (err) {
