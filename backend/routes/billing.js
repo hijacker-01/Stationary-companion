@@ -139,7 +139,7 @@ router.post("/", protect, requirePermission("billing.create"), idempotency, asyn
       // For unpaid/partial bills, add to customer balance (credit)
       if (req.body.status === "unpaid") {
         await customer.increment("balance", { by: bill.total, transaction: t });
-      if (req.body.status === "partial") {
+      } else if (req.body.status === "partial") {
         await customer.increment("balance", { by: bill.total / 2, transaction: t });
       }
     }
