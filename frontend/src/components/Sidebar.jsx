@@ -43,6 +43,7 @@ const enterprise = [
   { to: "/logistics", label: "Route & Delivery" },
   { to: "/approvals", label: "Approvals Inbox" },
   { to: "/crm", label: "Advanced CRM" },
+  { to: "/schemes", label: "Promotions & Schemes" },
   { to: "/dms", label: "Document Mgmt" },
   { to: "/drug-recall", label: "Drug Recall Mgmt" },
 ];

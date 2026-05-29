@@ -63,6 +63,7 @@ export default function Header() {
       { label: "Logistics", path: "/logistics" },
       { label: "Approvals", path: "/approvals" },
       { label: "CRM", path: "/crm" },
+      { label: "Schemes", path: "/schemes" },
       { label: "Documents", path: "/dms" },
       { label: "Drug Recall", path: "/drug-recall" },
     ]},
