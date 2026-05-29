@@ -56,6 +56,21 @@ export default function Header() {
       { label: "Smart Ledger / OCR", path: "/ai-ledger" },
       { label: "Re-Order Agent", path: "/reorder-center" },
       { label: "Expiry Guard", path: "/expiry-guard" },
+      { label: "AI Copilot", path: "/copilot" },
+    ]},
+    { label: "Enterprise", items: [
+      { label: "Warehouse WMS", path: "/wms" },
+      { label: "Logistics", path: "/logistics" },
+      { label: "Approvals", path: "/approvals" },
+      { label: "CRM", path: "/crm" },
+      { label: "Documents", path: "/dms" },
+      { label: "Drug Recall", path: "/drug-recall" },
+    ]},
+    { label: "Portals", items: [
+      { label: "Customer Portal", path: "/customer-portal" },
+      { label: "Salesman App", path: "/salesman-app" },
+      { label: "Owner Dashboard", path: "/owner-app" },
+      { label: "Business Health", path: "/health" },
     ]},
   ];
 

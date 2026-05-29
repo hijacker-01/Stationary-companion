@@ -67,6 +67,10 @@ app.use("/api/debtors",         require("./routes/debtors"));
 app.use("/api/creditors",       require("./routes/creditors"));
 app.use("/api/analytics",       require("./routes/analytics"));
 app.use("/api/intelligence",    require("./routes/intelligence"));
+// 11.0 Enterprise Expansion
+app.use("/api/enterprise",      require("./routes/enterprise"));
+app.use("/api/ai-advanced",     require("./routes/ai-advanced"));
+app.use("/api/portals",         require("./routes/portals"));
 
 const PORT = process.env.PORT || 5000;
 

@@ -9,7 +9,6 @@ import Users from "./pages/Users";
 import Settings from "./pages/Settings";
 import Suppliers from "./pages/Suppliers";
 import Customers from "./pages/Customers";
-import Schemes from "./pages/Schemes";
 import SalesReturn from "./pages/SalesReturn";
 import PurchaseReturn from "./pages/PurchaseReturn";
 import SalesmanPage from "./pages/Salesman";
@@ -38,6 +37,17 @@ import InventoryValuation from "./pages/InventoryValuation";
 import AICopilot from "./pages/AICopilot";
 import CustomerPortal from "./pages/CustomerPortal";
 import SalesmanApp from "./pages/SalesmanApp";
+
+// 11.0 Enterprise Imports
+import Warehouse from "./pages/Warehouse";
+import Logistics from "./pages/Logistics";
+import Approvals from "./pages/Approvals";
+import CRM from "./pages/CRM";
+import Schemes from "./pages/Schemes";
+import OwnerApp from "./pages/OwnerApp";
+import HealthDashboard from "./pages/HealthDashboard";
+import DocumentManagement from "./pages/DocumentManagement";
+import DrugRecall from "./pages/DrugRecall";
 
 import CommandPalette from "./components/CommandPalette";
 import { useHotkeys } from "./hooks/useHotkeys";
@@ -96,6 +106,18 @@ function App() {
         <Route path="/copilot" element={<AICopilot />} />
         <Route path="/customer-portal" element={<CustomerPortal />} />
         <Route path="/salesman-app" element={<SalesmanApp />} />
+        
+        {/* Domain 8: 11.0 Enterprise */}
+        <Route path="/wms" element={<Warehouse />} />
+        <Route path="/logistics" element={<Logistics />} />
+        <Route path="/approvals" element={<Approvals />} />
+        <Route path="/crm" element={<CRM />} />
+        <Route path="/schemes" element={<Schemes />} />
+        <Route path="/owner-app" element={<OwnerApp />} />
+        <Route path="/health" element={<HealthDashboard />} />
+        <Route path="/dms" element={<DocumentManagement />} />
+        <Route path="/drug-recall" element={<DrugRecall />} />
+
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

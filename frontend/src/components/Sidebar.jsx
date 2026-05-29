@@ -35,6 +35,23 @@ const aiTools = [
   { to: "/ai-ledger", label: "AI Smart Ledger", badge: "AI" },
   { to: "/reorder-center", label: "AI Re-Order Agent", badge: "AI" },
   { to: "/expiry-guard", label: "AI Expiry Guard", badge: "AI" },
+  { to: "/copilot", label: "AI Copilot", badge: "AI" },
+];
+
+const enterprise = [
+  { to: "/wms", label: "Warehouse (WMS)" },
+  { to: "/logistics", label: "Route & Delivery" },
+  { to: "/approvals", label: "Approvals Inbox" },
+  { to: "/crm", label: "Advanced CRM" },
+  { to: "/dms", label: "Document Mgmt" },
+  { to: "/drug-recall", label: "Drug Recall Mgmt" },
+];
+
+const portals = [
+  { to: "/customer-portal", label: "Customer Portal" },
+  { to: "/salesman-app", label: "Salesman App" },
+  { to: "/owner-app", label: "Owner Mobile App" },
+  { to: "/health", label: "Business Health" },
 ];
 
 const SidebarSection = ({ title, links, color }) => (
@@ -70,8 +87,11 @@ export default function Sidebar() {
       <div className="border-t border-gray-200" />
       <SidebarSection title="Inventory" links={inventory} />
       <div className="border-t border-gray-200" />
+      <SidebarSection title="Enterprise" links={enterprise} />
+      <div className="border-t border-gray-200" />
+      <SidebarSection title="Portals" links={portals} />
+      <div className="border-t border-gray-200" />
       <SidebarSection title="AI Tools" links={aiTools} color="text-purple-700" />
-      
       {/* Bottom section */}
       <div className="mt-auto p-2 border-t border-gray-300 bg-[#e4e4e4]">
         <div className="flex flex-col gap-1">
