@@ -23,6 +23,8 @@ import PurchaseBills from "./pages/PurchaseBills";
 import AILedger      from "./pages/AILedger";
 import ReorderCenter from "./pages/ReorderCenter";
 import ExpiryGuard   from "./pages/ExpiryGuard";
+import LedgerView    from "./pages/LedgerView";
+import AuditLog      from "./pages/AuditLog";
 
 function App() {
   return (
@@ -52,6 +54,8 @@ function App() {
         <Route path="/ai-ledger"       element={<AILedger />} />
         <Route path="/reorder-center"   element={<ReorderCenter />} />
         <Route path="/expiry-guard"     element={<ExpiryGuard />} />
+        <Route path="/ledger"           element={<LedgerView />} />
+        <Route path="/audit-log"        element={<AuditLog />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

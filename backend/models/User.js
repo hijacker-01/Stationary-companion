@@ -11,4 +11,28 @@ const User = sequelize.define("User", {
   isActive:    { type: DataTypes.BOOLEAN, defaultValue: true },
 });
 
+User.beforeCreate(async (user, options) => {
+  if (!user.permissions || user.permissions.length === 0) {
+    switch (user.role) {
+      case "admin":
+        user.permissions = ["*"];
+        break;
+      case "billing_operator":
+        user.permissions = ["billing.create", "billing.read", "customers.read", "items.read"];
+        break;
+      case "accountant":
+        user.permissions = ["ledger.read", "ledger.write", "reports.read"];
+        break;
+      case "manager":
+        user.permissions = ["billing.read", "reports.read", "inventory.read", "suppliers.read"];
+        break;
+      case "staff":
+        user.permissions = ["inventory.read"];
+        break;
+      default:
+        user.permissions = [];
+    }
+  }
+});
+
 module.exports = User;

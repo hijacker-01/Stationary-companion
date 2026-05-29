@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from routers import invoice, reorder, expiry
+from routers import invoice, reorder, expiry, forecast, anomaly
 from scheduler import start_scheduler
 
 
@@ -46,6 +46,8 @@ app.add_middleware(
 app.include_router(invoice.router, prefix="/ai/invoice", tags=["Invoice AI"])
 app.include_router(reorder.router, prefix="/ai/reorder", tags=["Reorder Agent"])
 app.include_router(expiry.router,  prefix="/ai/expiry",  tags=["Expiry Protection"])
+app.include_router(forecast.router, prefix="/ai/forecast", tags=["Demand Forecasting"])
+app.include_router(anomaly.router,  prefix="/ai/anomaly",  tags=["Anomaly Detection"])
 
 
 @app.get("/health")

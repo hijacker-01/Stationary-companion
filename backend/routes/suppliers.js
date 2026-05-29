@@ -3,7 +3,12 @@ const router = express.Router();
 const Supplier = require("../models/Supplier");
 const PurchaseOrder = require("../models/PurchaseOrder");
 const Item = require("../models/Item");
-const { protect } = require("../middleware/auth");
+const { protect, requirePermission } = require("../middleware/auth");
+const AuditLog = require("../models/AuditLog");
+const sequelize = require("../config/db");
+const accounting = require("../services/accounting");
+const stockMovement = require("../services/stockMovement");
+const idempotency = require("../middleware/idempotency");
 const multer = require("multer");
 const { createWorker } = require("tesseract.js");
 const path = require("path");
@@ -415,7 +420,8 @@ router.post(
 
 // Direct Purchase Bill Entry
 // This saves the bill and instantly updates inventory and supplier ledger.
-router.post("/direct-purchase", protect, async (req, res) => {
+router.post("/direct-purchase", protect, requirePermission("inventory.write"), idempotency, async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const {
       supplierId,
@@ -443,13 +449,14 @@ router.post("/direct-purchase", protect, async (req, res) => {
       paymentMode,
       status: "received",
       receivedDate: date || new Date(),
-    });
+    }, { transaction: t });
 
     // Update supplier balance if bought on credit
     if (paymentMode === "credit") {
       await Supplier.increment("balance", {
         by: total,
         where: { id: supplierId },
+        transaction: t
       });
     }
 
@@ -459,14 +466,14 @@ router.post("/direct-purchase", protect, async (req, res) => {
         where: { name: item.name, batch: item.batch || null },
       });
       if (existing) {
-        await existing.increment("stock_qty", { by: parseInt(item.qty || 1) });
-        if (item.schemeQty) {
-          await existing.increment("scheme_qty", {
-            by: parseInt(item.schemeQty || 0),
-          });
-        }
+        await existing.update({
+          stock_qty: existing.stock_qty + parseInt(item.qty || 1),
+          scheme_qty: existing.scheme_qty + parseInt(item.schemeQty || 0)
+        }, { transaction: t });
+        
+        await stockMovement.recordIn(existing, parseInt(item.qty || 1) + parseInt(item.schemeQty || 0), "purchase", order.id, req.user ? req.user.id : null, "Direct purchase", t);
       } else {
-        await Item.create({
+        const newItem = await Item.create({
           name: item.name,
           batch: item.batch || "",
           category: item.category || "",
@@ -479,15 +486,32 @@ router.post("/direct-purchase", protect, async (req, res) => {
           mrp: item.mrp || 0,
           selling_price: item.selling_price || item.mrp || 0,
           cost_price: item.costPrice || 0,
-        });
+        }, { transaction: t });
+        
+        await stockMovement.recordIn(newItem, parseInt(item.qty || 1) + parseInt(item.schemeQty || 0), "purchase", order.id, req.user ? req.user.id : null, "Direct purchase (New item)", t);
       }
     }
+
+    // Auto-create double-entry journal for purchase
+    await accounting.postPurchaseJournal(order, t);
+
+    // Audit log
+    await AuditLog.create({
+      userId: req.user ? req.user.id : null,
+      action: "create",
+      entityType: "PurchaseOrder",
+      entityId: order.id,
+      newValues: order.toJSON()
+    }, { transaction: t });
+
+    await t.commit();
 
     res.json({
       message: "Purchase Bill saved and Inventory updated successfully!",
       order,
     });
   } catch (err) {
+    await t.rollback();
     res.status(400).json({ error: err.message });
   }
 });

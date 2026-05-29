@@ -3,7 +3,12 @@ const router = express.Router();
 const Bill = require("../models/Bill");
 const Item = require("../models/Item");
 const Customer = require("../models/Customer");
+const AuditLog = require("../models/AuditLog");
 const sequelize = require("../config/db");
+const accounting = require("../services/accounting");
+const stockMovement = require("../services/stockMovement");
+const idempotency = require("../middleware/idempotency");
+const { protect, requirePermission } = require("../middleware/auth");
 
 // Generate sequential bill number per financial year (e.g. INV-2526-0001)
 const generateBillNo = async (transaction) => {
@@ -53,7 +58,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // Create bill — also deducts inventory quantities & auto-adds customer
-router.post("/", async (req, res) => {
+router.post("/", protect, requirePermission("billing.create"), idempotency, async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const billedItems = (req.body.items || []).filter(r => r.name);
@@ -97,6 +102,9 @@ router.post("/", async (req, res) => {
         stock_qty: newQty,
         scheme_qty: newSchemeQty
       }, { transaction: t });
+
+      // Record stock movement (Audit trail)
+      await stockMovement.recordOut(item, totalToDeduct, "sale", null, req.user ? req.user.id : null, `Bill creation`, t);
     }
 
     const bill = await Bill.create({
@@ -131,10 +139,28 @@ router.post("/", async (req, res) => {
       // For unpaid/partial bills, add to customer balance (credit)
       if (req.body.status === "unpaid") {
         await customer.increment("balance", { by: bill.total, transaction: t });
-      } else if (req.body.status === "partial") {
+      if (req.body.status === "partial") {
         await customer.increment("balance", { by: bill.total / 2, transaction: t });
       }
     }
+
+    // Auto-create double-entry journal for sales
+    await accounting.postSalesJournal(bill, t);
+
+    // Update stock movement reference IDs
+    await sequelize.models.StockMovement.update(
+      { referenceId: bill.id },
+      { where: { referenceType: "sale", referenceId: null }, transaction: t }
+    );
+
+    // Audit log
+    await AuditLog.create({
+      userId: req.user ? req.user.id : null,
+      action: "create",
+      entityType: "Bill",
+      entityId: bill.id,
+      newValues: bill.toJSON()
+    }, { transaction: t });
 
     await t.commit();
     res.json(bill);
@@ -145,7 +171,7 @@ router.post("/", async (req, res) => {
 });
 
 // Delete bill — restores inventory quantities
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", protect, requirePermission("billing.create"), async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const bill = await Bill.findByPk(req.params.id, { transaction: t });
@@ -159,13 +185,25 @@ router.delete("/:id", async (req, res) => {
     for (const billedItem of billedItems) {
       const item = await Item.findOne({ where: { name: billedItem.name, batch: billedItem.batch || "" }, transaction: t });
       if (item) {
+        const qtyToRestore = (parseInt(billedItem.qty) || 0) + (parseInt(billedItem.schemeQty) || 0);
         await item.update({ 
-          stock_qty: item.stock_qty + (parseInt(billedItem.qty) || 0) + (parseInt(billedItem.schemeQty) || 0)
+          stock_qty: item.stock_qty + qtyToRestore
         }, { transaction: t });
+        
+        await stockMovement.recordIn(item, qtyToRestore, "sale", bill.id, req.user ? req.user.id : null, "Bill deletion restore", t);
       }
     }
 
     await bill.destroy({ transaction: t });
+    
+    // Audit log
+    await AuditLog.create({
+      userId: req.user ? req.user.id : null,
+      action: "delete",
+      entityType: "Bill",
+      entityId: bill.id,
+      oldValues: bill.toJSON()
+    }, { transaction: t });
     await t.commit();
     res.json({ message: "Bill deleted and stock restored" });
   } catch (err) {

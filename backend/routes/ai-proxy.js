@@ -64,6 +64,13 @@ router.post("/expiry/suggest/:id", protect, (req, res) =>
 // POST /api/ai/expiry/run-agent
 router.post("/expiry/run-agent", protect, (req, res) => proxyJSON("/ai/expiry/run-agent", res, "POST"));
 
+// ── Forecast & Anomaly ────────────────────────────────────────────────────────
+// GET  /api/ai/forecast/items
+router.get("/forecast/items", protect, (req, res) => proxyJSON("/ai/forecast/items", res));
+
+// GET  /api/ai/anomaly/scan
+router.get("/anomaly/scan", protect, (req, res) => proxyJSON("/ai/anomaly/scan", res));
+
 // ── Health check ──────────────────────────────────────────────────────────────
 router.get("/health", async (req, res) => {
   try {

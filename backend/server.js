@@ -20,6 +20,13 @@ require("./models/DeliveryMan");
 require("./models/DirectMessage");
 require("./models/Expense");
 require("./models/JournalVoucher");
+// New Models
+require("./models/ItemBatch");
+require("./models/StockMovement");
+require("./models/LedgerAccount");
+require("./models/JournalLine");
+require("./models/AuditLog");
+require("./models/IdempotencyKey");
 
 const app = express();
 app.use(cors());
@@ -46,6 +53,8 @@ app.use("/api/delivery-man",   require("./routes/deliveryMan"));
 app.use("/api/messages",       require("./routes/messages"));
 app.use("/api/expenses",       require("./routes/expenses"));
 app.use("/api/journal",        require("./routes/journal"));
+app.use("/api/ledger",         require("./routes/ledger"));
+app.use("/api/audit",          require("./routes/audit"));
 app.use("/api/ai",             require("./routes/ai-proxy"));   // 🤖 AI microservice proxy
 
 const PORT = process.env.PORT || 5000;
