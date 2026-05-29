@@ -27,6 +27,8 @@ require("./models/LedgerAccount");
 require("./models/JournalLine");
 require("./models/AuditLog");
 require("./models/IdempotencyKey");
+require("./models/PurchaseChallan");
+require("./models/SalesChallan");
 
 const app = express();
 app.use(cors());
@@ -56,6 +58,14 @@ app.use("/api/journal",        require("./routes/journal"));
 app.use("/api/ledger",         require("./routes/ledger"));
 app.use("/api/audit",          require("./routes/audit"));
 app.use("/api/ai",             require("./routes/ai-proxy"));   // 🤖 AI microservice proxy
+// Domain 1 & 2: Challan workflows
+app.use("/api/purchase-challan", require("./routes/purchase-challan"));
+app.use("/api/sales-challan",    require("./routes/sales-challan"));
+// Domain 4: Financial reports
+app.use("/api/cashbook",        require("./routes/cashbook"));
+app.use("/api/debtors",         require("./routes/debtors"));
+app.use("/api/creditors",       require("./routes/creditors"));
+app.use("/api/analytics",       require("./routes/analytics"));
 
 const PORT = process.env.PORT || 5000;
 

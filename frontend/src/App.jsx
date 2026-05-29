@@ -25,6 +25,16 @@ import ReorderCenter from "./pages/ReorderCenter";
 import ExpiryGuard   from "./pages/ExpiryGuard";
 import LedgerView    from "./pages/LedgerView";
 import AuditLog      from "./pages/AuditLog";
+import CashBook      from "./pages/CashBook";
+import DebtorsBoard  from "./pages/DebtorsBoard";
+import CreditorsBoard from "./pages/CreditorsBoard";
+import InvoicePrint  from "./pages/InvoicePrint";
+import PurchaseChallan from "./pages/PurchaseChallan";
+import SalesChallan   from "./pages/SalesChallan";
+import ReceiptVoucher from "./pages/ReceiptVoucher";
+import PaymentVoucher from "./pages/PaymentVoucher";
+import ProfitAnalytics from "./pages/ProfitAnalytics";
+import InventoryValuation from "./pages/InventoryValuation";
 
 function App() {
   return (
@@ -56,6 +66,20 @@ function App() {
         <Route path="/expiry-guard"     element={<ExpiryGuard />} />
         <Route path="/ledger"           element={<LedgerView />} />
         <Route path="/audit-log"        element={<AuditLog />} />
+        {/* Domain 1 & 2: Challan workflows */}
+        <Route path="/purchase-challan" element={<PurchaseChallan />} />
+        <Route path="/sales-challan"    element={<SalesChallan />} />
+        {/* Domain 3: Financial vouchers */}
+        <Route path="/receipt-voucher"  element={<ReceiptVoucher />} />
+        <Route path="/payment-voucher"  element={<PaymentVoucher />} />
+        {/* Domain 4: Reports & Dashboards */}
+        <Route path="/cashbook"          element={<CashBook />} />
+        <Route path="/debtors"           element={<DebtorsBoard />} />
+        <Route path="/creditors"         element={<CreditorsBoard />} />
+        <Route path="/invoice-print/:id" element={<InvoicePrint />} />
+        {/* Domain 6: Analytics */}
+        <Route path="/profit-analytics"  element={<ProfitAnalytics />} />
+        <Route path="/inventory-valuation" element={<InventoryValuation />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

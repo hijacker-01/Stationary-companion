@@ -1,78 +1,85 @@
 import { NavLink } from "react-router-dom";
 
-const mostViewed = [
-  { to: "/dashboard", label: "Dashboard" },
-  { to: "/inventory", label: "Filtered Stock" },
-  { to: "/billing", label: "Modify" },
-  { to: "/sales-return", label: "Credit Note" },
-  { to: "/users", label: "Change User" },
-  { to: "/reports", label: "Area Wise" },
+const quickActions = [
+  { to: "/billing", label: "Cash/Credit Bill" },
+  { to: "/purchase-challan", label: "Purchase Challan" },
+  { to: "/sales-challan", label: "Sales DM" },
+  { to: "/purchase-bills", label: "Purchase Bills" },
 ];
 
-const recentlyViewed = [
-  { to: "/settings", label: "Change Company" },
-  { to: "/ledger", label: "Ledger A/C" },
-  { to: "/purchase-bills", label: "Receive" },
-  { to: "/expiry", label: "Near Expiry Stock" },
-  { to: "/items", label: "Item Master" },
-  { to: "/inventory", label: "Current Stock" },
-  { to: "/suppliers", label: "Route Wise" },
+const accounts = [
+  { to: "/receipt-voucher", label: "Receipt Voucher" },
+  { to: "/payment-voucher", label: "Payment Voucher" },
+  { to: "/cashbook", label: "Cash & Bank Book" },
+  { to: "/ledger", label: "Ledger A/c" },
+  { to: "/journal-vouchers", label: "Journal Vouchers" },
 ];
+
+const reports = [
+  { to: "/debtors", label: "Debtors (Receivable)" },
+  { to: "/creditors", label: "Creditors (Payable)" },
+  { to: "/reports", label: "Sales & Purchase Reports" },
+  { to: "/profit-analytics", label: "Profit Analytics" },
+  { to: "/inventory-valuation", label: "Inventory Valuation" },
+  { to: "/audit-log", label: "Audit Trail" },
+];
+
+const inventory = [
+  { to: "/inventory", label: "Current Stock" },
+  { to: "/expiry", label: "Near Expiry Stock" },
+  { to: "/schemes", label: "Schemes" },
+  { to: "/items", label: "Item Master" },
+];
+
+const aiTools = [
+  { to: "/ai-ledger", label: "AI Smart Ledger", badge: "AI" },
+  { to: "/reorder-center", label: "AI Re-Order Agent", badge: "AI" },
+  { to: "/expiry-guard", label: "AI Expiry Guard", badge: "AI" },
+];
+
+const SidebarSection = ({ title, links, color }) => (
+  <div className="py-1.5">
+    <h3 className={`px-3 text-[11px] font-extrabold uppercase tracking-wider mb-0.5 ${color || "text-[#1b4985]"}`}>{title}</h3>
+    <nav className="flex flex-col">
+      {links.map((link, i) => (
+        <NavLink
+          key={i}
+          to={link.to}
+          className={({ isActive }) =>
+            `px-4 py-[3px] text-[11.5px] font-medium transition-colors flex items-center justify-between ${
+              isActive ? "bg-[#dbeafe] text-[#1e3a8a] border-l-2 border-[#1e3a8a]" : "text-gray-700 hover:bg-[#e8e8e8]"
+            }`
+          }
+        >
+          {link.label}
+          {link.badge && <span className="bg-purple-100 text-purple-700 text-[8px] font-extrabold px-1 rounded">{link.badge}</span>}
+        </NavLink>
+      ))}
+    </nav>
+  </div>
+);
 
 export default function Sidebar() {
   return (
-    <div className="w-56 h-full bg-[#f4f4f4] border-r border-gray-300 flex flex-col overflow-y-auto shrink-0 shadow-[inset_-2px_0_4px_rgba(0,0,0,0.02)]">
+    <div className="w-52 h-full bg-[#f4f4f4] border-r border-gray-300 flex flex-col overflow-y-auto shrink-0 shadow-[inset_-2px_0_4px_rgba(0,0,0,0.02)]">
+      <SidebarSection title="Quick Actions" links={quickActions} />
+      <div className="border-t border-gray-200" />
+      <SidebarSection title="Accounts" links={accounts} />
+      <div className="border-t border-gray-200" />
+      <SidebarSection title="Reports" links={reports} />
+      <div className="border-t border-gray-200" />
+      <SidebarSection title="Inventory" links={inventory} />
+      <div className="border-t border-gray-200" />
+      <SidebarSection title="AI Tools" links={aiTools} color="text-purple-700" />
       
-      <div className="py-2">
-        <h3 className="px-4 text-[13px] font-bold text-[#1b4985] mb-1">Most viewed reports</h3>
-        <nav className="flex flex-col">
-          {mostViewed.map((link, i) => (
-            <NavLink
-              key={i}
-              to={link.to}
-              className={({ isActive }) =>
-                `px-6 py-0.5 text-[12px] font-medium transition-colors ${
-                  isActive ? "bg-[#dbeafe] text-[#1e3a8a] border-l-2 border-[#1e3a8a]" : "text-gray-700 hover:bg-[#e5e7eb]"
-                }`
-              }
-            >
-              {link.label}
-            </NavLink>
-          ))}
-        </nav>
-      </div>
-
-      <div className="py-2 flex-1">
-        <h3 className="px-4 text-[13px] font-bold text-[#1b4985] mb-1">Recently viewed reports</h3>
-        <nav className="flex flex-col">
-          {recentlyViewed.map((link, i) => (
-            <NavLink
-              key={i}
-              to={link.to}
-              className={({ isActive }) =>
-                `px-6 py-0.5 text-[12px] font-medium transition-colors ${
-                  isActive ? "bg-[#dbeafe] text-[#1e3a8a] border-l-2 border-[#1e3a8a]" : "text-gray-700 hover:bg-[#e5e7eb]"
-                }`
-              }
-            >
-              {link.label}
-            </NavLink>
-          ))}
-        </nav>
-      </div>
-
-      {/* Bottom Digital Actions */}
-      <div className="p-3 border-t border-gray-300 bg-[#e4e4e4]">
-        <div className="flex flex-col gap-1.5">
-          <NavLink to="/ai-ledger" className="flex items-center gap-2 text-[11px] font-bold text-gray-800 hover:text-blue-700">
-            <span className="text-blue-600 font-extrabold text-sm">➔</span> Digital Entry
-          </NavLink>
-          <NavLink to="/reorder-center" className="flex items-center gap-2 text-[11px] font-bold text-gray-800 hover:text-blue-700">
-            <span className="text-blue-600 font-extrabold text-sm">➔</span> ERP to ERP Order <span className="bg-yellow-400 text-[9px] px-1 rounded text-black ml-auto">NEW</span>
-          </NavLink>
-          <NavLink to="/delivery-man" className="flex items-center gap-2 text-[11px] font-bold text-gray-800 hover:text-blue-700">
-            <span className="text-blue-600 font-extrabold text-sm">➔</span> Digital Delivery
-          </NavLink>
+      {/* Bottom section */}
+      <div className="mt-auto p-2 border-t border-gray-300 bg-[#e4e4e4]">
+        <div className="flex flex-col gap-1">
+          <NavLink to="/suppliers" className="text-[10px] font-bold text-gray-700 hover:text-blue-700 px-2">Suppliers</NavLink>
+          <NavLink to="/customers" className="text-[10px] font-bold text-gray-700 hover:text-blue-700 px-2">Customers</NavLink>
+          <NavLink to="/salesman" className="text-[10px] font-bold text-gray-700 hover:text-blue-700 px-2">Salesman</NavLink>
+          <NavLink to="/users" className="text-[10px] font-bold text-gray-700 hover:text-blue-700 px-2">Users & Roles</NavLink>
+          <NavLink to="/settings" className="text-[10px] font-bold text-gray-700 hover:text-blue-700 px-2">Settings</NavLink>
         </div>
       </div>
     </div>
