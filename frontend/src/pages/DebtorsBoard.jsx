@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
 import Sidebar from "../components/Sidebar";
-import { Users, Search, AlertTriangle, IndianRupee, Receipt } from "lucide-react";
+import { Users, Search, AlertTriangle, Receipt, MessageCircle } from "lucide-react";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
@@ -112,13 +112,21 @@ export default function DebtorsBoard() {
                           {fmt(over90)}
                         </td>
                         <td className="px-2 py-1.5 text-gray-500">{shortDate(d.lastPaymentDate)}</td>
-                        <td className="px-2 py-1.5 text-center">
+                        <td className="px-2 py-1.5 text-center flex items-center justify-center gap-2">
                           <button
                             onClick={() => navigate("/receipt-voucher")}
                             className="bg-green-600 hover:bg-green-700 text-white px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer inline-flex items-center gap-0.5"
                           >
                             <Receipt className="w-3 h-3" /> Receipt
                           </button>
+                          <a
+                            href={`https://wa.me/?text=${encodeURIComponent(`Hello ${d.name}, your payment of ${fmt(d.totalOutstanding)} is due.`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-green-500 hover:bg-green-600 text-white px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer inline-flex items-center gap-0.5"
+                          >
+                            <MessageCircle className="w-3 h-3" /> WhatsApp
+                          </a>
                         </td>
                       </tr>
                     );

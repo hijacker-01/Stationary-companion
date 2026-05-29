@@ -35,10 +35,22 @@ import ReceiptVoucher from "./pages/ReceiptVoucher";
 import PaymentVoucher from "./pages/PaymentVoucher";
 import ProfitAnalytics from "./pages/ProfitAnalytics";
 import InventoryValuation from "./pages/InventoryValuation";
+import AICopilot from "./pages/AICopilot";
+import CustomerPortal from "./pages/CustomerPortal";
+import SalesmanApp from "./pages/SalesmanApp";
+
+import CommandPalette from "./components/CommandPalette";
+import { useHotkeys } from "./hooks/useHotkeys";
+
+function GlobalHooks() {
+  useHotkeys();
+  return <CommandPalette />;
+}
 
 function App() {
   return (
     <BrowserRouter>
+      <GlobalHooks />
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -80,6 +92,10 @@ function App() {
         {/* Domain 6: Analytics */}
         <Route path="/profit-analytics"  element={<ProfitAnalytics />} />
         <Route path="/inventory-valuation" element={<InventoryValuation />} />
+        {/* Domain 7: Portals & Integrations */}
+        <Route path="/copilot" element={<AICopilot />} />
+        <Route path="/customer-portal" element={<CustomerPortal />} />
+        <Route path="/salesman-app" element={<SalesmanApp />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

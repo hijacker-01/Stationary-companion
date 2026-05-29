@@ -412,6 +412,15 @@ export default function Billing() {
             })}
           </div>
 
+          {/* Smart Chips (Phase 21) */}
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xs font-bold text-slate-500 uppercase mr-2 tracking-wider">Quick Filters:</span>
+            <button className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-200 text-slate-600 rounded-full hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors shadow-sm focus:outline-none">Today</button>
+            <button className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-200 text-slate-600 rounded-full hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors shadow-sm focus:outline-none">Yesterday</button>
+            <button className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-200 text-slate-600 rounded-full hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors shadow-sm focus:outline-none flex items-center gap-1"><Tag className="w-3 h-3" /> High Profit</button>
+            <button className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-200 text-slate-600 rounded-full hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition-colors shadow-sm focus:outline-none">Unpaid</button>
+          </div>
+
           {/* Bills Table */}
           <div className="data-table-container">
             <table className="data-table">

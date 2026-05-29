@@ -66,6 +66,7 @@ app.use("/api/cashbook",        require("./routes/cashbook"));
 app.use("/api/debtors",         require("./routes/debtors"));
 app.use("/api/creditors",       require("./routes/creditors"));
 app.use("/api/analytics",       require("./routes/analytics"));
+app.use("/api/intelligence",    require("./routes/intelligence"));
 
 const PORT = process.env.PORT || 5000;
 
