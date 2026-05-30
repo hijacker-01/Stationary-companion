@@ -15,6 +15,7 @@ const headers = () => ({ Authorization: `Bearer ${token()}` });
 export default function ProfitAnalytics() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState(null);
   const [filter, setFilter] = useState("this_month"); // today, this_month, this_year, all
   const [activeTab, setActiveTab] = useState("executive"); // executive, products, customers, suppliers, batches
   const [aiQuery, setAiQuery] = useState("");
@@ -25,8 +26,10 @@ export default function ProfitAnalytics() {
     try {
       const res = await axios.get(`http://localhost:5000/api/analytics/profit?filter=${filter}`, { headers: headers() });
       setData(res.data);
+      setErrorMsg(null);
     } catch (err) {
       console.error(err);
+      setErrorMsg(err.response?.data?.error || err.message);
     } finally {
       setLoading(false);
     }
@@ -44,7 +47,9 @@ export default function ProfitAnalytics() {
     }
   };
 
-  if (loading || !data) return <div className="p-8 text-center font-bold">Loading Enterprise Profit Engine...</div>;
+  if (loading && !data) return <div className="p-8 text-center font-bold">Loading Enterprise Profit Engine...</div>;
+  if (errorMsg) return <div className="p-8 text-center font-bold text-red-600">Error: {errorMsg}</div>;
+  if (!data) return null;
 
   const sum = data.summary;
   const isLoss = sum.netMargin < 0;

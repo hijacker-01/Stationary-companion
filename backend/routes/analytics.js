@@ -41,8 +41,7 @@ router.get("/profit", protect, async (req, res) => {
 
     const bills = await Bill.findAll({
       where: {
-        createdAt: dateFilter,
-        status: { [Op.ne]: "cancelled" }
+        createdAt: dateFilter
       }
     });
 
