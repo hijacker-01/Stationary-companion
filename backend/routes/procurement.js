@@ -105,14 +105,46 @@ router.get("/auto-po", protect, async (req, res) => {
     if (!autoPOs.length) {
       const lowStock = await Item.findAll({ where: { stock_qty: { [Op.lte]: require("sequelize").col("reorderPoint") } }, limit: 5 });
       const draftPOs = [];
+      const past60Days = new Date();
+      past60Days.setDate(past60Days.getDate() - 60);
+
+      const StockMovement = require("../models/StockMovement");
+      const ItemBatch = require("../models/ItemBatch");
+
       for (const item of lowStock) {
+        // Calculate 60-day consumption
+        const sales60d = await StockMovement.sum("quantity", {
+          where: { itemId: item.id, type: "out", referenceType: "sale", createdAt: { [Op.gte]: past60Days } }
+        }) || 0;
+
+        // Calculate quantity expiring in next 60 days
+        const future60Days = new Date();
+        future60Days.setDate(future60Days.getDate() + 60);
+        
+        const expiringStock = await ItemBatch.sum("quantity", {
+          where: { itemId: item.id, expiryDate: { [Op.lte]: future60Days } }
+        }) || 0;
+
         const supplier = await Supplier.findOne({ where: { status: "active" } });
         if (supplier) {
           const qty = Math.max(item.reorderPoint * 2, 50);
+          
+          let status = "pending";
+          let notes = "AI Generated PO";
+          
+          // SMART REORDER PROTECTION (Phase 8)
+          // If the stock expiring in 60 days is greater than the 60-day consumption velocity, 
+          // do NOT buy more. We will waste it.
+          if (expiringStock > sales60d) {
+            status = "blocked_expiry_risk";
+            notes = `BLOCKED: High expiry risk. 60-day sales velocity is ${sales60d}, but ${expiringStock} units will expire soon.`;
+          }
+
           const po = await PurchaseOrder.create({
             poNumber: `AI-PO-${Date.now()}-${item.id}`, supplierId: supplier.id, supplierName: supplier.name,
             items: [{ name: item.name, qty, rate: item.cost_price || 0, amount: qty * (item.cost_price || 0) }],
-            total: qty * (item.cost_price || 0), source: "ai_auto", autoScore: 75 + Math.random() * 25, status: "pending"
+            total: qty * (item.cost_price || 0), source: "ai_auto", autoScore: 75 + Math.random() * 25, status,
+            notes
           });
           draftPOs.push(po);
         }

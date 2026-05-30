@@ -61,6 +61,7 @@ import WarehouseTwin from "./pages/WarehouseTwin";
 import ComplianceDashboard from "./pages/ComplianceDashboard";
 import AutomationBuilder from "./pages/AutomationBuilder";
 import PlatformAdmin from "./pages/PlatformAdmin";
+import ExpiryCommandCenter from "./pages/ExpiryCommandCenter";
 
 // 12.0 Phase 2: GST & Compliance
 import GSTDashboard from "./pages/GSTDashboard";
@@ -88,6 +89,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/expiry" element={<ExpiryBox />} />
+        <Route path="/expiry-center" element={<ExpiryCommandCenter />} />
         <Route path="/billing" element={<Billing />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/users" element={<Users />} />
