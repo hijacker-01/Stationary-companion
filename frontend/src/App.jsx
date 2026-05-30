@@ -70,9 +70,11 @@ import ComplianceAudit from "./pages/ComplianceAudit";
 
 import CommandPalette from "./components/CommandPalette";
 import { useHotkeys } from "./hooks/useHotkeys";
+import { useKeyboardNav } from "./hooks/useKeyboardNav";
 
 function GlobalHooks() {
   useHotkeys();
+  useKeyboardNav();
   return <CommandPalette />;
 }
 
