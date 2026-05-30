@@ -245,4 +245,22 @@ router.get("/fefo-suggest", protect, async (req, res) => {
   }
 });
 
+// ── LEGACY: Expiry Box Backwards Compatibility ───────────────────────────────
+router.get("/", protect, async (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 90;
+    const future = new Date();
+    future.setDate(future.getDate() + days);
+    
+    // The old ExpiryBox expected items with an expiry property
+    const items = await Item.findAll({
+      where: { expiry: { [Op.lte]: future } },
+      order: [["expiry", "ASC"]],
+    });
+    res.json(items);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
