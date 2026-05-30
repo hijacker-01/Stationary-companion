@@ -20,6 +20,6 @@ const Customer = sequelize.define("Customer", {
   stateCode:     { type: DataTypes.STRING(2) },
   registrationType: { type: DataTypes.ENUM("regular", "composition", "unregistered", "consumer"), defaultValue: "regular" },
   isComposition: { type: DataTypes.BOOLEAN, defaultValue: false },
-});
+}, { paranoid: true });
 
 module.exports = Customer;

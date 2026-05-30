@@ -130,12 +130,8 @@ router.post("/", protect, requirePermission("billing.create"), idempotency, asyn
       await stockMovement.recordOut(item, totalToDeduct, "sale", null, req.user ? req.user.id : null, `Bill creation`, t);
     }
 
-    const bill = await Bill.create({
-      ...req.body,
-      billNo: await generateBillNo(t),
-    }, { transaction: t });
-
-    // Auto-add or update customer
+    // Auto-add or update customer first so we have the ID
+    let customerId = null;
     if (req.body.customerName) {
       let customer = await Customer.findOne({
         where: { name: req.body.customerName },
@@ -150,7 +146,6 @@ router.post("/", protect, requirePermission("billing.create"), idempotency, asyn
           gstNumber: req.body.customerGst || "",
         }, { transaction: t });
       } else {
-        // Update phone/address/DL/GST if provided and customer had blank values
         const updates = {};
         if (req.body.customerPhone && !customer.phone) updates.phone = req.body.customerPhone;
         if (req.body.customerAddress && !customer.address) updates.address = req.body.customerAddress;
@@ -158,14 +153,22 @@ router.post("/", protect, requirePermission("billing.create"), idempotency, asyn
         if (req.body.customerGst && !customer.gstNumber) updates.gstNumber = req.body.customerGst;
         if (Object.keys(updates).length) await customer.update(updates, { transaction: t });
       }
-      await customer.increment("totalPurchased", { by: bill.total, transaction: t });
-      // For unpaid/partial bills, add to customer balance (credit)
+      
+      customerId = customer.id;
+      
+      await customer.increment("totalPurchased", { by: req.body.total, transaction: t });
       if (req.body.status === "unpaid") {
-        await customer.increment("balance", { by: bill.total, transaction: t });
+        await customer.increment("balance", { by: req.body.total, transaction: t });
       } else if (req.body.status === "partial") {
-        await customer.increment("balance", { by: bill.total / 2, transaction: t });
+        await customer.increment("balance", { by: req.body.total / 2, transaction: t });
       }
     }
+
+    const bill = await Bill.create({
+      ...req.body,
+      customerId,
+      billNo: await generateBillNo(t),
+    }, { transaction: t });
 
     // Auto-create double-entry journal for sales
     await accounting.postSalesJournal(bill, t);

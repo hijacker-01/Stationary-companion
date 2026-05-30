@@ -9,6 +9,6 @@ const Salesman = sequelize.define("Salesman", {
   target:  { type: DataTypes.FLOAT, defaultValue: 0 },
   commission: { type: DataTypes.FLOAT, defaultValue: 0 }, // % commission
   isActive:{ type: DataTypes.BOOLEAN, defaultValue: true },
-});
+}, { paranoid: true });
 
 module.exports = Salesman;

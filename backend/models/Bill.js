@@ -3,6 +3,7 @@ const sequelize = require("../config/db");
 
 const Bill = sequelize.define("Bill", {
   billNo:       { type: DataTypes.STRING, unique: true },
+  customerId:   { type: DataTypes.INTEGER, references: { model: 'Customers', key: 'id' } },
   customerName: { type: DataTypes.STRING, allowNull: false },
   customerPhone:{ type: DataTypes.STRING },
   customerAddress: { type: DataTypes.STRING },
@@ -17,7 +18,7 @@ const Bill = sequelize.define("Bill", {
   status:       { type: DataTypes.ENUM("paid", "unpaid", "partial"), defaultValue: "paid" },
   dueDate:      { type: DataTypes.DATEONLY },
   transportDetails: { type: DataTypes.STRING },
-  salesmanId:   { type: DataTypes.INTEGER },
+  salesmanId:   { type: DataTypes.INTEGER, references: { model: 'Salesmans', key: 'id' } },
   salesmanName: { type: DataTypes.STRING },
   deliveryManId: { type: DataTypes.INTEGER },
   deliveryManName: { type: DataTypes.STRING },

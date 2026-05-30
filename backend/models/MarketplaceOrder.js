@@ -3,7 +3,7 @@ const sequelize = require("../config/db");
 
 const MarketplaceOrder = sequelize.define("MarketplaceOrder", {
   orderNo:       { type: DataTypes.STRING, unique: true },
-  customerId:    { type: DataTypes.INTEGER, allowNull: false },
+  customerId:    { type: DataTypes.INTEGER, allowNull: false, references: { model: 'Customers', key: 'id' } },
   customerName:  { type: DataTypes.STRING },
   customerPhone: { type: DataTypes.STRING },
   items:         { type: DataTypes.JSON, defaultValue: [] },

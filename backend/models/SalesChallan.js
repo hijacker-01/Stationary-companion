@@ -3,7 +3,7 @@ const sequelize = require("../config/db");
 
 const SalesChallan = sequelize.define("SalesChallan", {
   challanNo:     { type: DataTypes.STRING, unique: true },
-  customerId:    { type: DataTypes.INTEGER },
+  customerId:    { type: DataTypes.INTEGER, references: { model: 'Customers', key: 'id' } },
   customerName:  { type: DataTypes.STRING, allowNull: false },
   customerPhone: { type: DataTypes.STRING },
   customerGst:   { type: DataTypes.STRING },
