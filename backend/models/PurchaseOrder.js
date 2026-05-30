@@ -17,6 +17,9 @@ const PurchaseOrder = sequelize.define("PurchaseOrder", {
   expectedDate: { type: DataTypes.DATEONLY },
   receivedDate: { type: DataTypes.DATEONLY },
   notes:        { type: DataTypes.TEXT },
+  source:       { type: DataTypes.ENUM("manual", "ai_auto", "rfq"), defaultValue: "manual" },
+  autoScore:    { type: DataTypes.FLOAT },
+  rfqId:        { type: DataTypes.INTEGER },
 });
 
 module.exports = PurchaseOrder;

@@ -49,6 +49,18 @@ import HealthDashboard from "./pages/HealthDashboard";
 import DocumentManagement from "./pages/DocumentManagement";
 import DrugRecall from "./pages/DrugRecall";
 
+// 12.0 Enterprise Routes
+import AutonomousProcurement from "./pages/AutonomousProcurement";
+import ControlTower from "./pages/ControlTower";
+import RetailerApp from "./pages/RetailerApp";
+import SupplierPortal from "./pages/SupplierPortal";
+import CEODashboard from "./pages/CEODashboard";
+import InstitutionalSales from "./pages/InstitutionalSales";
+import CashFlowEngine from "./pages/CashFlowEngine";
+import WarehouseTwin from "./pages/WarehouseTwin";
+import ComplianceDashboard from "./pages/ComplianceDashboard";
+import AutomationBuilder from "./pages/AutomationBuilder";
+import PlatformAdmin from "./pages/PlatformAdmin";
 import CommandPalette from "./components/CommandPalette";
 import { useHotkeys } from "./hooks/useHotkeys";
 
@@ -117,6 +129,19 @@ function App() {
         <Route path="/health" element={<HealthDashboard />} />
         <Route path="/dms" element={<DocumentManagement />} />
         <Route path="/drug-recall" element={<DrugRecall />} />
+
+        {/* 12.0 Enterprise Routes */}
+        <Route path="/autonomous-procurement" element={<AutonomousProcurement />} />
+        <Route path="/control-tower" element={<ControlTower />} />
+        <Route path="/retailer-app" element={<RetailerApp />} />
+        <Route path="/supplier-portal" element={<SupplierPortal />} />
+        <Route path="/ceo-dashboard" element={<CEODashboard />} />
+        <Route path="/institutional-sales" element={<InstitutionalSales />} />
+        <Route path="/cashflow-engine" element={<CashFlowEngine />} />
+        <Route path="/warehouse-twin" element={<WarehouseTwin />} />
+        <Route path="/compliance" element={<ComplianceDashboard />} />
+        <Route path="/automation" element={<AutomationBuilder />} />
+        <Route path="/platform-admin" element={<PlatformAdmin />} />
 
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

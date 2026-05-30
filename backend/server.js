@@ -29,6 +29,27 @@ require("./models/AuditLog");
 require("./models/IdempotencyKey");
 require("./models/PurchaseChallan");
 require("./models/SalesChallan");
+// 12.0 Enterprise Routes Models
+require("./models/SupplierPerformance");
+require("./models/RFQ");
+require("./models/RFQResponse");
+require("./models/Branch");
+require("./models/StockTransfer");
+require("./models/BranchMetric");
+require("./models/MarketplaceOrder");
+require("./models/SupplierScheme");
+require("./models/Tender");
+require("./models/InstitutionalBill");
+require("./models/CashFlowForecast");
+require("./models/PaymentRisk");
+require("./models/PickingTask");
+require("./models/ComplianceItem");
+require("./models/ComplianceAlert");
+require("./models/AutomationRule");
+require("./models/AutomationLog");
+require("./models/Plugin");
+require("./models/Webhook");
+require("./models/APIKey");
 
 const app = express();
 app.use(cors());
@@ -71,6 +92,19 @@ app.use("/api/intelligence",    require("./routes/intelligence"));
 app.use("/api/enterprise",      require("./routes/enterprise"));
 app.use("/api/ai-advanced",     require("./routes/ai-advanced"));
 app.use("/api/portals",         require("./routes/portals"));
+// 12.0 Enterprise Routes
+app.use("/api/procurement",     require("./routes/procurement"));
+app.use("/api/distribution",    require("./routes/distribution"));
+app.use("/api/marketplace",     require("./routes/marketplace"));
+app.use("/api/ai-ceo",          require("./routes/ai-ceo"));
+app.use("/api/institutional",   require("./routes/institutional"));
+app.use("/api/cashflow",        require("./routes/cashflow"));
+app.use("/api/warehouse-twin",  require("./routes/warehouse-twin"));
+app.use("/api/compliance",      require("./routes/compliance"));
+app.use("/api/automation",      require("./routes/automation"));
+app.use("/api/plugins",         require("./routes/plugins"));
+app.use("/api/webhooks",        require("./routes/webhooks"));
+app.use("/api/api-keys",        require("./routes/api-keys"));
 
 const PORT = process.env.PORT || 5000;
 

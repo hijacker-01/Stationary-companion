@@ -53,6 +53,20 @@ const portals = [
   { to: "/salesman-app", label: "Salesman App" },
   { to: "/owner-app", label: "Owner Mobile App" },
   { to: "/health", label: "Business Health" },
+  { to: "/retailer-app", label: "Retailer Marketplace" },
+  { to: "/supplier-portal", label: "Supplier Portal" },
+];
+
+const enterprise12 = [
+  { to: "/autonomous-procurement", label: "Auto Procurement", badge: "AI" },
+  { to: "/control-tower", label: "Distribution Tower" },
+  { to: "/ceo-dashboard", label: "CEO AI Dashboard", badge: "AI" },
+  { to: "/institutional-sales", label: "Hospital/Institutional" },
+  { to: "/cashflow-engine", label: "Cash Flow Engine", badge: "AI" },
+  { to: "/warehouse-twin", label: "Warehouse Twin 2D" },
+  { to: "/compliance", label: "Compliance Center" },
+  { to: "/automation", label: "Hyper Automation" },
+  { to: "/platform-admin", label: "Platform Admin" },
 ];
 
 const SidebarSection = ({ title, links, color }) => (
@@ -91,6 +105,8 @@ export default function Sidebar() {
       <SidebarSection title="Enterprise" links={enterprise} />
       <div className="border-t border-gray-200" />
       <SidebarSection title="Portals" links={portals} />
+      <div className="border-t border-gray-200" />
+      <SidebarSection title="12.0 Enterprise" links={enterprise12} color="text-blue-700" />
       <div className="border-t border-gray-200" />
       <SidebarSection title="AI Tools" links={aiTools} color="text-purple-700" />
       {/* Bottom section */}
