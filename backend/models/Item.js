@@ -20,6 +20,7 @@ const Item = sequelize.define("Item", {
   schedule:       { type: DataTypes.ENUM("None","H","H1","X"), defaultValue: "None" },
   reorderPoint:   { type: DataTypes.INTEGER, defaultValue: 10 },
   salesmanId:     { type: DataTypes.INTEGER },
+  taxCategoryId:  { type: DataTypes.INTEGER },
 });
 
 module.exports = Item;

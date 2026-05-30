@@ -69,6 +69,13 @@ const enterprise12 = [
   { to: "/platform-admin", label: "Platform Admin" },
 ];
 
+const gstCompliance = [
+  { to: "/gst-dashboard", label: "GST Dashboard", badge: "GST" },
+  { to: "/einvoice", label: "E-Invoice & E-Way Bill" },
+  { to: "/compliance-rules", label: "Compliance Rules" },
+  { to: "/compliance-audit", label: "System Audit", badge: "SEC" },
+];
+
 const SidebarSection = ({ title, links, color }) => (
   <div className="py-1.5">
     <h3 className={`px-3 text-[11px] font-extrabold uppercase tracking-wider mb-0.5 ${color || "text-[#1b4985]"}`}>{title}</h3>
@@ -107,6 +114,8 @@ export default function Sidebar() {
       <SidebarSection title="Portals" links={portals} />
       <div className="border-t border-gray-200" />
       <SidebarSection title="12.0 Enterprise" links={enterprise12} color="text-blue-700" />
+      <div className="border-t border-gray-200" />
+      <SidebarSection title="GST & Compliance" links={gstCompliance} color="text-green-700" />
       <div className="border-t border-gray-200" />
       <SidebarSection title="AI Tools" links={aiTools} color="text-purple-700" />
       {/* Bottom section */}

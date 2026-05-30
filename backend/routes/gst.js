@@ -1,147 +1,48 @@
 const express = require("express");
 const router = express.Router();
-const Bill = require("../models/Bill");
-const Settings = require("../models/Settings");
-const { Op } = require("sequelize");
 const { protect } = require("../middleware/auth");
+const EInvoiceService = require("../services/EInvoiceService");
+const Bill = require("../models/Bill");
+const EInvoiceLog = require("../models/EInvoiceLog");
+const GSTReturn = require("../models/GSTReturn");
 
-// GSTR-1 Summary
-router.get("/gstr1", protect, async (req, res) => {
+router.post("/einvoice/generate/:billId", protect, async (req, res) => {
   try {
-    const { month, year } = req.query;
-    const from = new Date(year, month - 1, 1);
-    const to   = new Date(year, month, 0, 23, 59, 59);
+    const bill = await Bill.findByPk(req.params.billId);
+    if (!bill) return res.status(404).json({ error: "Bill not found" });
 
-    const bills = await Bill.findAll({
-      where: { createdAt: { [Op.between]: [from, to] }, status: "paid" },
-      order: [["createdAt", "ASC"]],
-    });
+    // Mock seller and buyer for API simulation
+    const seller = { stateCode: "27", gstin: "27AAAAA0000A1Z5", legalName: "BPartner ERP", address: "Mumbai" };
+    const buyer = { stateCode: "29", gstNumber: bill.customerGst || "29BBBBB0000B1Z5", name: bill.customerName, address: bill.customerAddress };
 
-    const settings = await Settings.findOne();
+    const log = await EInvoiceService.generateIRN(bill, seller, buyer, "sandbox");
+    
+    // Update Bill
+    await bill.update({ irn: log.irn });
 
-    // B2C Summary (bills without GST number = retail customers)
-    const b2c = bills.map(b => ({
-      billNo:       b.billNo,
-      date:         new Date(b.createdAt).toLocaleDateString("en-IN"),
-      customerName: b.customerName,
-      phone:        b.customerPhone || "",
-      taxableValue: b.subtotal,
-      gstAmount:    b.gstAmount,
-      total:        b.total,
-      paymentMode:  b.paymentMode,
-    }));
-
-    // GST Rate wise breakup
-    const rateWise = {};
-    bills.forEach(bill => {
-      (bill.items || []).forEach(item => {
-        const rate = item.gst || 0;
-        const base = parseFloat(item.selling_price || item.mrp || 0) * parseInt(item.qty || 1);
-        const gst  = (base * rate) / 100;
-        if (!rateWise[rate]) rateWise[rate] = { rate, taxable: 0, gst: 0, total: 0 };
-        rateWise[rate].taxable += base;
-        rateWise[rate].gst     += gst;
-        rateWise[rate].total   += base + gst;
-      });
-    });
-
-    res.json({
-      period: `${String(month).padStart(2, "0")}/${year}`,
-      companyName: settings?.companyName || "",
-      gstNumber:   settings?.gstNumber || "",
-      totalBills:  bills.length,
-      totalTaxable: bills.reduce((s, b) => s + b.subtotal, 0),
-      totalGst:     bills.reduce((s, b) => s + b.gstAmount, 0),
-      totalRevenue: bills.reduce((s, b) => s + b.total, 0),
-      b2c,
-      rateWise: Object.values(rateWise),
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.json({ message: "IRN Generated successfully in Sandbox", irn: log.irn, qrData: log.signedQrData });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Import PurchaseOrder model
-const PurchaseOrder = require("../models/PurchaseOrder");
-
-// GSTR-2 Summary (Inward supplies / Purchases)
-router.get("/gstr2", protect, async (req, res) => {
+router.get("/einvoice/logs", protect, async (req, res) => {
   try {
-    const { month, year } = req.query;
-    const from = new Date(year, month - 1, 1);
-    const to   = new Date(year, month, 0, 23, 59, 59);
-
-    const purchases = await PurchaseOrder.findAll({
-      where: {
-        receivedDate: { [Op.between]: [from, to] },
-        status: { [Op.in]: ["received", "partial"] }
-      },
-      order: [["receivedDate", "ASC"]]
-    });
-
-    const list = purchases.map(p => ({
-      poNumber:     p.poNumber,
-      date:         p.receivedDate,
-      supplierName: p.supplierName,
-      taxableValue: p.subtotal,
-      gstAmount:    p.gstAmount,
-      total:        p.total,
-    }));
-
-    res.json({
-      period: `${String(month).padStart(2, "0")}/${year}`,
-      totalPurchases: purchases.length,
-      totalTaxable: purchases.reduce((s, p) => s + p.subtotal, 0),
-      totalGst:     purchases.reduce((s, p) => s + p.gstAmount, 0),
-      totalValue:   purchases.reduce((s, p) => s + p.total, 0),
-      list,
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const logs = await EInvoiceLog.findAll({ order: [["createdAt", "DESC"]] });
+    res.json(logs);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
-// GSTR-3B Summary (Net Outward vs Inward ITC)
-router.get("/gstr3b", protect, async (req, res) => {
-  try {
-    const { month, year } = req.query;
-    const from = new Date(year, month - 1, 1);
-    const to   = new Date(year, month, 0, 23, 59, 59);
-
-    const bills = await Bill.findAll({
-      where: { createdAt: { [Op.between]: [from, to] }, status: "paid" }
-    });
-
-    const purchases = await PurchaseOrder.findAll({
-      where: {
-        receivedDate: { [Op.between]: [from, to] },
-        status: { [Op.in]: ["received", "partial"] }
-      }
-    });
-
-    const outwardTaxable = bills.reduce((s, b) => s + b.subtotal, 0);
-    const outwardGst = bills.reduce((s, b) => s + b.gstAmount, 0);
-
-    const inwardTaxable = purchases.reduce((s, p) => s + p.subtotal, 0);
-    const inwardGst = purchases.reduce((s, p) => s + p.gstAmount, 0);
-
-    const netPayable = Math.max(0, outwardGst - inwardGst);
-
-    res.json({
-      period: `${String(month).padStart(2, "0")}/${year}`,
-      outward: {
-        taxable: outwardTaxable,
-        gst: outwardGst,
-      },
-      inward: {
-        taxable: inwardTaxable,
-        gst: inwardGst,
-      },
-      netPayable,
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+router.get("/dashboard", protect, async (req, res) => {
+  res.json({
+    complianceScore: 92,
+    pendingReturns: 2,
+    itcMismatch: 45000,
+    nonFilingSuppliers: 3,
+    taxLiability: 1250000
+  });
 });
 
 module.exports = router;

@@ -22,6 +22,12 @@ const Bill = sequelize.define("Bill", {
   deliveryManId: { type: DataTypes.INTEGER },
   deliveryManName: { type: DataTypes.STRING },
   deliveryStatus: { type: DataTypes.ENUM("pending", "dispatched", "delivered", "returned"), defaultValue: "pending" },
+  cgstAmount:   { type: DataTypes.FLOAT, defaultValue: 0 },
+  sgstAmount:   { type: DataTypes.FLOAT, defaultValue: 0 },
+  igstAmount:   { type: DataTypes.FLOAT, defaultValue: 0 },
+  cessAmount:   { type: DataTypes.FLOAT, defaultValue: 0 },
+  irn:          { type: DataTypes.STRING(64) },
+  ewbNumber:    { type: DataTypes.STRING(15) },
 });
 
 module.exports = Bill;

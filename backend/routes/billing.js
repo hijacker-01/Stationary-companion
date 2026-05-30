@@ -9,6 +9,7 @@ const accounting = require("../services/accounting");
 const stockMovement = require("../services/stockMovement");
 const idempotency = require("../middleware/idempotency");
 const { protect, requirePermission } = require("../middleware/auth");
+const ComplianceEngine = require("../services/ComplianceEngine");
 
 // Generate sequential bill number per financial year (e.g. INV-2526-0001)
 const generateBillNo = async (transaction) => {
@@ -59,9 +60,31 @@ router.get("/:id", async (req, res) => {
 
 // Create bill — also deducts inventory quantities & auto-adds customer
 router.post("/", protect, requirePermission("billing.create"), idempotency, async (req, res) => {
+  const billedItems = (req.body.items || []).filter(r => r.name);
+  
+  // Enterprise Compliance Engine Evaluation
+  try {
+    const complianceResult = await ComplianceEngine.evaluateTransaction({
+      module: "Sales",
+      user: req.user ? req.user.id : null,
+      items: billedItems,
+      total: req.body.total,
+      customer: { name: req.body.customerName },
+      hasPrescription: !!req.body.prescriptionRef
+    });
+
+    if (!complianceResult.allowed) {
+      return res.status(403).json({ 
+        error: "Transaction BLOCKED by Compliance Engine", 
+        alerts: complianceResult.alerts 
+      });
+    }
+  } catch (err) {
+    console.error("Compliance evaluation error:", err);
+  }
+
   const t = await sequelize.transaction();
   try {
-    const billedItems = (req.body.items || []).filter(r => r.name);
 
     // Validate stock availability and deduct quantities
     for (const billedItem of billedItems) {

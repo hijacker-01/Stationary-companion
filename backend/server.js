@@ -50,6 +50,16 @@ require("./models/AutomationLog");
 require("./models/Plugin");
 require("./models/Webhook");
 require("./models/APIKey");
+// 12.0 Enterprise GST & Compliance Models
+require("./models/GSTStateMaster");
+require("./models/GSTCategory");
+require("./models/EInvoiceLog");
+require("./models/EWayBillLog");
+require("./models/ComplianceRule");
+require("./models/ComplianceAuditLog");
+require("./models/GSTReturn");
+require("./models/ITCRecord");
+require("./models/GSTAuditLog");
 
 const app = express();
 app.use(cors());
@@ -101,6 +111,7 @@ app.use("/api/institutional",   require("./routes/institutional"));
 app.use("/api/cashflow",        require("./routes/cashflow"));
 app.use("/api/warehouse-twin",  require("./routes/warehouse-twin"));
 app.use("/api/compliance",      require("./routes/compliance"));
+app.use("/api/compliance-rules",require("./routes/compliance-rules"));
 app.use("/api/automation",      require("./routes/automation"));
 app.use("/api/plugins",         require("./routes/plugins"));
 app.use("/api/webhooks",        require("./routes/webhooks"));
@@ -108,9 +119,12 @@ app.use("/api/api-keys",        require("./routes/api-keys"));
 
 const PORT = process.env.PORT || 5000;
 
+const { seedStateMaster } = require("./seeders/stateMasterSeeder");
+
 sequelize.sync({ alter: true })
-  .then(() => {
+  .then(async () => {
     console.log("✅ Database connected & tables synced");
+    await seedStateMaster();
     app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
   })
   .catch(err => console.error("❌ DB connection failed:", err));

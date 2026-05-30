@@ -14,6 +14,10 @@ const Supplier = sequelize.define("Supplier", {
   openingBalance:{ type: DataTypes.FLOAT, defaultValue: 0 },
   balance:      { type: DataTypes.FLOAT, defaultValue: 0 },
   status:       { type: DataTypes.ENUM("active", "inactive"), defaultValue: "active" },
+  legalName:    { type: DataTypes.STRING },
+  tradeName:    { type: DataTypes.STRING },
+  stateCode:    { type: DataTypes.STRING(2) },
+  registrationType: { type: DataTypes.ENUM("regular", "composition", "unregistered", "sez"), defaultValue: "regular" },
 });
 
 module.exports = Supplier;

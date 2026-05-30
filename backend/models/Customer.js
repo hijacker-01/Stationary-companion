@@ -15,6 +15,11 @@ const Customer = sequelize.define("Customer", {
   totalPurchased:{ type: DataTypes.FLOAT, defaultValue: 0 },
   totalPaid:     { type: DataTypes.FLOAT, defaultValue: 0 },
   status:        { type: DataTypes.ENUM("active","inactive"), defaultValue: "active" },
+  legalName:     { type: DataTypes.STRING },
+  tradeName:     { type: DataTypes.STRING },
+  stateCode:     { type: DataTypes.STRING(2) },
+  registrationType: { type: DataTypes.ENUM("regular", "composition", "unregistered", "consumer"), defaultValue: "regular" },
+  isComposition: { type: DataTypes.BOOLEAN, defaultValue: false },
 });
 
 module.exports = Customer;

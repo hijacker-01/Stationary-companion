@@ -20,6 +20,10 @@ const PurchaseOrder = sequelize.define("PurchaseOrder", {
   source:       { type: DataTypes.ENUM("manual", "ai_auto", "rfq"), defaultValue: "manual" },
   autoScore:    { type: DataTypes.FLOAT },
   rfqId:        { type: DataTypes.INTEGER },
+  cgstAmount:   { type: DataTypes.FLOAT, defaultValue: 0 },
+  sgstAmount:   { type: DataTypes.FLOAT, defaultValue: 0 },
+  igstAmount:   { type: DataTypes.FLOAT, defaultValue: 0 },
+  cessAmount:   { type: DataTypes.FLOAT, defaultValue: 0 },
 });
 
 module.exports = PurchaseOrder;

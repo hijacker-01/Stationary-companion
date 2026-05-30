@@ -61,6 +61,13 @@ import WarehouseTwin from "./pages/WarehouseTwin";
 import ComplianceDashboard from "./pages/ComplianceDashboard";
 import AutomationBuilder from "./pages/AutomationBuilder";
 import PlatformAdmin from "./pages/PlatformAdmin";
+
+// 12.0 Phase 2: GST & Compliance
+import GSTDashboard from "./pages/GSTDashboard";
+import ComplianceRuleManager from "./pages/ComplianceRuleManager";
+import EInvoiceCenter from "./pages/EInvoiceCenter";
+import ComplianceAudit from "./pages/ComplianceAudit";
+
 import CommandPalette from "./components/CommandPalette";
 import { useHotkeys } from "./hooks/useHotkeys";
 
@@ -142,6 +149,12 @@ function App() {
         <Route path="/compliance" element={<ComplianceDashboard />} />
         <Route path="/automation" element={<AutomationBuilder />} />
         <Route path="/platform-admin" element={<PlatformAdmin />} />
+
+        {/* 12.0 GST & Compliance UI */}
+        <Route path="/gst-dashboard" element={<GSTDashboard />} />
+        <Route path="/compliance-rules" element={<ComplianceRuleManager />} />
+        <Route path="/einvoice" element={<EInvoiceCenter />} />
+        <Route path="/compliance-audit" element={<ComplianceAudit />} />
 
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
