@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 require("dotenv").config();
 const sequelize = require("./config/db");
 
@@ -62,6 +63,7 @@ require("./models/ITCRecord");
 require("./models/GSTAuditLog");
 
 const app = express();
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
 

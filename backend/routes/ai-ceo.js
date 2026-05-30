@@ -1,13 +1,13 @@
 const express = require("express");
 const router = express.Router();
-const { protect } = require("../middleware/auth");
+const { protect, adminOnly } = require("../middleware/auth");
 const Bill = require("../models/Bill");
 const Customer = require("../models/Customer");
 const Item = require("../models/Item");
 const Payment = require("../models/Payment");
 const sequelize = require("../config/db");
 
-router.post("/ask", protect, async (req, res) => {
+router.post("/ask", protect, adminOnly, async (req, res) => {
   try {
     const { question } = req.body;
     const q = (question || "").toLowerCase();
@@ -53,7 +53,7 @@ router.post("/ask", protect, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.get("/snapshot", protect, async (req, res) => {
+router.get("/snapshot", protect, adminOnly, async (req, res) => {
   try {
     const [totalSales, unpaidBills, totalItems, customerCount] = await Promise.all([
       Bill.sum("total") || 0, Bill.sum("total", { where: { status: "unpaid" } }) || 0,

@@ -5,7 +5,7 @@ const Bill = require("../models/Bill");
 const Item = require("../models/Item");
 const Customer = require("../models/Customer");
 const Supplier = require("../models/Supplier");
-const { protect } = require("../middleware/auth");
+const { protect, adminOnly } = require("../middleware/auth");
 
 // Standard Overhead Allocations (Phase 2 - True Profit Engine)
 const OVERHEADS = {
@@ -17,7 +17,7 @@ const OVERHEADS = {
 };
 
 // ── GET /api/analytics/profit ────────────────────────────────────────────────
-router.get("/profit", protect, async (req, res) => {
+router.get("/profit", protect, adminOnly, async (req, res) => {
   try {
     const { filter } = req.query; // 'today', 'this_month', 'this_year', etc.
     let dateFilter = {};
