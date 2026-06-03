@@ -69,6 +69,7 @@ import GSTDashboard from "./pages/GSTDashboard";
 import ComplianceRuleManager from "./pages/ComplianceRuleManager";
 import EInvoiceCenter from "./pages/EInvoiceCenter";
 import ComplianceAudit from "./pages/ComplianceAudit";
+import DispatchSummary from "./pages/DispatchSummary";
 
 import CommandPalette from "./components/CommandPalette";
 import { useHotkeys } from "./hooks/useHotkeys";
@@ -161,6 +162,7 @@ function App() {
         <Route path="/compliance-rules" element={<ComplianceRuleManager />} />
         <Route path="/einvoice" element={<EInvoiceCenter />} />
         <Route path="/compliance-audit" element={<ComplianceAudit />} />
+        <Route path="/dispatch-summary" element={<DispatchSummary />} />
 
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

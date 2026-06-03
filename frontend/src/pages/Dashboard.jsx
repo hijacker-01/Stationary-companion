@@ -45,6 +45,8 @@ export default function Dashboard() {
     { label: "Inventory Valuation", to: "/inventory-valuation", ai: false },
     { label: "AI Re-Order Agent", to: "/reorder-center", ai: true },
     { label: "AI Expiry Guard", to: "/expiry-guard", ai: true },
+    { label: "Bill Tagging", to: "/outstanding-bills/tagging", ai: false },
+    { label: "Dispatch Summary", to: "/dispatch-summary", ai: false },
     { label: "Sales & Purchase Reports", to: "/reports", ai: false },
     { label: "Profit Analytics", to: "/profit-analytics", ai: false },
     { label: "Todays Gross Profit", to: "/reports", ai: false },

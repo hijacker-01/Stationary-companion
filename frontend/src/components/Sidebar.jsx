@@ -19,6 +19,7 @@ const reports = [
   { to: "/debtors", label: "Debtors (Receivable)" },
   { to: "/creditors", label: "Creditors (Payable)" },
   { to: "/outstanding-bills/tagging", label: "Outstanding Bills" },
+  { to: "/dispatch-summary", label: "Dispatch Summary" },
   { to: "/reports", label: "Sales & Purchase Reports" },
   { to: "/profit-analytics", label: "Profit Analytics" },
   { to: "/inventory-valuation", label: "Inventory Valuation" },
