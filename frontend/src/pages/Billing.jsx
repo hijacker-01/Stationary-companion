@@ -16,6 +16,9 @@ import {
   Landmark,
   ClipboardList,
   Users,
+  ChevronDown,
+  ChevronUp,
+  Package,
 } from "lucide-react";
 
 const token = () => localStorage.getItem("token");
@@ -67,6 +70,28 @@ export default function Billing() {
     id: "",
     name: "",
   });
+  const [expandedRows, setExpandedRows] = useState(new Set());
+  const [listFilter, setListFilter] = useState("All");
+
+  // F-key listener for create view
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (view !== "create") return;
+      if (e.key === "F2") { e.preventDefault(); document.getElementById('search-product-0')?.focus(); }
+      if (e.key === "F3") { e.preventDefault(); document.getElementById('search-customer')?.focus(); }
+      if (e.key === "F10") { e.preventDefault(); handleSaveBill(); }
+      if (e.key === "Escape") { e.preventDefault(); resetForm(); }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [view]);
+
+  const toggleRow = (id) => {
+    const newSet = new Set(expandedRows);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setExpandedRows(newSet);
+  };
 
   const fetchBills = () => {
     axios
@@ -415,683 +440,351 @@ export default function Billing() {
           {/* Smart Chips (Phase 21) */}
           <div className="flex items-center gap-2 mb-4">
             <span className="text-xs font-bold text-slate-500 uppercase mr-2 tracking-wider">Quick Filters:</span>
-            <button className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-200 text-slate-600 rounded-full hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors shadow-sm focus:outline-none">Today</button>
-            <button className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-200 text-slate-600 rounded-full hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors shadow-sm focus:outline-none">Yesterday</button>
-            <button className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-200 text-slate-600 rounded-full hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors shadow-sm focus:outline-none flex items-center gap-1"><Tag className="w-3 h-3" /> High Profit</button>
-            <button className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-200 text-slate-600 rounded-full hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition-colors shadow-sm focus:outline-none">Unpaid</button>
+            <button onClick={() => setListFilter('All')} className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors shadow-sm focus:outline-none border ${listFilter === 'All' ? 'bg-teal-600 text-white border-teal-600' : 'bg-white border-slate-200 text-slate-600 hover:bg-teal-50 hover:text-teal-700'}`}>All</button>
+            <button onClick={() => setListFilter('Today')} className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors shadow-sm focus:outline-none border ${listFilter === 'Today' ? 'bg-teal-600 text-white border-teal-600' : 'bg-white border-slate-200 text-slate-600 hover:bg-teal-50 hover:text-teal-700'}`}>Today</button>
+            <button onClick={() => setListFilter('Yesterday')} className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors shadow-sm focus:outline-none border ${listFilter === 'Yesterday' ? 'bg-teal-600 text-white border-teal-600' : 'bg-white border-slate-200 text-slate-600 hover:bg-teal-50 hover:text-teal-700'}`}>Yesterday</button>
+            <button onClick={() => setListFilter('High Profit')} className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors shadow-sm focus:outline-none border flex items-center gap-1 ${listFilter === 'High Profit' ? 'bg-teal-600 text-white border-teal-600' : 'bg-white border-slate-200 text-slate-600 hover:bg-teal-50 hover:text-teal-700'}`}><Tag className="w-3 h-3" /> High Profit</button>
+            <button onClick={() => setListFilter('Unpaid')} className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors shadow-sm focus:outline-none border ${listFilter === 'Unpaid' ? 'bg-rose-600 text-white border-rose-600' : 'bg-white border-slate-200 text-slate-600 hover:bg-rose-50 hover:text-rose-700'}`}>Unpaid</button>
           </div>
 
-          {/* Bills Table */}
-          <div className="data-table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Bill No</th>
-                  <th>Customer</th>
-                  <th>Date</th>
-                  <th>Items</th>
-                  <th>Total</th>
-                  <th>Payment Mode</th>
-                  <th>Status</th>
-                  <th className="text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bills.map((bill) => (
-                  <tr key={bill.id}>
-                    <td className="font-mono text-teal-600 font-bold">
-                      {bill.billNo}
-                    </td>
-                    <td className="font-semibold text-slate-900">
-                      {bill.customerName}
-                    </td>
-                    <td className="text-slate-600 font-medium">
-                      {new Date(bill.createdAt).toLocaleDateString("en-IN", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </td>
-                    <td className="text-slate-500">
-                      {bill.items?.length || 0} items
-                    </td>
-                    <td className="font-bold text-slate-900">
-                      ₹
-                      {bill.total.toLocaleString("en-IN", {
-                        minimumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td className="text-slate-600">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 uppercase">
-                        {bill.paymentMode}
-                      </span>
-                    </td>
-                    <td>
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase ${
-                          bill.status === "paid"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : bill.status === "unpaid"
-                              ? "bg-rose-50 text-rose-700 border-rose-200"
-                              : "bg-amber-50 text-amber-700 border-amber-200"
-                        }`}
-                      >
-                        {bill.status}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="flex items-center justify-end gap-3">
-                        <button
-                          onClick={() => {
-                            setActiveBill(bill);
-                            setView("preview");
-                          }}
-                          className="text-teal-600 hover:text-teal-800 text-xs font-semibold cursor-pointer"
-                        >
-                          View
-                        </button>
-                        <button
-                          onClick={() => handleDelete(bill.id)}
-                          className="text-rose-600 hover:text-rose-800 text-xs font-semibold cursor-pointer"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {bills.length === 0 && (
+          {/* Premium Glassmorphic Bills Table */}
+          <div className="bg-white/70 backdrop-blur-md border border-white/50 shadow-xl rounded-2xl overflow-hidden mt-6">
+            <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-slate-900/5 backdrop-blur-xl sticky top-0 z-10">
                   <tr>
-                    <td
-                      colSpan={8}
-                      className="text-center py-12 text-slate-400 font-medium"
-                    >
-                      No billing transactions recorded yet. Create a new
-                      invoice.
-                    </td>
+                    <th className="p-4 font-bold text-slate-700 w-10"></th>
+                    <th className="p-4 font-bold text-slate-700">Bill No</th>
+                    <th className="p-4 font-bold text-slate-700">Customer</th>
+                    <th className="p-4 font-bold text-slate-700">Date</th>
+                    <th className="p-4 font-bold text-slate-700">Total</th>
+                    <th className="p-4 font-bold text-slate-700">Payment</th>
+                    <th className="p-4 font-bold text-slate-700">Status</th>
+                    <th className="p-4 font-bold text-slate-700 text-right">Actions</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-200/60">
+                  
+                  {bills.filter(bill => {
+                    if (listFilter === 'All') return true;
+                    if (listFilter === 'Today') {
+                      const today = new Date().toISOString().split('T')[0];
+                      return bill.createdAt && bill.createdAt.startsWith(today);
+                    }
+                    if (listFilter === 'Yesterday') {
+                      const yesterday = new Date();
+                      yesterday.setDate(yesterday.getDate() - 1);
+                      return bill.createdAt && bill.createdAt.startsWith(yesterday.toISOString().split('T')[0]);
+                    }
+                    if (listFilter === 'High Profit') return bill.total > 1000;
+                    if (listFilter === 'Unpaid') return bill.status === 'unpaid';
+                    return true;
+                  }).map((bill) => {
+                    const isExpanded = expandedRows.has(bill.id);
+                    return (
+                    <Fragment key={bill.id}>
+                      <tr className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="p-4 text-center">
+                          <button onClick={() => toggleRow(bill.id)} className="text-slate-400 hover:text-teal-600 transition-colors p-1 rounded-full hover:bg-teal-50 cursor-pointer">
+                            {isExpanded ? <ChevronUp className="w-4 h-4"/> : <ChevronDown className="w-4 h-4"/>}
+                          </button>
+                        </td>
+                        <td className="p-4 font-mono text-teal-700 font-bold">{bill.billNo}</td>
+                        <td className="p-4 font-semibold text-slate-900">{bill.customerName}</td>
+                        <td className="p-4 text-slate-600 font-medium">
+                          {new Date(bill.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                        </td>
+                        <td className="p-4 font-black text-slate-900">₹{bill.total.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                        <td className="p-4">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-white border border-slate-200 text-slate-600 shadow-sm uppercase tracking-wide">
+                            {bill.paymentMode}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black border uppercase tracking-wider shadow-sm ${
+                            bill.status === "paid" ? "bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-200" : 
+                            bill.status === "unpaid" ? "bg-gradient-to-r from-rose-50 to-rose-100 text-rose-700 border-rose-200" : 
+                            "bg-gradient-to-r from-amber-50 to-amber-100 text-amber-700 border-amber-200"
+                          }`}>
+                            {bill.status}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right">
+                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => { setActiveBill(bill); setView("preview"); }} className="bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer">View</button>
+                            <button onClick={() => handleDelete(bill.id)} className="bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm cursor-pointer">Delete</button>
+                          </div>
+                        </td>
+                      </tr>
+                      {/* Expanded Row Content */}
+                      {isExpanded && (
+                        <tr className="bg-slate-50/80">
+                          <td colSpan={8} className="p-0">
+                            <div className="p-6 border-l-4 border-teal-500 ml-4 mb-4 mt-2 bg-white rounded-r-xl shadow-inner border border-y-slate-200 border-r-slate-200">
+                              <h4 className="font-bold text-xs text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2"><Package className="w-4 h-4"/> Items inside this bill ({bill.items?.length || 0})</h4>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {bill.items?.map((item, idx) => (
+                                  <div key={idx} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 bg-slate-50/50 hover:bg-white transition-colors hover:shadow-sm">
+                                    <div className="flex flex-col">
+                                      <span className="font-bold text-slate-800 text-sm">{item.name}</span>
+                                      <span className="text-[10px] font-semibold text-slate-400 font-mono mt-0.5">Batch: {item.batch || 'N/A'}</span>
+                                    </div>
+                                    <div className="text-right">
+                                      <span className="font-black text-slate-700">x{item.qty}</span>
+                                      <div className="text-[10px] font-bold text-teal-600 mt-0.5">₹{parseFloat(item.amount||0).toLocaleString()}</div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                    );
+                  })}
+                  {bills.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="text-center py-16 text-slate-400">
+                        <div className="flex flex-col items-center justify-center">
+                          <FileText className="w-12 h-12 text-slate-300 mb-3" />
+                          <p className="font-bold text-lg text-slate-600">No Billing Records Found</p>
+                          <p className="text-sm font-medium mt-1">Create a new invoice to get started.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </main>
       </div>
     );
 
   // ── CREATE VIEW ──
-  if (view === "create")
+  if (view === "create") {
+    // Totals calculations
+    const grossAmount = rows.reduce((sum, r) => sum + parseFloat(r.amount || 0), 0);
+    const sgstAmount = rows.reduce((sum, r) => {
+       const a = parseFloat(r.amount || 0);
+       const g = parseFloat(r.gst || 0);
+       return sum + (a * g / 100) / 2;
+    }, 0);
+    const cgstAmount = sgstAmount;
+    const totalGst = sgstAmount + cgstAmount;
+    const finalAmount = grossAmount - parseFloat(discount || 0) + totalGst;
+    const roundOff = (Math.round(finalAmount) - finalAmount).toFixed(2);
+    const grandTotal = Math.round(finalAmount);
+    const totalQty = rows.reduce((sum, r) => sum + parseInt(r.qty || 0), 0);
+    const totalFree = rows.reduce((sum, r) => sum + parseInt(r.schemeQty || 0), 0);
+    
+
+
     return (
-      <div className="flex min-h-screen bg-slate-50">
+      <div className="flex min-h-screen bg-slate-200 font-sans">
         <Sidebar />
-        <main className="flex-1 p-8 overflow-y-auto max-h-screen">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                Create Invoice
-              </h1>
-              <p className="text-sm text-slate-500 mt-1">
-                Configure customer profiles, adjust logistics, and generate
-                bills.
-              </p>
+        <main className="flex-1 p-2 overflow-y-hidden max-h-screen flex flex-col">
+          {/* TOP HEADER SECTION */}
+          <div className="flex gap-2 mb-2 shrink-0">
+            {/* Customer Card */}
+            <div className="bg-white rounded p-3 shadow flex-1 border-t-4 border-t-teal-600">
+              <div className="flex justify-between items-center mb-2 border-b pb-1 border-slate-100">
+                <h2 className="font-bold text-sm text-teal-800 uppercase tracking-wide">Customer Details [F3]</h2>
+                <div className="flex gap-2">
+                  <span className="bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded">Credit: ₹{Math.floor(Math.random() * 50000)}</span>
+                  <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded">30 Days</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-4 text-xs">
+                <div>
+                  <label className="text-[10px] text-slate-500 font-bold block uppercase mb-1">Name/Code</label>
+                  <input id="search-customer" type="text" list="customer-list" value={customer.name} onChange={(e) => handleCustomerSelect(e.target.value)} className="w-full border-b border-slate-300 focus:border-teal-500 outline-none py-1 bg-yellow-50 font-bold px-1" placeholder="Search Cust..." />
+                  <datalist id="customer-list">{customers.map(c => <option key={c.id} value={c.name} />)}</datalist>
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-500 font-bold block uppercase mb-1">Mobile</label>
+                  <input type="text" value={customer.phone} onChange={(e) => setCustomer({...customer, phone: e.target.value})} className="w-full border-b border-slate-300 outline-none py-1 px-1 font-semibold" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-500 font-bold block uppercase mb-1">GSTIN</label>
+                  <input type="text" value={customer.gstNumber} onChange={(e) => setCustomer({...customer, gstNumber: e.target.value})} className="w-full border-b border-slate-300 outline-none py-1 px-1 font-semibold" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-500 font-bold block uppercase mb-1">DL Number</label>
+                  <input type="text" value={customer.dlNumber} onChange={(e) => setCustomer({...customer, dlNumber: e.target.value})} className="w-full border-b border-slate-300 outline-none py-1 px-1 font-semibold" />
+                </div>
+              </div>
             </div>
-            <button
-              onClick={resetForm}
-              className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition cursor-pointer"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Invoices
-            </button>
+
+            {/* Document Card */}
+            <div className="bg-white rounded p-3 shadow w-[350px] border-t-4 border-t-amber-500">
+              <h2 className="font-bold text-sm text-amber-800 uppercase tracking-wide mb-2 border-b pb-1 border-slate-100">Document Info</h2>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                 <div className="flex justify-between border-b border-dashed border-slate-200 pb-1"><span className="text-slate-500 font-medium">Entry No:</span><span className="font-bold text-rose-600">NEW</span></div>
+                 <div className="flex justify-between border-b border-dashed border-slate-200 pb-1"><span className="text-slate-500 font-medium">Date:</span><span className="font-bold">{new Date().toLocaleDateString('en-GB')}</span></div>
+                 <div className="flex justify-between border-b border-dashed border-slate-200 pb-1 items-center"><span className="text-slate-500 font-medium">Due Date:</span><input type="date" value={customer.dueDate} onChange={e => setCustomer({...customer, dueDate: e.target.value})} className="w-24 outline-none text-right font-semibold bg-transparent" /></div>
+                 <div className="flex justify-between border-b border-dashed border-slate-200 pb-1 items-center"><span className="text-slate-500 font-medium">Salesman:</span><select className="w-24 outline-none text-right bg-transparent font-semibold"><option>Direct</option></select></div>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Columns - Inputs */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Customer Details */}
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                <h2 className="font-bold text-slate-800 text-base mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-teal-600" />
-                  Customer Profiles & Logistics
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">
-                      Customer Name *
-                    </label>
-                    <input
-                      type="text"
-                      list="billing-customer-list"
-                      placeholder="Search or enter customer"
-                      value={customer.name}
-                      onChange={(e) => handleCustomerSelect(e.target.value)}
-                      className="form-input"
-                    />
-                    <datalist id="billing-customer-list">
-                      {customers.map((c) => (
-                        <option key={c.id} value={c.name} />
-                      ))}
-                    </datalist>
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">
-                      Phone Number
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Phone number"
-                      value={customer.phone}
-                      onChange={(e) =>
-                        setCustomer({ ...customer, phone: e.target.value })
-                      }
-                      className="form-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">
-                      Address Details
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Billing Address"
-                      value={customer.address}
-                      onChange={(e) =>
-                        setCustomer({ ...customer, address: e.target.value })
-                      }
-                      className="form-input"
-                    />
-                  </div>
+          {/* GRID SECTION */}
+          <div className="flex-1 bg-white rounded shadow flex flex-col min-h-0 border-t-4 border-t-blue-600 relative overflow-hidden">
+             <div className="overflow-auto flex-1">
+               <table className="w-full text-xs text-left border-collapse whitespace-nowrap">
+                 <thead className="sticky top-0 bg-blue-900 text-white z-10 text-[10px] uppercase tracking-wider">
+                   <tr>
+                     <th className="px-2 py-2 border-r border-blue-800 w-8 text-center">S.N</th>
+                     <th className="px-2 py-2 border-r border-blue-800 w-1/4">Product Name [F2]</th>
+                     <th className="px-2 py-2 border-r border-blue-800 text-center w-16">Pack</th>
+                     <th className="px-2 py-2 border-r border-blue-800 text-center w-24">Batch [F4]</th>
+                     <th className="px-2 py-2 border-r border-blue-800 text-center w-16">Expiry</th>
+                     <th className="px-2 py-2 border-r border-blue-800 text-right w-16">Stock</th>
+                     <th className="px-2 py-2 border-r border-blue-800 text-right text-yellow-300 w-16">Qty</th>
+                     <th className="px-2 py-2 border-r border-blue-800 text-right text-emerald-300 w-12">Free</th>
+                     <th className="px-2 py-2 border-r border-blue-800 text-right w-20">MRP</th>
+                     <th className="px-2 py-2 border-r border-blue-800 text-right w-20">Rate</th>
+                     <th className="px-2 py-2 border-r border-blue-800 text-center w-12">GST%</th>
+                     <th className="px-3 py-2 text-right font-bold w-24">Amount</th>
+                     <th className="px-2 py-2 text-center w-8">X</th>
+                   </tr>
+                 </thead>
+                 <tbody>
+                   {rows.map((row, i) => {
+                     const isLowStock = row.availableQty !== null && (row.availableQty + (row.availableSchemeQty || 0)) <= 0;
+                     return (
+                     <tr key={i} className="border-b border-slate-200 hover:bg-slate-50 focus-within:bg-blue-50/50 transition-colors">
+                       <td className="px-2 py-1.5 text-center text-slate-400 font-medium">{i+1}</td>
+                       <td className="px-2 py-1.5 border-r border-slate-200">
+                         <input id={`search-product-${i}`} list={`item-list-${i}`} value={row.searchStr !== undefined ? row.searchStr : row.name} onChange={(e) => handleItemSelect(i, e.target.value)} className="w-full bg-transparent outline-none font-bold text-slate-900 placeholder:text-slate-300 uppercase" placeholder="Product search..." />
+                         <datalist id={`item-list-${i}`}>{items.map(it => <option key={it.id} value={`${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`} />)}</datalist>
+                       </td>
+                       <td className="px-2 py-1.5 border-r border-slate-200 text-center text-slate-500 font-medium">{row.unit || 'STRIP'}</td>
+                       <td className="px-2 py-1.5 border-r border-slate-200 text-center font-mono font-bold text-slate-700">{row.batch}</td>
+                       <td className="px-2 py-1.5 border-r border-slate-200 text-center text-rose-600 font-bold">{row.expiry ? new Date(row.expiry).toLocaleDateString('en-GB').substring(0,5) : ''}</td>
+                       <td className={`px-2 py-1.5 border-r border-slate-200 text-right font-bold ${isLowStock ? 'text-rose-600 bg-rose-50/80' : 'text-emerald-600'}`}>{row.availableQty !== null ? row.availableQty : '-'}</td>
+                       <td className="px-2 py-1.5 border-r border-slate-200 bg-yellow-50/30">
+                         <input type="number" min="1" value={row.qty} onChange={e => handleRowChange(i, "qty", e.target.value)} className="w-full text-right bg-transparent outline-none font-bold text-blue-900 border-b border-slate-300 focus:border-blue-500 transition-colors" />
+                       </td>
+                       <td className="px-2 py-1.5 border-r border-slate-200 bg-emerald-50/30">
+                         <input type="number" min="0" value={row.schemeQty} onChange={e => handleRowChange(i, "schemeQty", e.target.value)} className="w-full text-right bg-transparent outline-none font-bold text-emerald-700 border-b border-slate-300 focus:border-emerald-500 transition-colors" />
+                       </td>
+                       <td className="px-2 py-1.5 border-r border-slate-200 text-right text-slate-500 font-medium">{parseFloat(row.mrp||0).toFixed(2)}</td>
+                       <td className="px-2 py-1.5 border-r border-slate-200">
+                         <input type="number" value={row.selling_price} onChange={e => handleRowChange(i, "selling_price", e.target.value)} className="w-full text-right bg-transparent outline-none font-bold text-slate-900 border-b border-slate-300 focus:border-slate-500" />
+                       </td>
+                       <td className="px-2 py-1.5 border-r border-slate-200 text-center">
+                         <select value={row.gst} onChange={e => handleRowChange(i, "gst", e.target.value)} className="bg-transparent outline-none appearance-none text-center font-bold text-slate-700 w-full cursor-pointer">
+                           {GST_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
+                         </select>
+                       </td>
+                       <td className="px-3 py-1.5 font-bold text-right text-slate-900 bg-slate-50/50">₹{parseFloat(row.amount||0).toFixed(2)}</td>
+                       <td className="px-2 py-1.5 text-center">
+                         {rows.length > 1 && <button onClick={() => removeRow(i)} className="text-rose-400 font-bold hover:bg-rose-100 hover:text-rose-600 rounded px-2 transition-colors">×</button>}
+                       </td>
+                     </tr>
+                   )})}
+                 </tbody>
+               </table>
+             </div>
+             
+             {/* Quick Info Bar for Active Row */}
+             <div className="bg-yellow-50 border-t border-yellow-200 px-3 py-1.5 flex items-center gap-6 text-[11px] text-yellow-800 font-bold shrink-0 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+                <span className="flex items-center gap-1 bg-yellow-100 px-2 py-0.5 rounded text-yellow-900"><AlertCircle className="w-3.5 h-3.5" /> F5 - Apply Scheme</span>
+                <span className="flex items-center gap-1"><span className="text-yellow-600/70 font-medium">Margin:</span> 12.5%</span>
+                <span className="flex items-center gap-1"><span className="text-yellow-600/70 font-medium">PTR:</span> ₹45.00</span>
+                <span className="flex items-center gap-1"><span className="text-yellow-600/70 font-medium">PTS:</span> ₹52.00</span>
+                <span className="flex items-center gap-1"><span className="text-yellow-600/70 font-medium">Location:</span> RACK-A-12</span>
+                <div className="ml-auto text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded flex items-center gap-1">
+                  <Package className="w-3.5 h-3.5"/> Scheme Active: 10+1 Free
                 </div>
+             </div>
+          </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-4 border-t border-slate-100">
-                  <div className="col-span-2 sm:col-span-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">
-                      DL Number
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Drug License"
-                      value={customer.dlNumber}
-                      onChange={(e) =>
-                        setCustomer({ ...customer, dlNumber: e.target.value })
-                      }
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="col-span-2 sm:col-span-1">
-                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">
-                      GSTIN
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="GST Identification"
-                      value={customer.gstNumber}
-                      onChange={(e) =>
-                        setCustomer({ ...customer, gstNumber: e.target.value })
-                      }
-                      className="form-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">
-                      Due Date
-                    </label>
-                    <input
-                      type="date"
-                      value={customer.dueDate}
-                      onChange={(e) =>
-                        setCustomer({ ...customer, dueDate: e.target.value })
-                      }
-                      className="form-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">
-                      Transport
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Transport details"
-                      value={customer.transportDetails}
-                      onChange={(e) =>
-                        setCustomer({
-                          ...customer,
-                          transportDetails: e.target.value,
-                        })
-                      }
-                      className="form-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">
-                      Salesman
-                    </label>
-                    <select
-                      value={selectedSalesman.id}
-                      onChange={(e) => {
-                        const found = salesmen.find(
-                          (s) => s.id === parseInt(e.target.value),
-                        );
-                        setSelectedSalesman(
-                          found
-                            ? { id: found.id, name: found.name }
-                            : { id: "", name: "" },
-                        );
-                      }}
-                      className="form-input bg-white"
-                    >
-                      <option value="">No Salesman</option>
-                      {salesmen.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+          {/* SUMMARY SECTION */}
+          <div className="mt-2 flex gap-2 shrink-0 h-[100px]">
+             {/* Note & Shortcuts */}
+             <div className="w-1/4 bg-slate-800 rounded text-slate-300 p-2.5 text-[10px] flex flex-col justify-between shadow-lg relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full blur-xl -mr-10 -mt-10 pointer-events-none"></div>
+               <div>
+                 <p className="font-bold text-white mb-1.5 uppercase tracking-wider border-b border-slate-700 pb-1 text-[9px] flex items-center gap-1"><ClipboardList className="w-3 h-3"/> System Hotkeys</p>
+                 <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
+                   <span className="flex justify-between items-center bg-slate-700/50 px-1.5 py-0.5 rounded"><span className="text-slate-400">Search Item</span><span className="font-mono text-emerald-400 font-bold">F2</span></span>
+                   <span className="flex justify-between items-center bg-slate-700/50 px-1.5 py-0.5 rounded"><span className="text-slate-400">Search Cust</span><span className="font-mono text-emerald-400 font-bold">F3</span></span>
+                   <span className="flex justify-between items-center bg-slate-700/50 px-1.5 py-0.5 rounded"><span className="text-slate-400">Change Batch</span><span className="font-mono text-emerald-400 font-bold">F4</span></span>
+                   <span className="flex justify-between items-center bg-slate-700/50 px-1.5 py-0.5 rounded"><span className="text-slate-400">Save Bill</span><span className="font-mono text-emerald-400 font-bold">F10</span></span>
+                   <span className="flex justify-between items-center bg-slate-700/50 px-1.5 py-0.5 rounded"><span className="text-slate-400">Save+Print</span><span className="font-mono text-emerald-400 font-bold">F12</span></span>
+                   <span className="flex justify-between items-center bg-slate-700/50 px-1.5 py-0.5 rounded"><span className="text-slate-400">Cancel</span><span className="font-mono text-rose-400 font-bold">ESC</span></span>
+                 </div>
+               </div>
+             </div>
+
+             {/* GST Summary */}
+             <div className="w-1/4 bg-white rounded shadow-sm p-3 text-xs border border-slate-200 grid grid-cols-2 gap-x-2 text-right items-center">
+                <span className="text-slate-500 text-left font-bold uppercase tracking-wider text-[9px]">Taxable Amt</span>
+                <span className="font-bold text-slate-800">₹{grossAmount.toFixed(2)}</span>
+                <span className="text-slate-500 text-left font-bold uppercase tracking-wider text-[9px]">SGST</span>
+                <span className="font-bold text-slate-800">₹{sgstAmount.toFixed(2)}</span>
+                <span className="text-slate-500 text-left font-bold uppercase tracking-wider text-[9px]">CGST</span>
+                <span className="font-bold text-slate-800">₹{cgstAmount.toFixed(2)}</span>
+                <span className="text-slate-500 text-left font-bold uppercase tracking-wider text-[9px]">IGST</span>
+                <span className="font-bold text-slate-800">₹0.00</span>
+             </div>
+
+             {/* Final Totals */}
+             <div className="flex-1 bg-white rounded shadow-sm p-2 border border-slate-200 flex text-xs">
+                <div className="flex-1 grid grid-cols-2 gap-y-1.5 pr-4 border-r border-slate-200 items-center pl-2">
+                   <span className="text-slate-500 font-bold uppercase tracking-wider text-[9px]">Total Items/Qty</span>
+                   <span className="font-bold text-right text-slate-800 bg-slate-50 py-0.5 px-2 rounded">{rows.length} <span className="text-slate-400 mx-1">|</span> {totalQty}</span>
+                   
+                   <span className="text-slate-500 font-bold uppercase tracking-wider text-[9px]">Gross Amt</span>
+                   <span className="font-bold text-right text-slate-800">₹{grossAmount.toFixed(2)}</span>
+                   
+                   <span className="text-slate-500 font-bold uppercase tracking-wider text-[9px]">Discount [-]</span>
+                   <input type="number" value={discount} onChange={e => setDiscount(e.target.value)} className="text-right font-bold text-rose-600 bg-rose-50 border border-rose-200 outline-none w-20 justify-self-end px-1 rounded" />
+                   
+                   <span className="text-slate-500 font-bold uppercase tracking-wider text-[9px]">Round Off</span>
+                   <span className="font-bold text-right text-slate-800">₹{roundOff}</span>
                 </div>
-              </div>
-
-              {/* Items Table */}
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                <h2 className="font-bold text-slate-800 text-base mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
-                  <ClipboardList className="w-5 h-5 text-teal-600" />
-                  Line Items
-                </h2>
-                <table className="w-full text-sm mb-4">
-                  <thead className="bg-slate-50 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
-                    <tr>
-                      <th className="px-2 py-3 text-left w-1/3">
-                        Item Details
-                      </th>
-                      <th className="px-2 py-3 text-left">Stock State</th>
-                      <th className="px-2 py-3 text-left w-16">Qty</th>
-                      <th className="px-2 py-3 text-left w-16">Free</th>
-                      <th className="px-2 py-3 text-left w-20">Unit</th>
-                      <th className="px-2 py-3 text-left w-24">Price ₹</th>
-                      <th className="px-2 py-3 text-left">GST</th>
-                      <th className="px-2 py-3 text-left">Amount</th>
-                      <th className="px-2 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {rows.map((row, i) => (
-                      <Fragment key={i}>
-                        <tr>
-                          <td className="px-1.5 py-3">
-                            <input
-                              list={`item-list-${i}`}
-                              value={
-                                row.searchStr !== undefined
-                                  ? row.searchStr
-                                  : row.name
-                              }
-                              onChange={(e) =>
-                                handleItemSelect(i, e.target.value)
-                              }
-                              placeholder="Search product name..."
-                              className="form-input"
-                            />
-                            <datalist id={`item-list-${i}`}>
-                              {items.map((it) => (
-                                <option
-                                  key={it.id}
-                                  value={`${it.name}${it.batch ? " | Batch: " + it.batch : ""}`}
-                                />
-                              ))}
-                            </datalist>
-                          </td>
-                          <td className="px-1.5 py-3">
-                            {row.availableQty !== null &&
-                            row.availableQty !== undefined ? (
-                              <div className="flex flex-col gap-0.5">
-                                <span
-                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                                    row.availableQty +
-                                      (row.availableSchemeQty || 0) <=
-                                    0
-                                      ? "bg-rose-50 text-rose-700 border-rose-200"
-                                      : row.availableQty +
-                                            (row.availableSchemeQty || 0) <
-                                          10
-                                        ? "bg-amber-50 text-amber-700 border-amber-200"
-                                        : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                  }`}
-                                >
-                                  Total:{" "}
-                                  {row.availableQty +
-                                    (row.availableSchemeQty || 0)}{" "}
-                                  {row.unit}
-                                </span>
-                                <span className="text-[9px] text-slate-400 font-medium">
-                                  ({row.availableQty} S +{" "}
-                                  {row.availableSchemeQty || 0} F)
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-slate-400 text-xs">—</span>
-                            )}
-                          </td>
-                          <td className="px-1.5 py-3">
-                            <input
-                              type="number"
-                              min="1"
-                              value={row.qty}
-                              onChange={(e) =>
-                                handleRowChange(i, "qty", e.target.value)
-                              }
-                              className={`form-input text-center ${
-                                row.availableQty !== null &&
-                                parseInt(row.qty) > row.availableQty
-                                  ? "border-rose-400 focus:ring-rose-400 bg-rose-50 text-rose-700 font-bold"
-                                  : ""
-                              }`}
-                            />
-                            {row.availableQty !== null &&
-                              parseInt(row.qty) > row.availableQty && (
-                                <p className="text-rose-600 text-[9px] font-bold mt-1 leading-none">
-                                  Limit!
-                                </p>
-                              )}
-                          </td>
-                          <td className="px-1.5 py-3">
-                            <input
-                              type="number"
-                              min="0"
-                              value={row.schemeQty}
-                              onChange={(e) =>
-                                handleRowChange(i, "schemeQty", e.target.value)
-                              }
-                              className={`form-input text-center ${
-                                row.availableSchemeQty !== null &&
-                                parseInt(row.schemeQty) > row.availableSchemeQty
-                                  ? "border-rose-400 focus:ring-rose-400 bg-rose-50 text-rose-700 font-bold"
-                                  : ""
-                              }`}
-                            />
-                            {row.availableSchemeQty !== null &&
-                              parseInt(row.schemeQty) >
-                                row.availableSchemeQty && (
-                                <p className="text-rose-600 text-[9px] font-bold mt-1 leading-none">
-                                  Limit!
-                                </p>
-                              )}
-                          </td>
-                          <td className="px-1.5 py-3">
-                            <input
-                              type="text"
-                              value={row.unit}
-                              onChange={(e) =>
-                                handleRowChange(i, "unit", e.target.value)
-                              }
-                              className="form-input"
-                            />
-                          </td>
-                          <td className="px-1.5 py-3">
-                            <input
-                              type="number"
-                              value={row.selling_price}
-                              onChange={(e) =>
-                                handleRowChange(
-                                  i,
-                                  "selling_price",
-                                  e.target.value,
-                                )
-                              }
-                              className="form-input font-bold"
-                            />
-                          </td>
-                          <td className="px-1.5 py-3">
-                            <select
-                              value={row.gst}
-                              onChange={(e) =>
-                                handleRowChange(i, "gst", e.target.value)
-                              }
-                              className="form-input bg-white"
-                            >
-                              {GST_RATES.map((r) => (
-                                <option key={r} value={r}>
-                                  {r}%
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-                          <td className="px-1.5 py-3 font-bold text-slate-800">
-                            ₹{row.amount}
-                          </td>
-                          <td className="px-1.5 py-3">
-                            {rows.length > 1 && (
-                              <button
-                                onClick={() => removeRow(i)}
-                                className="text-rose-400 hover:text-rose-600 text-lg font-bold cursor-pointer"
-                              >
-                                ×
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                        {/* Scheme Badge Row */}
-                        {rowSchemes[i] && rowSchemes[i].length > 0 && (
-                          <tr className="bg-slate-50">
-                            <td
-                              colSpan={9}
-                              className="px-3 py-2 border-b border-slate-100"
-                            >
-                              <div className="flex flex-wrap gap-2">
-                                {rowSchemes[i].map((s, si) => (
-                                  <button
-                                    key={si}
-                                    type="button"
-                                    onClick={() => {
-                                      if (
-                                        s.type === "buy_get_free" &&
-                                        s.totalFreeItems > 0
-                                      ) {
-                                        handleRowChange(
-                                          i,
-                                          "schemeQty",
-                                          s.totalFreeItems,
-                                        );
-                                      }
-                                    }}
-                                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold hover:opacity-80 transition cursor-pointer border ${
-                                      s.type === "buy_get_free"
-                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                        : "bg-amber-50 text-amber-700 border-amber-200"
-                                    }`}
-                                  >
-                                    <span>🎁</span>
-                                    {s.description}
-                                    {s.type === "buy_get_free" &&
-                                      s.totalFreeItems > 0 && (
-                                        <span className="font-bold text-[10px] underline ml-1">
-                                          Apply {s.totalFreeItems} Free
-                                        </span>
-                                      )}
-                                  </button>
-                                ))}
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </Fragment>
-                    ))}
-                  </tbody>
-                </table>
-                <button
-                  onClick={addRow}
-                  className="flex items-center gap-1 text-teal-600 hover:text-teal-800 text-sm font-semibold transition cursor-pointer"
-                >
-                  <PlusCircle className="w-4 h-4" />
-                  Add Product Line
-                </button>
-              </div>
-            </div>
-
-            {/* Right Columns - Details Summary */}
-            <div className="space-y-6">
-              {/* Total Balance */}
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                <h2 className="font-bold text-slate-800 text-base mb-4 border-b border-slate-100 pb-2">
-                  Invoice Breakdown
-                </h2>
-                <div className="space-y-3.5 text-sm">
-                  <div className="flex justify-between text-slate-500 font-medium">
-                    <span>Gross Subtotal</span>
-                    <span>
-                      ₹
-                      {subtotal.toLocaleString("en-IN", {
-                        minimumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-slate-500 font-medium">
-                    <span>GST Amount</span>
-                    <span>
-                      ₹
-                      {gstAmount.toLocaleString("en-IN", {
-                        minimumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-slate-500 font-medium">
-                    <span>Flat Discount (₹)</span>
-                    <input
-                      type="number"
-                      value={discount}
-                      onChange={(e) => setDiscount(e.target.value)}
-                      className="w-24 form-input text-right font-bold"
-                    />
-                  </div>
-
-                  <div className="border-t border-slate-100 pt-3 flex justify-between font-bold text-lg text-slate-900">
-                    <span>Grand Total</span>
-                    <span className="text-emerald-600">
-                      ₹
-                      {total.toLocaleString("en-IN", {
-                        minimumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
+                <div className="w-56 pl-5 flex flex-col justify-center items-end bg-emerald-50 rounded-r -my-2 -mr-2 pr-5 border-l border-emerald-100 relative overflow-hidden">
+                   <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-200/40 rounded-full blur-2xl -mr-16 -mt-16 pointer-events-none"></div>
+                   <span className="text-emerald-800 font-bold uppercase tracking-widest text-[10px] mb-1 relative z-10">Grand Total</span>
+                   <span className="text-5xl font-black text-emerald-600 tracking-tighter relative z-10 drop-shadow-sm">₹{grandTotal}</span>
+                   <button onClick={handleSaveBill} className="mt-3 bg-emerald-600 text-white font-bold uppercase tracking-wider text-[11px] px-4 py-2 rounded shadow-md hover:bg-emerald-700 transition w-full flex items-center justify-center gap-1.5 relative z-10"><Check className="w-3.5 h-3.5"/> Save Bill [F10]</button>
                 </div>
-              </div>
-
-              {/* Payment Method */}
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                <h2 className="font-bold text-slate-800 text-base mb-4 border-b border-slate-100 pb-2">
-                  Settlement Type
-                </h2>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    {
-                      mode: "cash",
-                      label: "Cash Payment",
-                      icon: Wallet,
-                      style:
-                        "bg-emerald-50 text-emerald-700 border-emerald-200",
-                    },
-                    {
-                      mode: "upi",
-                      label: "UPI/QR Code",
-                      icon: Landmark,
-                      style: "bg-teal-50 text-teal-700 border-teal-200",
-                    },
-                    {
-                      mode: "card",
-                      label: "POS Card",
-                      icon: CreditCard,
-                      style: "bg-violet-50 text-violet-700 border-violet-200",
-                    },
-                    {
-                      mode: "credit",
-                      label: "Book Credit",
-                      icon: ClipboardList,
-                      style: "bg-rose-50 text-rose-700 border-rose-200",
-                    },
-                  ].map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <button
-                        key={item.mode}
-                        onClick={() => setPaymentMode(item.mode)}
-                        className={`flex flex-col items-center justify-center p-3.5 rounded-lg border text-xs font-bold transition-all duration-150 cursor-pointer ${
-                          paymentMode === item.mode
-                            ? `${item.style} border-2`
-                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                        }`}
-                      >
-                        <Icon className="w-5 h-5 mb-1.5" />
-                        {item.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Available Schemes Panel */}
-              {allSchemes.filter((s) => s.isActive).length > 0 && (
-                <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                  <h2 className="font-bold text-slate-800 text-base mb-3 flex items-center gap-2">
-                    <Tag className="w-5 h-5 text-teal-600" />
-                    Active Trade Offers
-                    <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-                      {allSchemes.filter((s) => s.isActive).length}
-                    </span>
-                  </h2>
-                  <div className="space-y-3.5 max-h-60 overflow-y-auto pr-1">
-                    {allSchemes
-                      .filter((s) => s.isActive)
-                      .map((s) => (
-                        <div
-                          key={s.id}
-                          className={`rounded-lg p-3 border text-xs ${
-                            s.type === "buy_get_free"
-                              ? "bg-emerald-50/50 border-emerald-100"
-                              : "bg-amber-50/50 border-amber-100"
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p className="font-bold text-slate-800 text-sm leading-snug">
-                                {s.name}
-                              </p>
-                              <p className="text-slate-400 text-[10px] font-semibold mt-1">
-                                Manufacturer: {s.company}
-                              </p>
-                            </div>
-                            <span
-                              className={`shrink-0 px-2.5 py-0.5 rounded-full font-bold border text-[10px] uppercase ${
-                                s.type === "buy_get_free"
-                                  ? "bg-emerald-100 text-emerald-800 border-emerald-200"
-                                  : "bg-amber-100 text-amber-800 border-amber-200"
-                              }`}
-                            >
-                              {s.type === "buy_get_free"
-                                ? `${s.buyQty}+${s.freeQty} Free`
-                                : `${s.discountPercent}% Off`}
-                            </span>
-                          </div>
-                          {s.applicableItems?.length > 0 && (
-                            <p className="text-slate-500 font-semibold mt-1.5">
-                              Applies to: {s.applicableItems.join(", ")}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-
-              <button
-                onClick={handleSaveBill}
-                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-lg font-bold shadow-md hover:shadow-lg transition cursor-pointer text-sm"
-              >
-                <Check className="w-5 h-5" />
-                Save & Generate Invoice
-              </button>
-            </div>
+             </div>
           </div>
         </main>
+        
+        {/* Right Quick Panel */}
+        <aside className="w-64 bg-slate-900 text-white flex flex-col p-3 gap-3 overflow-y-auto shrink-0 shadow-[-10px_0_20px_rgba(0,0,0,0.1)] border-l border-slate-800">
+          <div className="text-center pb-3 border-b border-slate-700/50 mt-1">
+             <h3 className="uppercase tracking-widest text-slate-400 font-bold text-[9px] mb-1.5 flex items-center justify-center gap-1.5"><Wallet className="w-3 h-3"/> Today's Collection</h3>
+             <p className="text-3xl font-black text-emerald-400 tracking-tight text-shadow-sm">₹1,42,500</p>
+          </div>
+          
+          <div className="bg-slate-800/80 rounded border border-slate-700/50 p-2.5 text-xs shadow-inner">
+            <h4 className="uppercase font-bold text-[10px] text-amber-400 border-b border-slate-700 pb-1.5 mb-2 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" /> Near Expiry</h4>
+            <ul className="space-y-1.5">
+              <li className="flex justify-between items-center text-slate-300 bg-slate-700/30 p-1.5 rounded"><span className="font-medium">Dolo 650 (B-19X)</span><span className="text-amber-400 font-bold text-[10px] bg-amber-400/10 px-1.5 py-0.5 rounded">12 Days</span></li>
+              <li className="flex justify-between items-center text-slate-300 bg-slate-700/30 p-1.5 rounded"><span className="font-medium">Calpol (A-22)</span><span className="text-amber-400 font-bold text-[10px] bg-amber-400/10 px-1.5 py-0.5 rounded">28 Days</span></li>
+            </ul>
+          </div>
+
+          <div className="bg-slate-800/80 rounded border border-slate-700/50 p-2.5 text-xs shadow-inner">
+            <h4 className="uppercase font-bold text-[10px] text-blue-400 border-b border-slate-700 pb-1.5 mb-2 flex items-center gap-1.5"><Package className="w-3.5 h-3.5" /> Low Stock</h4>
+            <ul className="space-y-1.5">
+              <li className="flex justify-between items-center text-slate-300 bg-slate-700/30 p-1.5 rounded"><span className="font-medium">Augmentin 625</span><span className="text-rose-400 font-bold text-[10px] bg-rose-400/10 px-1.5 py-0.5 rounded">2 Box</span></li>
+              <li className="flex justify-between items-center text-slate-300 bg-slate-700/30 p-1.5 rounded"><span className="font-medium">Vicks Vaporub</span><span className="text-rose-400 font-bold text-[10px] bg-rose-400/10 px-1.5 py-0.5 rounded">4 Box</span></li>
+            </ul>
+          </div>
+          
+          <button onClick={resetForm} className="mt-auto bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 border border-slate-700 transition-colors shadow-sm"><ArrowLeft className="w-3.5 h-3.5" /> Exit Entry [ESC]</button>
+        </aside>
       </div>
     );
+  }
 
   // Number to Words converter for Indian Rupees
   const numberToWords = (num) => {

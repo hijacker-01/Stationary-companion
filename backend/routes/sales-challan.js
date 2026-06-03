@@ -126,9 +126,16 @@ router.post("/:id/invoice", protect, async (req, res) => {
       const item = await Item.findOne({ where: { name: row.name, batch: row.batch || "" }, transaction: t });
       if (!item) { await t.rollback(); return res.status(400).json({ error: `Item "${row.name}" not found in inventory` }); }
       const qty = parseInt(row.qty) || 0;
-      if (item.stock_qty < qty) { await t.rollback(); return res.status(400).json({ error: `Insufficient stock for "${row.name}". Available: ${item.stock_qty}` }); }
-      await item.update({ stock_qty: item.stock_qty - qty }, { transaction: t });
+      const schemeQty = parseInt(row.schemeQty) || 0;
+      const totalRequested = qty + schemeQty;
+
+      if (item.stock_qty < totalRequested) { await t.rollback(); return res.status(400).json({ error: `Insufficient stock for "${row.name}". Available: ${item.stock_qty}` }); }
+      await item.update({ stock_qty: item.stock_qty - totalRequested }, { transaction: t });
+      
       await stockMovement.recordOut(item, qty, "sale", null, req.user ? req.user.id : null, `DM ${challan.challanNo} invoiced`, t);
+      if (schemeQty > 0) {
+        await stockMovement.recordOut(item, schemeQty, "sale", null, req.user ? req.user.id : null, `DM ${challan.challanNo} invoiced (Free Scheme)`, t);
+      }
     }
 
     // Create Bill

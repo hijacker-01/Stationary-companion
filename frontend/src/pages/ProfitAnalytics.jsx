@@ -20,11 +20,12 @@ export default function ProfitAnalytics() {
   const [activeTab, setActiveTab] = useState("executive"); // executive, products, customers, suppliers, batches
   const [aiQuery, setAiQuery] = useState("");
   const [aiResponse, setAiResponse] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`http://localhost:5000/api/analytics/profit?filter=${filter}`, { headers: headers() });
+      const res = await axios.get(`/api/analytics/profit?filter=${filter}`, { headers: headers() });
       setData(res.data);
       setErrorMsg(null);
     } catch (err) {
@@ -39,11 +40,14 @@ export default function ProfitAnalytics() {
 
   const askCopilot = async () => {
     if (!aiQuery) return;
+    setIsAnalyzing(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/analytics/copilot", { query: aiQuery }, { headers: headers() });
+      const res = await axios.post("/api/analytics/copilot", { query: aiQuery }, { headers: headers() });
       setAiResponse(res.data);
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -127,8 +131,8 @@ export default function ProfitAnalytics() {
                 <option value="this_year">This Year</option>
                 <option value="all">All Time</option>
               </select>
-              <button onClick={fetchAnalytics} className="bg-[#1b4985] text-white px-3 py-1.5 text-xs font-bold rounded flex items-center gap-1 hover:bg-blue-800">
-                <Filter className="w-3 h-3"/> Refresh
+              <button onClick={fetchAnalytics} disabled={loading} className="bg-[#1b4985] text-white px-3 py-1.5 text-xs font-bold rounded flex items-center gap-1 hover:bg-blue-800 disabled:opacity-50">
+                <Filter className="w-3 h-3"/> {loading ? "Refreshing..." : "Refresh"}
               </button>
             </div>
           </div>
@@ -176,8 +180,8 @@ export default function ProfitAnalytics() {
                 onChange={e=>setAiQuery(e.target.value)}
                 className="flex-1 text-xs p-2 rounded text-gray-800 focus:outline-none"
               />
-              <button onClick={askCopilot} className="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-xs font-bold rounded flex items-center gap-1">
-                <Search className="w-3 h-3"/> Analyze
+              <button onClick={askCopilot} disabled={isAnalyzing} className="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-xs font-bold rounded flex items-center gap-1 disabled:opacity-50">
+                <Search className="w-3 h-3"/> {isAnalyzing ? "Analyzing..." : "Analyze"}
               </button>
             </div>
             {aiResponse && (

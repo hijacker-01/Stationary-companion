@@ -27,6 +27,7 @@ import AuditLog      from "./pages/AuditLog";
 import CashBook      from "./pages/CashBook";
 import DebtorsBoard  from "./pages/DebtorsBoard";
 import CreditorsBoard from "./pages/CreditorsBoard";
+import OutstandingBillsTagging from "./pages/OutstandingBillsTagging";
 import InvoicePrint  from "./pages/InvoicePrint";
 import PurchaseChallan from "./pages/PurchaseChallan";
 import SalesChallan   from "./pages/SalesChallan";
@@ -121,6 +122,7 @@ function App() {
         <Route path="/cashbook"          element={<CashBook />} />
         <Route path="/debtors"           element={<DebtorsBoard />} />
         <Route path="/creditors"         element={<CreditorsBoard />} />
+        <Route path="/outstanding-bills/tagging" element={<OutstandingBillsTagging />} />
         <Route path="/invoice-print/:id" element={<InvoicePrint />} />
         {/* Domain 6: Analytics */}
         <Route path="/profit-analytics"  element={<ProfitAnalytics />} />
