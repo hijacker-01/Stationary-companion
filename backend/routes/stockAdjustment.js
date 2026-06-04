@@ -3,6 +3,9 @@ const router = express.Router();
 const StockAdjustment = require("../models/StockAdjustment");
 const Item = require("../models/Item");
 const sequelize = require("../config/db");
+const { protect } = require("../middleware/auth");
+
+router.use(protect);
 
 router.get("/", async (req, res) => {
   try {

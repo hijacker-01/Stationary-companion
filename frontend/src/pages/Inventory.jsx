@@ -36,23 +36,39 @@ export default function Inventory() {
 
   const handleSubmit = async () => {
     if (!form.name || !form.expiry) return alert("Name and Expiry are required");
-    if (editId) {
-      await axios.put(`http://localhost:5000/api/items/${editId}`, form, { headers: headers() });
-    } else {
-      await axios.post("http://localhost:5000/api/items", form, { headers: headers() });
+    const payload = {
+      ...form,
+      stock_qty: parseInt(form.stock_qty) || 0,
+      scheme_qty: parseInt(form.scheme_qty) || 0,
+      mrp: parseFloat(form.mrp) || 0,
+      selling_price: parseFloat(form.selling_price) || 0,
+      cost_price: parseFloat(form.cost_price) || 0,
+      reorderPoint: parseInt(form.reorderPoint) || 10
+    };
+    try {
+      if (editId) {
+        await axios.put(`http://localhost:5000/api/items/${editId}`, payload, { headers: headers() });
+      } else {
+        await axios.post("http://localhost:5000/api/items", payload, { headers: headers() });
+      }
+      setShowModal(false);
+      setForm({ ...empty });
+      setEditId(null);
+      fetchItems();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to save item");
     }
-    setShowModal(false);
-    setForm(empty);
-    setEditId(null);
-    fetchItems();
   };
 
   const handleEdit = (item) => {
-    setForm({ 
-      ...item, 
-      expiry: item.expiry?.split("T")[0],
-      schedule: item.schedule || "None",
-      reorderPoint: item.reorderPoint || 10
+    setForm({
+      name: item.name || "", batch: item.batch || "", hsn: item.hsn || "",
+      pack: item.pack || "", category: item.category || "", company: item.company || "",
+      stock_qty: item.stock_qty || 0, scheme_qty: item.scheme_qty || 0, unit: item.unit || "strips",
+      expiry: item.expiry?.split("T")[0], location: item.location || "", mrp: item.mrp || 0,
+      selling_price: item.selling_price || 0, cost_price: item.cost_price || 0,
+      purchaseScheme: item.purchaseScheme || "", schedule: item.schedule || "None",
+      reorderPoint: item.reorderPoint ?? 10
     });
     setEditId(item.id);
     setShowModal(true);
@@ -60,8 +76,12 @@ export default function Inventory() {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this item?")) return;
-    await axios.delete(`http://localhost:5000/api/items/${id}`, { headers: headers() });
-    fetchItems();
+    try {
+      await axios.delete(`http://localhost:5000/api/items/${id}`, { headers: headers() });
+      fetchItems();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to delete item");
+    }
   };
 
   const openAdjustment = (item) => {
@@ -96,9 +116,9 @@ export default function Inventory() {
     i.batch?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const lowStockItems = items.filter(i => i.stock_qty > 0 && i.stock_qty <= (i.reorderPoint || 10));
-  const outOfStockItems = items.filter(i => i.stock_qty <= 0);
-  const totalStockValue = items.reduce((sum, i) => sum + (i.stock_qty * (i.selling_price || i.mrp || 0)), 0);
+  const lowStockItems = items.filter(i => i.stock_qty > 0 && i.stock_qty <= (i.reorderPoint ?? 10));
+  const outOfStockItems = items.filter(i => i.stock_qty === 0);
+  const totalStockValue = items.reduce((sum, i) => sum + (Math.max(0, i.stock_qty) * (i.selling_price || i.mrp || 0)), 0);
 
   return (
     <div className="flex h-screen bg-[#e5e5e5] font-sans">
@@ -206,7 +226,7 @@ export default function Inventory() {
                     <td className="py-1.5 px-3 border-r border-gray-200 font-medium text-gray-800">{item.company || "—"}</td>
                     <td className="py-1.5 px-3 border-r border-gray-200 text-right">
                       <span className={`font-black ${
-                        item.stock_qty <= 0 ? "text-red-600" : item.stock_qty <= (item.reorderPoint || 10) ? "text-amber-600" : "text-green-700"
+                        item.stock_qty <= 0 ? "text-red-600" : item.stock_qty <= (item.reorderPoint ?? 10) ? "text-amber-600" : "text-green-700"
                       }`}>
                         {item.stock_qty}
                       </span>
@@ -218,7 +238,7 @@ export default function Inventory() {
                       {(item.stock_qty || 0) + (item.scheme_qty || 0)} <span className="text-[10px] text-gray-500 font-normal">{item.unit}</span>
                     </td>
                     <td className="py-1.5 px-3 border-r border-gray-200 text-right font-bold text-gray-900">
-                      ₹{(item.selling_price || item.mrp || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      ₹{(item.mrp || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </td>
                     <td className="py-1.5 px-3 border-r border-gray-200 text-gray-700">
                       {item.expiry ? new Date(item.expiry).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
@@ -360,7 +380,7 @@ export default function Inventory() {
                     type="number"
                     min="0"
                     placeholder="e.g. 10"
-                    value={form.reorderPoint || ""}
+                    value={form.reorderPoint ?? ""}
                     onChange={(e) => setForm({ ...form, reorderPoint: parseInt(e.target.value) || 0 })}
                     className="w-full border border-gray-300 px-2 py-1.5 focus:outline-none focus:border-[#1b4985] bg-white font-semibold text-gray-900"
                   />

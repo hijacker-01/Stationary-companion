@@ -28,15 +28,21 @@ export default function Customers() {
 
   const fetchCustomers = () =>
     axios.get("http://localhost:5000/api/customers", { headers: headers() })
-      .then(r => setCustomers(r.data));
+      .then(r => setCustomers(r.data))
+      .catch(err => console.error("Failed to fetch customers:", err));
 
   useEffect(() => { fetchCustomers(); }, []);
 
   const fetchLedger = async (customer) => {
-    const res = await axios.get(`http://localhost:5000/api/customers/${customer.id}/ledger`, { headers: headers() });
-    setLedger(res.data);
-    setActiveCustomer(customer);
-    setShowLedger(true);
+    try {
+      const res = await axios.get(`http://localhost:5000/api/customers/${customer.id}/ledger`, { headers: headers() });
+      setLedger(res.data);
+      setActiveCustomer(customer);
+      setShowLedger(true);
+    } catch (err) {
+      console.error('Failed to fetch ledger:', err);
+      alert(err.response?.data?.error || 'Failed to load ledger');
+    }
   };
 
   const handleSave = async () => {
@@ -53,20 +59,26 @@ export default function Customers() {
   };
 
   const handlePayment = async () => {
-    if (!payForm.amount || payForm.amount <= 0) return alert("Enter valid amount");
+    const amt = parseFloat(payForm.amount);
+    if (isNaN(amt) || amt <= 0) return alert("Enter valid amount");
     try {
-      await axios.post(`http://localhost:5000/api/customers/${activeCustomer.id}/payment`,
+      await axios.post(`http://localhost:5000/api/customers/${payForm.customerId}/payment`,
         payForm, { headers: headers() });
       setShowPayment(false); setPayForm(emptyPayment);
       fetchCustomers();
-      if (showLedger) fetchLedger(activeCustomer);
+      if (showLedger && activeCustomer) fetchLedger(activeCustomer);
     } catch(err) { alert(err.response?.data?.error || "Error"); }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this customer?")) return;
-    await axios.delete(`http://localhost:5000/api/customers/${id}`, { headers: headers() });
-    fetchCustomers();
+    try {
+      await axios.delete(`http://localhost:5000/api/customers/${id}`, { headers: headers() });
+      fetchCustomers();
+    } catch (err) {
+      console.error('Failed to delete customer:', err);
+      alert(err.response?.data?.error || 'Failed to delete customer');
+    }
   };
 
   const filtered = customers.filter(c => {
@@ -109,7 +121,6 @@ export default function Customers() {
           </button>
         </div>
 
-        {/* Summary */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {summaryCards.map((c, i) => {
             const Icon = c.icon;
@@ -127,7 +138,6 @@ export default function Customers() {
           })}
         </div>
 
-        {/* Filter */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm flex flex-wrap gap-4 items-center">
           <div className="flex items-center gap-3 flex-1 min-w-48">
             <Search className="w-5 h-5 text-slate-400" />
@@ -152,7 +162,6 @@ export default function Customers() {
           <span className="text-sm text-slate-400 ml-auto">{filtered.length} customers</span>
         </div>
 
-        {/* Customer Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(c => (
             <div key={c.id} className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-150">
@@ -188,7 +197,7 @@ export default function Customers() {
                   className="flex-1 flex items-center justify-center gap-1.5 bg-teal-50 hover:bg-teal-100 text-teal-600 py-2 rounded-lg text-xs font-semibold cursor-pointer transition">
                   <BookOpen className="w-3.5 h-3.5" /> Ledger
                 </button>
-                <button onClick={() => { setActiveCustomer(c); setPayForm(emptyPayment); setShowPayment(true); }}
+                <button onClick={() => { setActiveCustomer(c); setPayForm({...emptyPayment, customerId: c.id}); setShowPayment(true); }}
                   className="flex-1 flex items-center justify-center gap-1.5 bg-green-50 hover:bg-green-100 text-green-600 py-2 rounded-lg text-xs font-semibold cursor-pointer transition">
                   <IndianRupee className="w-3.5 h-3.5" /> Payment
                 </button>
@@ -211,7 +220,6 @@ export default function Customers() {
           )}
         </div>
 
-        {/* ── ADD/EDIT MODAL ── */}
         {showModal && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
@@ -261,7 +269,6 @@ export default function Customers() {
           </div>
         )}
 
-        {/* ── PAYMENT MODAL ── */}
         {showPayment && activeCustomer && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
@@ -332,7 +339,6 @@ export default function Customers() {
           </div>
         )}
 
-        {/* ── LEDGER MODAL ── */}
         {showLedger && ledger && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto border border-slate-100">
@@ -350,17 +356,13 @@ export default function Customers() {
                     <p className={`text-2xl font-bold ${ledger.finalBalance > 0 ? "text-red-600" : "text-green-600"}`}>
                       ₹{ledger.finalBalance?.toFixed(2)}
                     </p>
-                    <p className="text-xs text-slate-400">
-                      {ledger.finalBalance > 0 ? "Amount Due" : "Advance / Clear"}
-                    </p>
                   </div>
                 </div>
 
-                {/* Summary */}
                 <div className="grid grid-cols-3 gap-4 mb-6">
                   {[
-                    { label:"Total Invoiced", value:`₹${ledger.entries?.filter(e=>e.debit>0).reduce((s,e)=>s+e.debit,0).toFixed(2)}`, color:"text-red-600" },
-                    { label:"Total Paid", value:`₹${ledger.entries?.filter(e=>e.credit>0).reduce((s,e)=>s+e.credit,0).toFixed(2)}`, color:"text-green-600" },
+                    { label:"Total Invoiced", value:`₹${(ledger.entries || []).filter(e=>e.debit>0).reduce((s,e)=>s+parseFloat(e.debit),0).toFixed(2)}`, color:"text-red-600" },
+                    { label:"Total Paid", value:`₹${(ledger.entries || []).filter(e=>e.credit>0).reduce((s,e)=>s+parseFloat(e.credit),0).toFixed(2)}`, color:"text-green-600" },
                     { label:"Balance Due", value:`₹${ledger.finalBalance?.toFixed(2)}`, color: ledger.finalBalance>0?"text-red-600":"text-green-600" },
                   ].map(s => (
                     <div key={s.label} className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">

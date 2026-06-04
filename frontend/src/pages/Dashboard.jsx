@@ -6,7 +6,7 @@ import BusinessFooter from "../components/BusinessFooter";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
+  LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
 import { ArrowUpRight, TrendingUp, AlertCircle, IndianRupee, AlertTriangle, ShieldAlert } from "lucide-react";
@@ -24,7 +24,7 @@ export default function Dashboard() {
   useEffect(() => {
     axios.get("http://localhost:5000/api/dashboard", { headers: headers() })
       .then(r => setData(r.data))
-      .catch(() => {})
+      .catch((err) => { console.error('Dashboard fetch failed:', err); })
       .finally(() => setLoading(false));
   }, []);
 

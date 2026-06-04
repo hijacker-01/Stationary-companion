@@ -19,7 +19,13 @@ export default function Login() {
       localStorage.setItem("user", JSON.stringify(res.data.user));
       navigate("/dashboard");
     } catch (err) {
-      setError("Invalid email or password");
+      if (err.response?.status === 401 || err.response?.status === 400) {
+        setError('Invalid email or password');
+      } else if (!err.response) {
+        setError('Unable to connect to server');
+      } else {
+        setError(err.response?.data?.error || 'An unexpected error occurred');
+      }
     } finally {
       setIsLoading(false);
     }

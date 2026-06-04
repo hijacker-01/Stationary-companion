@@ -55,11 +55,11 @@ export default function Suppliers() {
   const [poItemSchemes, setPoItemSchemes] = useState({});
 
   const fetchSuppliers = () =>
-    axios.get("http://localhost:5000/api/suppliers", { headers: headers() }).then(r => setSuppliers(r.data));
+    axios.get("http://localhost:5000/api/suppliers", { headers: headers() }).then(r => setSuppliers(r.data)).catch(err => console.error('Failed to fetch suppliers:', err));
   const fetchOrders = () =>
-    axios.get("http://localhost:5000/api/suppliers/orders", { headers: headers() }).then(r => setOrders(r.data));
+    axios.get("http://localhost:5000/api/suppliers/orders", { headers: headers() }).then(r => setOrders(r.data)).catch(err => console.error('Failed to fetch orders:', err));
   const fetchSchemes = () =>
-    axios.get("http://localhost:5000/api/schemes", { headers: headers() }).then(r => setAllSchemes(r.data));
+    axios.get("http://localhost:5000/api/schemes", { headers: headers() }).then(r => setAllSchemes(r.data)).catch(err => console.error('Failed to fetch schemes:', err));
 
   useEffect(() => { fetchSuppliers(); fetchOrders(); fetchSchemes(); }, []);
 
@@ -103,14 +103,16 @@ export default function Suppliers() {
 
   const handleSavePO = async () => {
     if (!poSupplier) return alert("Select a supplier");
-    const sup = suppliers.find(s => s.name === poSupplier);
+    const validItems = poItems.filter(i => i.name);
+    if (validItems.length === 0) return alert('Add at least one item');
+    const sup = suppliers.find(s => s.name.toLowerCase() === poSupplier.toLowerCase());
     try {
       await axios.post("http://localhost:5000/api/suppliers/orders", {
         supplierId: sup?.id,
         supplierName: poSupplier,
         items: poItems.filter(i => i.name),
         subtotal: parseFloat(subtotal.toFixed(2)),
-        gstAmount: parseFloat(gstTotal.toFixed(2)),
+        gstAmount: parseFloat(gstAmount.toFixed(2)),
         total: parseFloat(total.toFixed(2)),
         balanceDue: parseFloat(total.toFixed(2)),
         paymentMode: poPayMode,
@@ -139,14 +141,24 @@ export default function Suppliers() {
 
   const handleDeleteSupplier = async (id) => {
     if (!window.confirm("Delete supplier?")) return;
-    await axios.delete(`http://localhost:5000/api/suppliers/${id}`, { headers: headers() });
-    fetchSuppliers();
+    try {
+      await axios.delete(`http://localhost:5000/api/suppliers/${id}`, { headers: headers() });
+      fetchSuppliers();
+    } catch (err) {
+      console.error('Failed to delete supplier:', err);
+      alert(err.response?.data?.error || 'Failed to delete supplier');
+    }
   };
 
   const handleDeleteOrder = async (id) => {
     if (!window.confirm("Delete this purchase order?")) return;
-    await axios.delete(`http://localhost:5000/api/suppliers/orders/${id}`, { headers: headers() });
-    fetchOrders();
+    try {
+      await axios.delete(`http://localhost:5000/api/suppliers/orders/${id}`, { headers: headers() });
+      fetchOrders();
+    } catch (err) {
+      console.error('Failed to delete order:', err);
+      alert(err.response?.data?.error || 'Failed to delete order');
+    }
   };
 
   const filteredSuppliers = suppliers.filter(s =>
@@ -493,7 +505,7 @@ export default function Suppliers() {
                             ))}
                             <td className="px-1 py-1">
                               <select value={item.gst}
-                                onChange={e => { const u=[...poItems]; u[i]={...u[i],gst:e.target.value}; setPoItems(u); }}
+                                onChange={e => { const u=[...poItems]; u[i]={...u[i],gst:parseFloat(e.target.value)}; setPoItems(u); }}
                                 className="border border-slate-200 rounded px-2 py-1.5 text-xs focus:outline-none bg-white">
                                 {GST_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
                               </select>
@@ -507,8 +519,18 @@ export default function Suppliers() {
                             <td className="px-1 py-1">
                               {poItems.length > 1 && (
                                 <button onClick={() => {
-                                  setPoItems(poItems.filter((_,idx)=>idx!==i));
-                                  setPoItemSchemes(prev => { const n = { ...prev }; delete n[i]; return n; });
+                                  const newItems = poItems.filter((_,idx)=>idx!==i);
+                                  setPoItems(newItems);
+                                  // Rebuild scheme indices after removal
+                                  setPoItemSchemes(prev => {
+                                    const rebuilt = {};
+                                    Object.keys(prev).forEach(k => {
+                                      const ki = parseInt(k);
+                                      if (ki < i) rebuilt[ki] = prev[ki];
+                                      else if (ki > i) rebuilt[ki - 1] = prev[ki];
+                                    });
+                                    return rebuilt;
+                                  });
                                 }}
                                   className="text-red-400 hover:text-red-600 text-lg cursor-pointer">×</button>
                               )}
@@ -598,7 +620,7 @@ export default function Suppliers() {
               <div className="mb-6">
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Amount Paid Now ₹</label>
                 <input type="number" value={receiveAmount}
-                  onChange={e => setReceiveAmount(e.target.value)}
+                  onChange={e => setReceiveAmount(parseFloat(e.target.value) || 0)}
                   className="form-input" />
                 <p className="text-xs text-slate-400 mt-1">
                   Balance due: ₹{(activeOrder.total - receiveAmount).toFixed(2)}

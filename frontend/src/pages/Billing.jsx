@@ -1,4 +1,4 @@
-import { useEffect, useState, Fragment } from "react";
+import { useEffect, useState, useRef, Fragment } from "react";
 import axios from "axios";
 import Sidebar from "../components/Sidebar";
 import {
@@ -81,6 +81,10 @@ export default function Billing() {
     company: "",
     division: ""
   });
+  const handleSaveBillRef = useRef(null);
+
+  // Keep handleSaveBillRef always pointing at the latest handleSaveBill
+  useEffect(() => { handleSaveBillRef.current = handleSaveBill; });
 
   // F-key listener for create view
   useEffect(() => {
@@ -88,7 +92,7 @@ export default function Billing() {
       if (view !== "create") return;
       if (e.key === "F2") { e.preventDefault(); document.getElementById('search-product-0')?.focus(); }
       if (e.key === "F3") { e.preventDefault(); document.getElementById('search-customer')?.focus(); }
-      if (e.key === "F10") { e.preventDefault(); handleSaveBill(); }
+      if (e.key === "F10") { e.preventDefault(); handleSaveBillRef.current?.(); }
       if (e.key === "Escape") { e.preventDefault(); resetForm(); }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -105,29 +109,34 @@ export default function Billing() {
   const fetchBills = () => {
     axios
       .get("http://localhost:5000/api/billing", { headers: headers() })
-      .then((res) => setBills(res.data));
+      .then((res) => setBills(res.data))
+      .catch((err) => console.error(err));
   };
 
   const fetchItems = () => {
     axios
       .get("http://localhost:5000/api/items", { headers: headers() })
-      .then((res) => setItems(res.data));
+      .then((res) => setItems(res.data))
+      .catch((err) => console.error(err));
   };
 
   const fetchSchemes = () =>
     axios
       .get("http://localhost:5000/api/schemes", { headers: headers() })
-      .then((res) => setAllSchemes(res.data));
+      .then((res) => setAllSchemes(res.data))
+      .catch((err) => console.error(err));
 
   const fetchCustomers = () =>
     axios
       .get("http://localhost:5000/api/customers", { headers: headers() })
-      .then((res) => setCustomers(res.data || []));
+      .then((res) => setCustomers(res.data || []))
+      .catch((err) => console.error(err));
 
   const fetchSalesmen = () =>
     axios
       .get("http://localhost:5000/api/salesman", { headers: headers() })
-      .then((res) => setSalesmen(res.data || []));
+      .then((res) => setSalesmen(res.data || []))
+      .catch((err) => console.error(err));
 
   const handleCustomerSelect = (name) => {
     const found = customers.find(
@@ -159,7 +168,8 @@ export default function Billing() {
   const fetchSettings = () =>
     axios
       .get("http://localhost:5000/api/settings", { headers: headers() })
-      .then((res) => setSettings(res.data || {}));
+      .then((res) => setSettings(res.data || {}))
+      .catch((err) => console.error(err));
 
   useEffect(() => {
     fetchBills();
@@ -251,12 +261,17 @@ export default function Billing() {
     setRows(updated);
   };
 
-  const calculateAmount = (mrp, qty, gst) => {
+  const calculateAmount = (mrp, qty, _gst) => {
     const base = parseFloat(mrp || 0) * parseInt(qty || 1);
-    return parseFloat((base + (base * gst) / 100).toFixed(2));
+    return parseFloat(base.toFixed(2));
   };
 
   const handleRowChange = (index, field, value) => {
+    // Coerce numeric fields so they aren't stored as strings
+    if (field === 'qty' || field === 'schemeQty') value = parseInt(value) || 0;
+    if (field === 'gst') value = parseFloat(value) || 0;
+    if (field === 'selling_price' || field === 'mrp') value = parseFloat(value) || 0;
+
     const updated = [...rows];
     updated[index][field] = value;
     updated[index].amount = calculateAmount(
@@ -275,9 +290,14 @@ export default function Billing() {
   const removeRow = (i) => {
     setRows(rows.filter((_, idx) => idx !== i));
     setRowSchemes((prev) => {
-      const n = { ...prev };
-      delete n[i];
-      return n;
+      const rebuilt = {};
+      Object.keys(prev).forEach((key) => {
+        const k = parseInt(key);
+        if (k < i) rebuilt[k] = prev[k];
+        else if (k > i) rebuilt[k - 1] = prev[k];
+        // k === i is the deleted row, skip it
+      });
+      return rebuilt;
     });
   };
 
@@ -347,11 +367,16 @@ export default function Billing() {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this bill?")) return;
-    await axios.delete(`http://localhost:5000/api/billing/${id}`, {
-      headers: headers(),
-    });
-    fetchBills();
-    fetchItems(); // Refresh items since stock is restored on bill deletion
+    try {
+      await axios.delete(`http://localhost:5000/api/billing/${id}`, {
+        headers: headers(),
+      });
+      fetchBills();
+      fetchItems(); // Refresh items since stock is restored on bill deletion
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.error || "Failed to delete bill");
+    }
   };
 
   const resetForm = () => {
@@ -380,10 +405,10 @@ export default function Billing() {
       let from = "", to = "";
       const today = new Date();
       if (val === "Today") {
-        from = to = today.toISOString().split("T")[0];
+        from = to = today.toLocaleDateString('en-CA');
       } else if (val === "Yesterday") {
         const y = new Date(); y.setDate(today.getDate() - 1);
-        from = to = y.toISOString().split("T")[0];
+        from = to = y.toLocaleDateString('en-CA');
       } else if (val === "This Month") {
         from = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
         to = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split("T")[0];
@@ -404,7 +429,7 @@ export default function Billing() {
       // Shop / Customer Filter
       if (advancedSearch.shop && !bill.customerName?.toLowerCase().includes(advancedSearch.shop.toLowerCase())) return false;
       // Date Filter
-      const bDate = bill.createdAt?.split("T")[0];
+      const bDate = bill.createdAt ? new Date(bill.createdAt).toLocaleDateString('en-CA') : '';
       if (advancedSearch.dateFrom && bDate < advancedSearch.dateFrom) return false;
       if (advancedSearch.dateTo && bDate > advancedSearch.dateTo) return false;
       
@@ -648,7 +673,7 @@ export default function Billing() {
               <div className="flex justify-between items-center mb-2 border-b pb-1 border-slate-100">
                 <h2 className="font-bold text-sm text-teal-800 uppercase tracking-wide">Customer Details [F3]</h2>
                 <div className="flex gap-2">
-                  <span className="bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded">Credit: ₹{Math.floor(Math.random() * 50000)}</span>
+                  <span className="bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded">Credit: —</span>
                   <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded">30 Days</span>
                 </div>
               </div>
@@ -680,7 +705,7 @@ export default function Billing() {
                  <div className="flex justify-between border-b border-dashed border-slate-200 pb-1"><span className="text-slate-500 font-medium">Entry No:</span><span className="font-bold text-rose-600">NEW</span></div>
                  <div className="flex justify-between border-b border-dashed border-slate-200 pb-1"><span className="text-slate-500 font-medium">Date:</span><span className="font-bold">{new Date().toLocaleDateString('en-GB')}</span></div>
                  <div className="flex justify-between border-b border-dashed border-slate-200 pb-1 items-center"><span className="text-slate-500 font-medium">Due Date:</span><input type="date" value={customer.dueDate} onChange={e => setCustomer({...customer, dueDate: e.target.value})} className="w-24 outline-none text-right font-semibold bg-transparent" /></div>
-                 <div className="flex justify-between border-b border-dashed border-slate-200 pb-1 items-center"><span className="text-slate-500 font-medium">Salesman:</span><select className="w-24 outline-none text-right bg-transparent font-semibold"><option>Direct</option></select></div>
+                 <div className="flex justify-between border-b border-dashed border-slate-200 pb-1 items-center"><span className="text-slate-500 font-medium">Salesman:</span><select value={selectedSalesman.name} onChange={e => { const found = salesmen.find(s => s.name === e.target.value); setSelectedSalesman(found ? { id: found.id, name: found.name } : { id: '', name: '' }); }} className="w-24 outline-none text-right bg-transparent font-semibold"><option value="">Direct</option>{salesmen.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}</select></div>
               </div>
             </div>
           </div>
@@ -844,6 +869,7 @@ export default function Billing() {
 
   // Number to Words converter for Indian Rupees
   const numberToWords = (num) => {
+    num = Math.abs(Math.round(Number(num)));
     const a = [
       "",
       "One ",
@@ -1211,4 +1237,6 @@ export default function Billing() {
       </div>
     );
   }
+
+  return null;
 }

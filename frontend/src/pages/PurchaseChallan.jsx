@@ -1,4 +1,4 @@
-import { useEffect, useState, Fragment } from "react";
+import { useEffect, useState, useRef, Fragment } from "react";
 import axios from "axios";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
@@ -77,6 +77,10 @@ export default function PurchaseChallan() {
     category: 'ALL CATEGORY', item: 'ALL ITEMS',
   });
 
+  // Ref for F10 stale closure fix
+  const handleSaveBillRef = useRef(null);
+  useEffect(() => { handleSaveBillRef.current = handleSaveBill; });
+
   // F-key listener for create view
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -84,7 +88,7 @@ export default function PurchaseChallan() {
       if (e.key === "F2") { e.preventDefault(); document.getElementById('search-product-0')?.focus(); }
       if (e.key === "F3") { e.preventDefault(); document.getElementById('search-supplier')?.focus(); }
       if (e.key === "F8") { e.preventDefault(); setShowDebtorsModal(true); }
-      if (e.key === "F10") { e.preventDefault(); handleSaveBill(); }
+      if (e.key === "F10") { e.preventDefault(); handleSaveBillRef.current?.(); }
       if (e.key === "Escape") {
         e.preventDefault();
         if (showDebtorsModal) setShowDebtorsModal(false);
@@ -101,12 +105,12 @@ export default function PurchaseChallan() {
     setExpandedRows(newSet);
   };
 
-  const fetchBills = () => axios.get("http://localhost:5000/api/purchase-challan", { headers: headers() }).then((res) => setBills(res.data));
-  const fetchItems = () => axios.get("http://localhost:5000/api/items", { headers: headers() }).then((res) => setItems(res.data));
-  const fetchSchemes = () => axios.get("http://localhost:5000/api/schemes", { headers: headers() }).then((res) => setAllSchemes(res.data));
-  const fetchSuppliers = () => axios.get("http://localhost:5000/api/suppliers", { headers: headers() }).then((res) => setSuppliers(res.data || []));
-  const fetchSalesmen = () => axios.get("http://localhost:5000/api/salesman", { headers: headers() }).then((res) => setSalesmen(res.data || []));
-  const fetchSettings = () => axios.get("http://localhost:5000/api/settings", { headers: headers() }).then((res) => setSettings(res.data || {}));
+  const fetchBills = () => axios.get("http://localhost:5000/api/purchase-challan", { headers: headers() }).then((res) => setBills(res.data)).catch((err) => console.error("Failed to fetch bills:", err));
+  const fetchItems = () => axios.get("http://localhost:5000/api/items", { headers: headers() }).then((res) => setItems(res.data)).catch((err) => console.error("Failed to fetch items:", err));
+  const fetchSchemes = () => axios.get("http://localhost:5000/api/schemes", { headers: headers() }).then((res) => setAllSchemes(res.data)).catch((err) => console.error("Failed to fetch schemes:", err));
+  const fetchSuppliers = () => axios.get("http://localhost:5000/api/suppliers", { headers: headers() }).then((res) => setSuppliers(res.data || [])).catch((err) => console.error("Failed to fetch suppliers:", err));
+  const fetchSalesmen = () => axios.get("http://localhost:5000/api/salesman", { headers: headers() }).then((res) => setSalesmen(res.data || [])).catch((err) => console.error("Failed to fetch salesmen:", err));
+  const fetchSettings = () => axios.get("http://localhost:5000/api/settings", { headers: headers() }).then((res) => setSettings(res.data || {})).catch((err) => console.error("Failed to fetch settings:", err));
 
   const handleSupplierSelect = (name) => {
     const found = suppliers.find((c) => c.name.toLowerCase() === name.toLowerCase());
@@ -159,10 +163,12 @@ export default function PurchaseChallan() {
 
   const calculateAmount = (mrp, qty, gst) => {
     const base = parseFloat(mrp || 0) * parseInt(qty || 1);
-    return parseFloat((base + (base * gst) / 100).toFixed(2));
+    return parseFloat(base.toFixed(2));
   };
 
   const handleRowChange = (index, field, value) => {
+    if (field === 'qty' || field === 'schemeQty') value = parseInt(value) || 0;
+    if (field === 'gst') value = parseFloat(value) || 0;
     const updated = [...rows];
     updated[index][field] = value;
     updated[index].amount = calculateAmount(
@@ -175,7 +181,18 @@ export default function PurchaseChallan() {
   };
 
   const addRow = () => setRows([...rows, { ...emptyRow }]);
-  const removeRow = (i) => { setRows(rows.filter((_, idx) => idx !== i)); setRowSchemes((prev) => { const n = { ...prev }; delete n[i]; return n; }); };
+  const removeRow = (i) => {
+    setRows(rows.filter((_, idx) => idx !== i));
+    setRowSchemes((prev) => {
+      const n = {};
+      Object.keys(prev).forEach((key) => {
+        const k = parseInt(key);
+        if (k < i) n[k] = prev[k];
+        else if (k > i) n[k - 1] = prev[k];
+      });
+      return n;
+    });
+  };
 
   const subtotal = rows.reduce((s, r) => s + parseFloat(r.rate || r.mrp || 0) * parseInt(r.qty || 1), 0);
   const gstAmount = rows.reduce((s, r) => { const base = parseFloat(r.rate || r.mrp || 0) * parseInt(r.qty || 1); return s + (base * r.gst) / 100; }, 0);
@@ -215,8 +232,12 @@ export default function PurchaseChallan() {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this bill?")) return;
-    await axios.delete(`http://localhost:5000/api/purchase-challan/${id}`, { headers: headers() });
-    fetchBills(); fetchItems();
+    try {
+      await axios.delete(`http://localhost:5000/api/purchase-challan/${id}`, { headers: headers() });
+      fetchBills(); fetchItems();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to delete challan");
+    }
   };
 
   const resetForm = () => {
@@ -226,6 +247,7 @@ export default function PurchaseChallan() {
 
   // Number to Words converter
   const numberToWords = (num) => {
+    num = Math.abs(Math.round(Number(num)));
     const a = ["","One ","Two ","Three ","Four ","Five ","Six ","Seven ","Eight ","Nine ","Ten ","Eleven ","Twelve ","Thirteen ","Fourteen ","Fifteen ","Sixteen ","Seventeen ","Eighteen ","Nineteen "];
     const b = ["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
     if ((num = num.toString()).length > 9) return "overflow";
@@ -314,7 +336,7 @@ export default function PurchaseChallan() {
               </thead>
               <tbody>
                 {bills.filter(bill => {
-                  if (listFilter === 'Today') { const t = new Date().toISOString().split('T')[0]; return bill.createdAt?.startsWith(t); }
+                  if (listFilter === 'Today') { const t = new Date().toLocaleDateString('en-CA'); return new Date(bill.createdAt).toLocaleDateString('en-CA') === t; }
                   if (listFilter === 'Unpaid') return bill.status === 'unpaid';
                   return true;
                 }).map((bill) => (
@@ -325,7 +347,7 @@ export default function PurchaseChallan() {
                       <td className="py-1.5 px-3 text-center text-gray-400">
                         {expandedRows.has(bill.id) ? <ChevronUp className="w-3.5 h-3.5"/> : <ChevronDown className="w-3.5 h-3.5"/>}
                       </td>
-                      <td className="py-1.5 px-3 font-mono font-bold text-[#1b4985]">{bill.billNo}</td>
+                      <td className="py-1.5 px-3 font-mono font-bold text-[#1b4985]">{bill.challanNo}</td>
                       <td className="py-1.5 px-3 font-medium text-gray-800">{bill.supplierName}</td>
                       <td className="py-1.5 px-3 text-gray-500">{new Date(bill.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
                       <td className="py-1.5 px-3 text-right font-bold text-gray-800">₹{fmt(bill.total)}</td>
@@ -371,7 +393,11 @@ export default function PurchaseChallan() {
                     )}
                   </Fragment>
                 ))}
-                {bills.length === 0 && <tr><td colSpan={8} className="text-center py-12 text-gray-400">No challans found. Create a new purchase entry.</td></tr>}
+                {bills.filter(bill => {
+                  if (listFilter === 'Today') { const t = new Date().toLocaleDateString('en-CA'); return new Date(bill.createdAt).toLocaleDateString('en-CA') === t; }
+                  if (listFilter === 'Unpaid') return bill.status === 'unpaid';
+                  return true;
+                }).length === 0 && <tr><td colSpan={8} className="text-center py-12 text-gray-400">No challans found. Create a new purchase entry.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -595,7 +621,7 @@ export default function PurchaseChallan() {
             <span><span className="text-[#1b4985] font-black mr-1">F8</span> PDC Issue</span>
             <span><span className="text-red-600 font-black mr-1">Ctrl+F1</span> Summary</span>
             <div className="ml-auto flex items-center gap-3">
-              <span className="text-gray-500 font-bold bg-white px-3 py-1 rounded border border-gray-200">Last Bill: {bills[0]?.billNo || '—'}</span>
+              <span className="text-gray-500 font-bold bg-white px-3 py-1 rounded border border-gray-200">Last Bill: {bills[0]?.challanNo || '—'}</span>
             </div>
           </div>
 
@@ -695,7 +721,7 @@ export default function PurchaseChallan() {
                   {activeBill.supplierGst && <p className="font-semibold">GSTIN: {activeBill.supplierGst}</p>}
                 </div>
                 <div className="space-y-1">
-                  <div className="flex justify-between text-gray-600"><span className="font-bold">Invoice No:</span><span className="font-mono font-semibold">{activeBill.billNo}</span></div>
+                  <div className="flex justify-between text-gray-600"><span className="font-bold">Invoice No:</span><span className="font-mono font-semibold">{activeBill.challanNo}</span></div>
                   <div className="flex justify-between text-gray-600"><span className="font-bold">Date:</span><span className="font-semibold">{new Date(activeBill.createdAt).toLocaleDateString("en-IN")}</span></div>
                   <div className="flex justify-between text-gray-600"><span className="font-bold">Due Date:</span><span className="font-semibold">{activeBill.dueDate ? new Date(activeBill.dueDate).toLocaleDateString("en-IN") : "N/A"}</span></div>
                   <div className="flex justify-between text-gray-600"><span className="font-bold">Transport:</span><span className="font-semibold">{activeBill.transportDetails || "Hand Delivery"}</span></div>
@@ -776,4 +802,6 @@ export default function PurchaseChallan() {
       </div>
     );
   }
+
+  return null;
 }

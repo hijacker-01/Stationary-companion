@@ -139,7 +139,6 @@ function App() {
         <Route path="/logistics" element={<Logistics />} />
         <Route path="/approvals" element={<Approvals />} />
         <Route path="/crm" element={<CRM />} />
-        <Route path="/schemes" element={<Schemes />} />
         <Route path="/owner-app" element={<OwnerApp />} />
         <Route path="/health" element={<HealthDashboard />} />
         <Route path="/dms" element={<DocumentManagement />} />
