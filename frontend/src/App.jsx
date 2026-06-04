@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
@@ -89,8 +90,10 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/inventory" element={<Inventory />} />
+        
+        <Route element={<ProtectedRoute allowedRoles={['admin', 'user']} />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/inventory" element={<Inventory />} />
         <Route path="/expiry" element={<ExpiryBox />} />
         <Route path="/expiry-center" element={<ExpiryCommandCenter />} />
         <Route path="/billing" element={<Billing />} />
@@ -164,6 +167,7 @@ function App() {
         <Route path="/dispatch-summary" element={<DispatchSummary />} />
         <Route path="/closing-stock" element={<ClosingStock />} />
         <Route path="/compliance-audit" element={<ComplianceAudit />} />
+        </Route>
 
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
