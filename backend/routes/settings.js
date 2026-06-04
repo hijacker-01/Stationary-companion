@@ -25,5 +25,15 @@ router.put("/", protect, async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
+// Trigger Database Backup
+router.post("/backup", protect, async (req, res) => {
+  try {
+    const performBackup = require("../scripts/backup");
+    const filepath = await performBackup();
+    res.json({ message: "Backup successful", filepath });
+  } catch (err) {
+    res.status(500).json({ error: "Backup failed: " + err.message });
+  }
+});
 
 module.exports = router;

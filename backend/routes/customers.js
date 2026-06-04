@@ -106,19 +106,27 @@ router.post("/:id/payment", protect, async (req, res) => {
     const customer = await Customer.findByPk(req.params.id);
     if (!customer) return res.status(404).json({ error: "Customer not found" });
 
-    const payment = await Payment.create({
-      type: "customer",
-      partyId: req.params.id,
-      partyName: customer.name,
-      direction: "in",
-      ...req.body,
-    });
+    const sequelize = require("../config/db");
+    const t = await sequelize.transaction();
+    try {
+      const payment = await Payment.create({
+        type: "customer",
+        partyId: req.params.id,
+        partyName: customer.name,
+        direction: "in",
+        ...req.body,
+      }, { transaction: t });
 
-    // Update customer balance
-    await customer.decrement("balance", { by: req.body.amount });
-    await customer.increment("totalPaid", { by: req.body.amount });
-
-    res.json(payment);
+      // Update customer balance
+      await customer.decrement("balance", { by: req.body.amount, transaction: t });
+      await customer.increment("totalPaid", { by: req.body.amount, transaction: t });
+      
+      await t.commit();
+      res.json(payment);
+    } catch(err) {
+      await t.rollback();
+      throw err;
+    }
   } catch(err) { res.status(400).json({ error: err.message }); }
 });
 
@@ -126,13 +134,28 @@ router.post("/:id/payment", protect, async (req, res) => {
 router.post("/supplier/:id/payment", protect, async (req, res) => {
   try {
     const { Supplier } = require("../models/Supplier") || await import("../models/Supplier.js");
-    const payment = await Payment.create({
-      type: "supplier",
-      partyId: req.params.id,
-      direction: "out",
-      ...req.body,
-    });
-    res.json(payment);
+    const sequelize = require("../config/db");
+    const t = await sequelize.transaction();
+    try {
+      const payment = await Payment.create({
+        type: "supplier",
+        partyId: req.params.id,
+        direction: "out",
+        ...req.body,
+      }, { transaction: t });
+      
+      const supplier = await Supplier.findByPk(req.params.id, { transaction: t });
+      if (supplier) {
+        await supplier.decrement("balance", { by: req.body.amount, transaction: t });
+        await supplier.increment("totalPaid", { by: req.body.amount, transaction: t });
+      }
+
+      await t.commit();
+      res.json(payment);
+    } catch(err) {
+      await t.rollback();
+      throw err;
+    }
   } catch(err) { res.status(400).json({ error: err.message }); }
 });
 

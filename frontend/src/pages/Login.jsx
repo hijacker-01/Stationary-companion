@@ -176,6 +176,19 @@ export default function Login() {
                     </>
                   )}
                 </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const res = await axios.post("/settings/backup");
+                      alert(res.data.message + ": " + res.data.filepath);
+                    } catch(e) { alert("Backup failed: Are you authorized?"); }
+                  }}
+                  className="w-full bg-gray-600 hover:bg-gray-700 active:bg-gray-800 text-white font-semibold py-3.5 px-4 rounded-xl shadow-lg transition-all duration-200 mt-3"
+                >
+                  Emergency Database Backup
+                </button>
               </form>
               
               <div className="mt-10 text-center">

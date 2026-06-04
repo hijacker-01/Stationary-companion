@@ -5,20 +5,23 @@ module.exports = async (req, res, next) => {
   if (!key) return next();
 
   try {
-    const existingKey = await IdempotencyKey.findOne({ where: { key } });
-    
-    if (existingKey) {
-      if (existingKey.responseStatus) {
-        return res.status(existingKey.responseStatus).json(existingKey.responseBody);
+    try {
+      await IdempotencyKey.create({
+        key,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      });
+    } catch (err) {
+      if (err.name === 'SequelizeUniqueConstraintError') {
+        const existingKey = await IdempotencyKey.findOne({ where: { key } });
+        if (existingKey) {
+          if (existingKey.responseStatus) {
+            return res.status(existingKey.responseStatus).json(existingKey.responseBody);
+          }
+          return res.status(409).json({ error: "A request with this idempotency key is already in progress." });
+        }
       }
-      return res.status(409).json({ error: "A request with this idempotency key is already in progress." });
+      throw err;
     }
-
-    // Create the key
-    await IdempotencyKey.create({
-      key,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours expiry
-    });
 
     // Intercept res.json to save the response
     const originalJson = res.json;

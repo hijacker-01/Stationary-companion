@@ -256,7 +256,13 @@ export default function Header() {
         </div>
         
         {/* Direct nav links */}
-        <button onClick={() => navigate("/dashboard")} className="px-3 py-1 text-xs font-semibold text-gray-800 hover:bg-gray-200 ml-auto">Dashboard</button>
+        <button onClick={async () => {
+          try {
+            const res = await axios.post("/settings/backup");
+            alert(res.data.message + ": " + res.data.filepath);
+          } catch(e) { alert("Backup failed"); }
+        }} className="px-3 py-1 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded ml-auto mr-2">Backup Data</button>
+        <button onClick={() => navigate("/dashboard")} className="px-3 py-1 text-xs font-semibold text-gray-800 hover:bg-gray-200">Dashboard</button>
         <button onClick={() => navigate("/settings")} className="px-3 py-1 text-xs font-semibold text-gray-800 hover:bg-gray-200">Settings</button>
         <button onClick={async () => { 
           try { await axios.post("/auth/logout"); } catch(e){}

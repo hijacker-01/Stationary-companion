@@ -8,9 +8,9 @@ const SalesReturn = sequelize.define("SalesReturn", {
   customerName:   { type: DataTypes.STRING, allowNull: false },
   customerPhone:  { type: DataTypes.STRING },
   items:          { type: DataTypes.JSON },  // array of returned items
-  subtotal:       { type: DataTypes.FLOAT, defaultValue: 0 },
-  gstAmount:      { type: DataTypes.FLOAT, defaultValue: 0 },
-  totalAmount:    { type: DataTypes.FLOAT, defaultValue: 0 },
+  subtotal:       { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
+  gstAmount:      { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
+  totalAmount:    { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
   reason:         { type: DataTypes.STRING },
   status:         { type: DataTypes.ENUM("pending","approved","rejected"), defaultValue: "approved" },
   restockItems:   { type: DataTypes.BOOLEAN, defaultValue: true },

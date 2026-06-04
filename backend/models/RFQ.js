@@ -12,7 +12,7 @@ const RFQ = sequelize.define("RFQ", {
   deadline:     { type: DataTypes.DATEONLY },
   bestSupplierId:   { type: DataTypes.INTEGER },
   bestSupplierName: { type: DataTypes.STRING },
-  bestLandedCost:   { type: DataTypes.FLOAT },
+  bestLandedCost:   { type: DataTypes.DECIMAL(15, 2) },
   responsesCount:   { type: DataTypes.INTEGER, defaultValue: 0 },
   createdBy:    { type: DataTypes.STRING },
   notes:        { type: DataTypes.TEXT },

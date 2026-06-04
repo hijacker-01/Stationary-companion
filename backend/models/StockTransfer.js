@@ -9,7 +9,7 @@ const StockTransfer = sequelize.define("StockTransfer", {
   toBranch:     { type: DataTypes.STRING },
   items:        { type: DataTypes.JSON, defaultValue: [] },
   itemCount:    { type: DataTypes.INTEGER, defaultValue: 0 },
-  totalValue:   { type: DataTypes.FLOAT, defaultValue: 0 },
+  totalValue:   { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
   status:       { type: DataTypes.ENUM("draft", "approved", "in_transit", "received", "cancelled"), defaultValue: "draft" },
   requestedBy:  { type: DataTypes.STRING },
   approvedBy:   { type: DataTypes.STRING },

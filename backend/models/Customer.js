@@ -8,18 +8,20 @@ const Customer = sequelize.define("Customer", {
   address:       { type: DataTypes.STRING },
   gstNumber:     { type: DataTypes.STRING },
   dlNumber:      { type: DataTypes.STRING },
-  creditLimit:   { type: DataTypes.FLOAT, defaultValue: 0 },
+  creditLimit:   { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
   creditDays:    { type: DataTypes.INTEGER, defaultValue: 30 },
-  openingBalance:{ type: DataTypes.FLOAT, defaultValue: 0 },
-  balance:       { type: DataTypes.FLOAT, defaultValue: 0 },
-  totalPurchased:{ type: DataTypes.FLOAT, defaultValue: 0 },
-  totalPaid:     { type: DataTypes.FLOAT, defaultValue: 0 },
+  openingBalance:{ type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
+  balance:       { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
+  totalPurchased:{ type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
+  totalPaid:     { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
   status:        { type: DataTypes.ENUM("active","inactive"), defaultValue: "active" },
   legalName:     { type: DataTypes.STRING },
   tradeName:     { type: DataTypes.STRING },
   stateCode:     { type: DataTypes.STRING(2) },
   registrationType: { type: DataTypes.ENUM("regular", "composition", "unregistered", "consumer"), defaultValue: "regular" },
   isComposition: { type: DataTypes.BOOLEAN, defaultValue: false },
-}, { paranoid: true });
+}, {
+  paranoid: true
+});
 
 module.exports = Customer;

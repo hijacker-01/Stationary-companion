@@ -8,10 +8,10 @@ const ITCRecord = sequelize.define("ITCRecord", {
     type: DataTypes.ENUM("eligible", "ineligible", "blocked", "reversed"),
     defaultValue: "eligible"
   },
-  cgstAmount: { type: DataTypes.FLOAT, defaultValue: 0 },
-  sgstAmount: { type: DataTypes.FLOAT, defaultValue: 0 },
-  igstAmount: { type: DataTypes.FLOAT, defaultValue: 0 },
-  cessAmount: { type: DataTypes.FLOAT, defaultValue: 0 },
+  cgstAmount: { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
+  sgstAmount: { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
+  igstAmount: { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
+  cessAmount: { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
   reasonForBlock: { type: DataTypes.STRING },
   matchedWith2B: { type: DataTypes.BOOLEAN, defaultValue: false }
 });

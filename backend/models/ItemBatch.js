@@ -5,8 +5,8 @@ const ItemBatch = sequelize.define("ItemBatch", {
   itemId: { type: DataTypes.INTEGER, allowNull: false },
   batchNo: { type: DataTypes.STRING, allowNull: false },
   expiryDate: { type: DataTypes.DATEONLY },
-  mrp: { type: DataTypes.FLOAT },
-  purchaseRate: { type: DataTypes.FLOAT },
+  mrp: { type: DataTypes.DECIMAL(15, 2) },
+  purchaseRate: { type: DataTypes.DECIMAL(15, 2) },
   quantity: { type: DataTypes.INTEGER, defaultValue: 0 },
   rackCode: { type: DataTypes.STRING }
 });

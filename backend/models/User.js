@@ -9,6 +9,8 @@ const User = sequelize.define("User", {
   phone:       { type: DataTypes.STRING },
   permissions: { type: DataTypes.JSON, defaultValue: [] },
   isActive:    { type: DataTypes.BOOLEAN, defaultValue: true },
+}, {
+  paranoid: true
 });
 
 User.beforeCreate(async (user, options) => {

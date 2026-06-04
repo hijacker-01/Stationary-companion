@@ -13,21 +13,20 @@ const Item = sequelize.define("Item", {
   unit:           { type: DataTypes.STRING },
   expiry:         { type: DataTypes.DATEONLY },
   location:       { type: DataTypes.STRING },
-  mrp:            { type: DataTypes.FLOAT, defaultValue: 0, validate: { min: 0 } },
-  selling_price:  { type: DataTypes.FLOAT, defaultValue: 0, validate: { min: 0 } },
-  cost_price:     { type: DataTypes.FLOAT, defaultValue: 0, validate: { min: 0 } },
+  mrp:            { type: DataTypes.DECIMAL(15, 2), defaultValue: 0, validate: { min: 0 } },
+  selling_price:  { type: DataTypes.DECIMAL(15, 2), defaultValue: 0, validate: { min: 0 } },
+  cost_price:     { type: DataTypes.DECIMAL(15, 2), defaultValue: 0, validate: { min: 0 } },
   purchaseScheme: { type: DataTypes.STRING },
   schedule:       { type: DataTypes.ENUM("None","H","H1","X"), defaultValue: "None" },
   reorderPoint:   { type: DataTypes.INTEGER, defaultValue: 10 },
   salesmanId:     { type: DataTypes.INTEGER },
   taxCategoryId:  { type: DataTypes.INTEGER },
 }, {
+  paranoid: true,
   indexes: [
-    { fields: ['name'] },
-    { fields: ['batch'] },
+    { unique: true, fields: ['name', 'batch'] },
     { fields: ['category'] }
-  ],
-  paranoid: true, // Enables Soft Deletes (deletedAt)
+  ]
 });
 
 module.exports = Item;

@@ -7,7 +7,7 @@ const DeliveryMan = sequelize.define("DeliveryMan", {
   vehicleNo: { type: DataTypes.STRING },
   route: { type: DataTypes.STRING },
   status: { type: DataTypes.ENUM("active", "inactive"), defaultValue: "active" },
-  pendingCash: { type: DataTypes.FLOAT, defaultValue: 0 },
+  pendingCash: { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
 });
 
 module.exports = DeliveryMan;

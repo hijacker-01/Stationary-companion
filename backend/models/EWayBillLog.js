@@ -13,7 +13,7 @@ const EWayBillLog = sequelize.define("EWayBillLog", {
   validUntil: { type: DataTypes.DATE },
   transporterId: { type: DataTypes.STRING },
   vehicleNo: { type: DataTypes.STRING },
-  distance: { type: DataTypes.FLOAT },
+  distance: { type: DataTypes.DECIMAL(15, 2) },
   status: { 
     type: DataTypes.ENUM("generated", "cancelled", "extended", "failed"), 
     defaultValue: "generated" 

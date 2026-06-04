@@ -88,7 +88,7 @@ router.post("/", protect, requirePermission("billing.create"), idempotency, asyn
 
     // Validate stock availability and deduct quantities
     for (const billedItem of billedItems) {
-      const item = await Item.findOne({ where: { name: billedItem.name, batch: billedItem.batch || "" }, transaction: t });
+      const item = await Item.findOne({ where: { name: billedItem.name, batch: billedItem.batch || "" }, transaction: t, lock: t.LOCK.UPDATE });
       if (!item) {
         await t.rollback();
         return res.status(400).json({ error: `Item "${billedItem.name}" not found in inventory` });

@@ -11,8 +11,8 @@ const Branch = sequelize.define("Branch", {
   phone:      { type: DataTypes.STRING },
   managerId:  { type: DataTypes.INTEGER },
   managerName:{ type: DataTypes.STRING },
-  lat:        { type: DataTypes.FLOAT },
-  lng:        { type: DataTypes.FLOAT },
+  lat:        { type: DataTypes.DECIMAL(15, 2) },
+  lng:        { type: DataTypes.DECIMAL(15, 2) },
   isActive:   { type: DataTypes.BOOLEAN, defaultValue: true },
 });
 

@@ -7,7 +7,7 @@ const Scheme = sequelize.define("Scheme", {
   type:             { type: DataTypes.ENUM("buy_get_free", "flat_discount"), allowNull: false },
   buyQty:           { type: DataTypes.INTEGER, defaultValue: 0 },
   freeQty:          { type: DataTypes.INTEGER, defaultValue: 0 },
-  discountPercent:  { type: DataTypes.FLOAT, defaultValue: 0 },
+  discountPercent:  { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
   applicableItems:  { type: DataTypes.JSON, defaultValue: [] },
   startDate:        { type: DataTypes.DATEONLY },
   endDate:          { type: DataTypes.DATEONLY },

@@ -6,7 +6,7 @@ const Payment = sequelize.define("Payment", {
   voucherNo:   { type: DataTypes.STRING, unique: true },
   partyId:     { type: DataTypes.INTEGER, allowNull: false },
   partyName:   { type: DataTypes.STRING },
-  amount:      { type: DataTypes.FLOAT, allowNull: false },
+  amount:      { type: DataTypes.DECIMAL(15, 2), allowNull: false },
   mode:        { type: DataTypes.ENUM("cash","upi","card","bank"), defaultValue: "cash" },
   reference:   { type: DataTypes.STRING },
   note:        { type: DataTypes.TEXT },

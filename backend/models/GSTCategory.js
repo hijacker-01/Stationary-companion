@@ -9,19 +9,19 @@ const GSTCategory = sequelize.define("GSTCategory", {
   },
   description: DataTypes.STRING,
   cgstRate: {
-    type: DataTypes.FLOAT,
+    type: DataTypes.DECIMAL(15, 2),
     defaultValue: 0
   },
   sgstRate: {
-    type: DataTypes.FLOAT,
+    type: DataTypes.DECIMAL(15, 2),
     defaultValue: 0
   },
   igstRate: {
-    type: DataTypes.FLOAT,
+    type: DataTypes.DECIMAL(15, 2),
     defaultValue: 0
   },
   cessRate: {
-    type: DataTypes.FLOAT,
+    type: DataTypes.DECIMAL(15, 2),
     defaultValue: 0
   }
 });

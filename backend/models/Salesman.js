@@ -6,8 +6,8 @@ const Salesman = sequelize.define("Salesman", {
   phone:   { type: DataTypes.STRING },
   email:   { type: DataTypes.STRING },
   area:    { type: DataTypes.STRING },
-  target:  { type: DataTypes.FLOAT, defaultValue: 0 },
-  commission: { type: DataTypes.FLOAT, defaultValue: 0 }, // % commission
+  target:  { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
+  commission: { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 }, // % commission
   isActive:{ type: DataTypes.BOOLEAN, defaultValue: true },
 }, { paranoid: true });
 

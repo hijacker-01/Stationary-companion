@@ -13,7 +13,7 @@ const JournalVoucher = sequelize.define("JournalVoucher", {
   creditPartyId: { type: DataTypes.INTEGER, allowNull: false },
   creditPartyName: { type: DataTypes.STRING, allowNull: false },
   
-  amount: { type: DataTypes.FLOAT, allowNull: false },
+  amount: { type: DataTypes.DECIMAL(15, 2), allowNull: false },
   narration: { type: DataTypes.STRING, allowNull: false },
 });
 
