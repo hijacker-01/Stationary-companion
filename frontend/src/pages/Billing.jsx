@@ -241,6 +241,8 @@ export default function Billing() {
         expiry: found.expiry || "",
         mrp: found.mrp || "",
         selling_price: found.selling_price || found.mrp || "",
+        gst: found.gst || 0,
+        reorderPoint: found.reorderPoint || 10,
         unit: found.unit || "strips",
         availableQty: found.stock_qty,
         availableSchemeQty: found.scheme_qty,
@@ -814,7 +816,7 @@ export default function Billing() {
                      <td className="px-1 border-r border-slate-300 text-center font-bold text-slate-500">{i+1}</td>
                      <td className="px-1 border-r border-slate-300 flex items-center justify-between group">
                        <input list={`item-list-${i}`} value={row.searchStr !== undefined ? row.searchStr : row.name} onChange={(e) => handleItemSelect(i, e.target.value)} className="bg-transparent outline-none w-full text-black font-bold" placeholder={i === rows.length-1 ? "Type to add item..." : ""} />
-                       <datalist id={`item-list-${i}`}>{items.map(it => <option key={it.id} value={`${it.name}${it.batch ? ' | B: ' + it.batch : ''}`} />)}</datalist>
+                       <datalist id={`item-list-${i}`}>{items.map(it => <option key={it.id} value={`${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`} />)}</datalist>
                        {isNearExpiry && !isLowStock && <span className="bg-[#ff9900] text-black font-bold px-1 py-0.5 ml-1 text-[9px] shrink-0 border border-slate-500">Near Expiry</span>}
                        {isLowStock && <span className="bg-[#cc0000] text-white font-bold px-1 py-0.5 ml-1 text-[9px] shrink-0 border border-slate-500">Low Stock</span>}
                        {row.name && <button onClick={() => removeRow(i)} className="text-red-500 opacity-0 group-hover:opacity-100 ml-1 px-1 hover:bg-red-200">✕</button>}
