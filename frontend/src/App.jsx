@@ -67,6 +67,8 @@ import ComplianceDashboard from "./pages/ComplianceDashboard";
 import AutomationBuilder from "./pages/AutomationBuilder";
 import PlatformAdmin from "./pages/PlatformAdmin";
 import ExpiryCommandCenter from "./pages/ExpiryCommandCenter";
+import CollectionAgent from "./pages/CollectionAgent";
+import AutoReconciliation from "./pages/AutoReconciliation";
 
 // 12.0 Phase 2: GST & Compliance
 import GSTDashboard from "./pages/GSTDashboard";
@@ -162,6 +164,8 @@ function App() {
         <Route path="/ceo-dashboard" element={<CEODashboard />} />
         <Route path="/institutional-sales" element={<InstitutionalSales />} />
         <Route path="/cashflow-engine" element={<CashFlowEngine />} />
+        <Route path="/collection-agent" element={<CollectionAgent />} />
+        <Route path="/auto-reconciliation" element={<AutoReconciliation />} />
         <Route path="/warehouse-twin" element={<WarehouseTwin />} />
         <Route path="/compliance" element={<ComplianceDashboard />} />
         <Route path="/automation" element={<AutomationBuilder />} />

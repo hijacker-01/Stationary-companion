@@ -16,8 +16,10 @@ const accounts = [
 ];
 
 const reports = [
-  { to: "/debtors", label: "Debtors (Receivable)" },
-  { to: "/creditors", label: "Creditors (Payable)" },
+  { to: "/debtors", label: "Debtors (Accounts Receivable)" },
+  { to: "/collection-agent", label: "Collection Agent (AI Dunning)" },
+  { to: "/auto-reconciliation", label: "Bank Auto-Reconciliation" },
+  { to: "/creditors", label: "Creditors (Accounts Payable)" },
   { to: "/outstanding-bills/tagging", label: "Outstanding Bills" },
   { to: "/dispatch-summary", label: "Dispatch Summary" },
   { to: "/reports", label: "Sales & Purchase Reports" },
