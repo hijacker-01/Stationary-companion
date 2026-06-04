@@ -25,7 +25,11 @@ const PurchaseOrder = sequelize.define("PurchaseOrder", {
   igstAmount:   { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
   cessAmount:   { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
 }, {
-  paranoid: true
+  paranoid: true,
+  indexes: [
+    { fields: ['supplierId'] },
+    { fields: ['status'] }
+  ]
 });
 
 module.exports = PurchaseOrder;

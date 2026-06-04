@@ -30,7 +30,12 @@ const Bill = sequelize.define("Bill", {
   irn:          { type: DataTypes.STRING(64) },
   ewbNumber:    { type: DataTypes.STRING(15) },
 }, {
-  paranoid: true
+  paranoid: true,
+  indexes: [
+    { fields: ['customerId'] },
+    { fields: ['salesmanId'] },
+    { fields: ['status'] }
+  ]
 });
 
 module.exports = Bill;

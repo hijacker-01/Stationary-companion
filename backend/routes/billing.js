@@ -5,6 +5,7 @@ const Item = require("../models/Item");
 const Customer = require("../models/Customer");
 const AuditLog = require("../models/AuditLog");
 const sequelize = require("../config/db");
+const { Op } = require("sequelize");
 const accounting = require("../services/accounting");
 const stockMovement = require("../services/stockMovement");
 const idempotency = require("../middleware/idempotency");
@@ -85,10 +86,23 @@ router.post("/", protect, requirePermission("billing.create"), idempotency, asyn
 
   const t = await sequelize.transaction();
   try {
+    const itemKeys = billedItems.map(item => ({ name: item.name, batch: item.batch || "" }));
+    
+    // Fetch all items in a single query with locking
+    const items = await Item.findAll({ 
+      where: {
+        [Op.or]: itemKeys
+      }, 
+      transaction: t, 
+      lock: t.LOCK.UPDATE 
+    });
 
-    // Validate stock availability and deduct quantities
+    const itemsMap = new Map();
+    items.forEach(item => itemsMap.set(`${item.name}|${item.batch}`, item));
+
+    // Validate stock availability and compute new quantities
     for (const billedItem of billedItems) {
-      const item = await Item.findOne({ where: { name: billedItem.name, batch: billedItem.batch || "" }, transaction: t, lock: t.LOCK.UPDATE });
+      const item = itemsMap.get(`${billedItem.name}|${billedItem.batch || ""}`);
       if (!item) {
         await t.rollback();
         return res.status(400).json({ error: `Item "${billedItem.name}" not found in inventory` });

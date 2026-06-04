@@ -1,84 +1,85 @@
+import React, { Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AICopilotWidget from "./components/AICopilotWidget";
-import AICockpit from "./pages/AICockpit";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Inventory from "./pages/Inventory";
-import ExpiryBox from "./pages/ExpiryBox";
-import Billing from "./pages/Billing";
-import Reports from "./pages/Reports";
-import Users from "./pages/Users";
-import Settings from "./pages/Settings";
-import Suppliers from "./pages/Suppliers";
-import Customers from "./pages/Customers";
-import SalesReturn from "./pages/SalesReturn";
-import PurchaseReturn from "./pages/PurchaseReturn";
-import SalesmanPage from "./pages/Salesman";
-import Vouchers from "./pages/Vouchers";
-import Register from "./pages/Register";
-import DeliveryMan from "./pages/DeliveryMan";
-import DirectMessages from "./pages/DirectMessages";
-import Expenses from "./pages/Expenses";
-import JournalVouchers from "./pages/JournalVouchers";
-import PurchaseBills from "./pages/PurchaseBills";
-import AILedger      from "./pages/AILedger";
-import ReorderCenter from "./pages/ReorderCenter";
-import ExpiryGuard   from "./pages/ExpiryGuard";
-import LedgerView    from "./pages/LedgerView";
-import AuditLog      from "./pages/AuditLog";
-import CashBook      from "./pages/CashBook";
-import DebtorsBoard  from "./pages/DebtorsBoard";
-import CreditorsBoard from "./pages/CreditorsBoard";
-import OutstandingBillsTagging from "./pages/OutstandingBillsTagging";
-import InvoicePrint  from "./pages/InvoicePrint";
-import PurchaseChallan from "./pages/PurchaseChallan";
-import SalesChallan   from "./pages/SalesChallan";
-import ReceiptVoucher from "./pages/ReceiptVoucher";
-import PaymentVoucher from "./pages/PaymentVoucher";
-import ProfitAnalytics from "./pages/ProfitAnalytics";
-import InventoryValuation from "./pages/InventoryValuation";
-import AICopilot from "./pages/AICopilot";
-import CustomerPortal from "./pages/CustomerPortal";
-import SalesmanApp from "./pages/SalesmanApp";
+const AICockpit = React.lazy(() => import("./pages/AICockpit"));
+const Login = React.lazy(() => import("./pages/Login"));
+const Dashboard = React.lazy(() => import("./pages/Dashboard"));
+const Inventory = React.lazy(() => import("./pages/Inventory"));
+const ExpiryBox = React.lazy(() => import("./pages/ExpiryBox"));
+const Billing = React.lazy(() => import("./pages/Billing"));
+const Reports = React.lazy(() => import("./pages/Reports"));
+const Users = React.lazy(() => import("./pages/Users"));
+const Settings = React.lazy(() => import("./pages/Settings"));
+const Suppliers = React.lazy(() => import("./pages/Suppliers"));
+const Customers = React.lazy(() => import("./pages/Customers"));
+const SalesReturn = React.lazy(() => import("./pages/SalesReturn"));
+const PurchaseReturn = React.lazy(() => import("./pages/PurchaseReturn"));
+const SalesmanPage = React.lazy(() => import("./pages/Salesman"));
+const Vouchers = React.lazy(() => import("./pages/Vouchers"));
+const Register = React.lazy(() => import("./pages/Register"));
+const DeliveryMan = React.lazy(() => import("./pages/DeliveryMan"));
+const DirectMessages = React.lazy(() => import("./pages/DirectMessages"));
+const Expenses = React.lazy(() => import("./pages/Expenses"));
+const JournalVouchers = React.lazy(() => import("./pages/JournalVouchers"));
+const PurchaseBills = React.lazy(() => import("./pages/PurchaseBills"));
+const AILedger = React.lazy(() => import("./pages/AILedger"));
+const ReorderCenter = React.lazy(() => import("./pages/ReorderCenter"));
+const ExpiryGuard = React.lazy(() => import("./pages/ExpiryGuard"));
+const LedgerView = React.lazy(() => import("./pages/LedgerView"));
+const AuditLog = React.lazy(() => import("./pages/AuditLog"));
+const CashBook = React.lazy(() => import("./pages/CashBook"));
+const DebtorsBoard = React.lazy(() => import("./pages/DebtorsBoard"));
+const CreditorsBoard = React.lazy(() => import("./pages/CreditorsBoard"));
+const OutstandingBillsTagging = React.lazy(() => import("./pages/OutstandingBillsTagging"));
+const InvoicePrint = React.lazy(() => import("./pages/InvoicePrint"));
+const PurchaseChallan = React.lazy(() => import("./pages/PurchaseChallan"));
+const SalesChallan = React.lazy(() => import("./pages/SalesChallan"));
+const ReceiptVoucher = React.lazy(() => import("./pages/ReceiptVoucher"));
+const PaymentVoucher = React.lazy(() => import("./pages/PaymentVoucher"));
+const ProfitAnalytics = React.lazy(() => import("./pages/ProfitAnalytics"));
+const InventoryValuation = React.lazy(() => import("./pages/InventoryValuation"));
+const AICopilot = React.lazy(() => import("./pages/AICopilot"));
+const CustomerPortal = React.lazy(() => import("./pages/CustomerPortal"));
+const SalesmanApp = React.lazy(() => import("./pages/SalesmanApp"));
 
 // 11.0 Enterprise Imports
-import Warehouse from "./pages/Warehouse";
-import GodownMaster from "./pages/GodownMaster";
-import Logistics from "./pages/Logistics";
-import Approvals from "./pages/Approvals";
-import CRM from "./pages/CRM";
-import Schemes from "./pages/Schemes";
-import OwnerApp from "./pages/OwnerApp";
-import HealthDashboard from "./pages/HealthDashboard";
-import DocumentManagement from "./pages/DocumentManagement";
-import DrugRecall from "./pages/DrugRecall";
+const Warehouse = React.lazy(() => import("./pages/Warehouse"));
+const GodownMaster = React.lazy(() => import("./pages/GodownMaster"));
+const Logistics = React.lazy(() => import("./pages/Logistics"));
+const Approvals = React.lazy(() => import("./pages/Approvals"));
+const CRM = React.lazy(() => import("./pages/CRM"));
+const Schemes = React.lazy(() => import("./pages/Schemes"));
+const OwnerApp = React.lazy(() => import("./pages/OwnerApp"));
+const HealthDashboard = React.lazy(() => import("./pages/HealthDashboard"));
+const DocumentManagement = React.lazy(() => import("./pages/DocumentManagement"));
+const DrugRecall = React.lazy(() => import("./pages/DrugRecall"));
 
 // 12.0 Enterprise Routes
-import AutonomousProcurement from "./pages/AutonomousProcurement";
-import ControlTower from "./pages/ControlTower";
-import RetailerApp from "./pages/RetailerApp";
-import SupplierPortal from "./pages/SupplierPortal";
-import CEODashboard from "./pages/CEODashboard";
-import InstitutionalSales from "./pages/InstitutionalSales";
-import CashFlowEngine from "./pages/CashFlowEngine";
-import WarehouseTwin from "./pages/WarehouseTwin";
-import ComplianceDashboard from "./pages/ComplianceDashboard";
-import AutomationBuilder from "./pages/AutomationBuilder";
-import PlatformAdmin from "./pages/PlatformAdmin";
-import ExpiryCommandCenter from "./pages/ExpiryCommandCenter";
-import CollectionAgent from "./pages/CollectionAgent";
-import AutoReconciliation from "./pages/AutoReconciliation";
-import PricingEngine from "./pages/PricingEngine";
+const AutonomousProcurement = React.lazy(() => import("./pages/AutonomousProcurement"));
+const ControlTower = React.lazy(() => import("./pages/ControlTower"));
+const RetailerApp = React.lazy(() => import("./pages/RetailerApp"));
+const SupplierPortal = React.lazy(() => import("./pages/SupplierPortal"));
+const CEODashboard = React.lazy(() => import("./pages/CEODashboard"));
+const InstitutionalSales = React.lazy(() => import("./pages/InstitutionalSales"));
+const CashFlowEngine = React.lazy(() => import("./pages/CashFlowEngine"));
+const WarehouseTwin = React.lazy(() => import("./pages/WarehouseTwin"));
+const ComplianceDashboard = React.lazy(() => import("./pages/ComplianceDashboard"));
+const AutomationBuilder = React.lazy(() => import("./pages/AutomationBuilder"));
+const PlatformAdmin = React.lazy(() => import("./pages/PlatformAdmin"));
+const ExpiryCommandCenter = React.lazy(() => import("./pages/ExpiryCommandCenter"));
+const CollectionAgent = React.lazy(() => import("./pages/CollectionAgent"));
+const AutoReconciliation = React.lazy(() => import("./pages/AutoReconciliation"));
+const PricingEngine = React.lazy(() => import("./pages/PricingEngine"));
 
 // 12.0 Phase 2: GST & Compliance
-import GSTDashboard from "./pages/GSTDashboard";
-import ComplianceRuleManager from "./pages/ComplianceRuleManager";
-import EInvoiceCenter from "./pages/EInvoiceCenter";
-import ComplianceAudit from "./pages/ComplianceAudit";
-import DispatchSummary from "./pages/DispatchSummary";
-import ClosingStock from "./pages/ClosingStock";
+const GSTDashboard = React.lazy(() => import("./pages/GSTDashboard"));
+const ComplianceRuleManager = React.lazy(() => import("./pages/ComplianceRuleManager"));
+const EInvoiceCenter = React.lazy(() => import("./pages/EInvoiceCenter"));
+const ComplianceAudit = React.lazy(() => import("./pages/ComplianceAudit"));
+const DispatchSummary = React.lazy(() => import("./pages/DispatchSummary"));
+const ClosingStock = React.lazy(() => import("./pages/ClosingStock"));
 
 import CommandPalette from "./components/CommandPalette";
 import { useHotkeys } from "./hooks/useHotkeys";
@@ -96,7 +97,8 @@ function App() {
       <Toaster position="top-right" />
       <AICopilotWidget />
       <GlobalHooks />
-      <Routes>
+      <Suspense fallback={<div className="flex h-screen items-center justify-center text-gray-500">Loading Module...</div>}>
+          <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
         
@@ -185,6 +187,7 @@ function App() {
 
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+        </Suspense>
     </BrowserRouter>
   );
 }

@@ -25,6 +25,11 @@ const SalesChallan = sequelize.define("SalesChallan", {
   billId:        { type: DataTypes.INTEGER },
   notes:         { type: DataTypes.TEXT },
   userId:        { type: DataTypes.INTEGER },
+}, {
+  indexes: [
+    { fields: ['customerId'] },
+    { fields: ['status'] }
+  ]
 });
 
 module.exports = SalesChallan;

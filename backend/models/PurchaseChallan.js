@@ -26,6 +26,11 @@ const PurchaseChallan = sequelize.define("PurchaseChallan", {
   purchaseOrderId: { type: DataTypes.INTEGER },
   notes:           { type: DataTypes.TEXT },
   userId:          { type: DataTypes.INTEGER },
+}, {
+  indexes: [
+    { fields: ['supplierId'] },
+    { fields: ['status'] }
+  ]
 });
 
 module.exports = PurchaseChallan;

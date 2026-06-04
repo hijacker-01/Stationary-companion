@@ -196,45 +196,23 @@ router.post(
     let worker = null;
 
     try {
-      // 1. PRE-PROCESS THE IMAGE WITH SHARP
-      // This removes shadows and turns the image into pure black text on a white background
-      await sharp(rawFilePath)
-        // 1. Resize: Tesseract loves images that are roughly 1500-2000px wide.
-        // It gives it the "300 DPI" feel it needs to read characters clearly.
-        .resize({ width: 1800, withoutEnlargement: true })
-        .grayscale()
-        // 2. CLAHE: Flattens shadows and balances uneven lighting
-        .clahe({ width: 200, height: 200, maxSlope: 3 })
-        .normalize()
-        // 3. Sharpen: Crisp up the edges of the letters
-        .sharpen({ sigma: 1, m1: 2, m2: 2 })
-        // 4. Threshold: Now binarize it.
-        .threshold(140)
-        .toFile(processedFilePath);
-
-      // Initialize Tesseract worker
-      // Initialize Tesseract worker
-      worker = await createWorker("eng");
-
-      // Add this configuration block
-      await worker.setParameters({
-        // PSM 6: Assume a single uniform block of text.
-        // (Alternatively, try '4' for a single column of text of variable sizes)
-        tessedit_pageseg_mode: "6",
-
-        // Whitelist: Stop Tesseract from guessing weird symbols like ™, ©, or œ.
-        // Only allow characters that actually appear on an invoice.
-        tessedit_char_whitelist:
-          "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz/.-% ",
+      const { Worker } = require("worker_threads");
+      
+      const text = await new Promise((resolve, reject) => {
+        const worker = new Worker(path.join(__dirname, "../services/ocrWorker.js"), {
+          workerData: { rawFilePath, processedFilePath }
+        });
+        
+        worker.on("message", (msg) => {
+          if (msg.success) resolve(msg.text);
+          else reject(new Error(msg.error));
+        });
+        
+        worker.on("error", reject);
+        worker.on("exit", (code) => {
+          if (code !== 0) reject(new Error(`Worker stopped with exit code ${code}`));
+        });
       });
-
-      const {
-        data: { text },
-      } = await worker.recognize(processedFilePath);
-
-      // Clean up files
-      fs.unlinkSync(rawFilePath);
-      fs.unlinkSync(processedFilePath);
 
       const lines = text
         .split("\n")

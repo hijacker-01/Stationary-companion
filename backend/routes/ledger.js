@@ -38,7 +38,10 @@ router.get("/accounts", protect, requirePermission("ledger.read"), async (req, r
 
 router.get("/trial-balance", protect, requirePermission("ledger.read"), async (req, res) => {
   try {
-    const accounts = await LedgerAccount.findAll({ include: [{ model: JournalLine }] });
+    const accounts = await LedgerAccount.findAll({ 
+      include: [{ model: JournalLine, limit: 100 }],
+      limit: 500
+    });
     // Assuming you would do aggregation here, but keeping it simple for the skeleton
     // In reality, this needs a raw query for sum(debit), sum(credit) grouped by accountId
     res.json(accounts);
