@@ -62,6 +62,22 @@ router.post("/", protect, async (req, res) => {
       userId: req.user ? req.user.id : null,
     }, { transaction: t });
 
+    const items = req.body.items || [];
+    for (const row of items) {
+      if (!row.name) continue;
+      let item = await Item.findOne({ where: { name: row.name, batch: row.batch || "" }, transaction: t });
+      if (item) {
+        await item.update({ stock_qty: item.stock_qty + (parseInt(row.qty) || 0) }, { transaction: t });
+      } else {
+        item = await Item.create({
+          name: row.name, batch: row.batch || "", expiry: row.expiry || null,
+          mrp: row.mrp || 0, cost_price: row.rate || 0, selling_price: row.mrp || 0,
+          stock_qty: parseInt(row.qty) || 0, category: "General", unit: "PCS",
+        }, { transaction: t });
+      }
+      await stockMovement.recordIn(item, parseInt(row.qty) || 0, "purchase", null, req.user ? req.user.id : null, `Challan ${challan.challanNo} created`, t);
+    }
+
     await AuditLog.create({
       userId: req.user ? req.user.id : null, action: "create",
       entityType: "PurchaseChallan", entityId: challan.id,
@@ -129,22 +145,6 @@ router.post("/:id/convert", protect, async (req, res) => {
       notes: challan.notes,
     }, { transaction: t });
 
-    // Update inventory for each item
-    for (const row of items) {
-      if (!row.name) continue;
-      let item = await Item.findOne({ where: { name: row.name, batch: row.batch || "" }, transaction: t });
-      if (item) {
-        await item.update({ stock_qty: item.stock_qty + (parseInt(row.qty) || 0) }, { transaction: t });
-      } else {
-        item = await Item.create({
-          name: row.name, batch: row.batch || "", expiry: row.expiry || null,
-          mrp: row.mrp || 0, cost_price: row.rate || 0, selling_price: row.mrp || 0,
-          stock_qty: parseInt(row.qty) || 0, category: "General", unit: "PCS",
-        }, { transaction: t });
-      }
-      await stockMovement.recordIn(item, parseInt(row.qty) || 0, "purchase", po.id, req.user ? req.user.id : null, `Challan ${challan.challanNo} converted`, t);
-    }
-
     // Post accounting journal
     await accounting.postPurchaseJournal(po, t);
 
@@ -171,8 +171,28 @@ router.delete("/:id", protect, async (req, res) => {
     const challan = await PurchaseChallan.findByPk(req.params.id);
     if (!challan) return res.status(404).json({ error: "Not found" });
     if (challan.status === "converted") return res.status(400).json({ error: "Cannot delete converted challan" });
-    await challan.destroy();
-    res.json({ message: "Challan deleted" });
+    
+    const t = await sequelize.transaction();
+    try {
+      const items = challan.items || [];
+      for (const row of items) {
+        if (!row.name) continue;
+        const item = await Item.findOne({ where: { name: row.name, batch: row.batch || "" }, transaction: t });
+        if (item) {
+          const qty = parseInt(row.qty) || 0;
+          if (item.stock_qty >= qty) {
+            await item.update({ stock_qty: item.stock_qty - qty }, { transaction: t });
+            await stockMovement.recordOut(item, qty, "purchase", null, req.user ? req.user.id : null, `Challan ${challan.challanNo} deleted`, t);
+          }
+        }
+      }
+      await challan.destroy({ transaction: t });
+      await t.commit();
+      res.json({ message: "Challan deleted and stock restored" });
+    } catch(err) {
+      await t.rollback();
+      throw err;
+    }
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

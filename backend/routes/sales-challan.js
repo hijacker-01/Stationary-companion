@@ -79,6 +79,24 @@ router.post("/", protect, async (req, res) => {
       userId: req.user ? req.user.id : null,
     }, { transaction: t });
 
+    const items = req.body.items || [];
+    for (const row of items) {
+      if (!row.name) continue;
+      const item = await Item.findOne({ where: { name: row.name, batch: row.batch || "" }, transaction: t });
+      if (!item) { await t.rollback(); return res.status(400).json({ error: `Item "${row.name}" not found in inventory` }); }
+      const qty = parseInt(row.qty) || 0;
+      const schemeQty = parseInt(row.schemeQty) || 0;
+      const totalRequested = qty + schemeQty;
+
+      if (item.stock_qty < totalRequested) { await t.rollback(); return res.status(400).json({ error: `Insufficient stock for "${row.name}". Available: ${item.stock_qty}` }); }
+      await item.update({ stock_qty: item.stock_qty - totalRequested }, { transaction: t });
+      
+      await stockMovement.recordOut(item, qty, "sale", null, req.user ? req.user.id : null, `DM ${challan.challanNo} created`, t);
+      if (schemeQty > 0) {
+        await stockMovement.recordOut(item, schemeQty, "sale", null, req.user ? req.user.id : null, `DM ${challan.challanNo} created (Free Scheme)`, t);
+      }
+    }
+
     await AuditLog.create({
       userId: req.user ? req.user.id : null, action: "create",
       entityType: "SalesChallan", entityId: challan.id,
@@ -119,24 +137,6 @@ router.post("/:id/invoice", protect, async (req, res) => {
     if (challan.status === "cancelled") { await t.rollback(); return res.status(400).json({ error: "Cancelled challan cannot be invoiced" }); }
 
     const items = challan.items || [];
-
-    // Validate and deduct stock
-    for (const row of items) {
-      if (!row.name) continue;
-      const item = await Item.findOne({ where: { name: row.name, batch: row.batch || "" }, transaction: t });
-      if (!item) { await t.rollback(); return res.status(400).json({ error: `Item "${row.name}" not found in inventory` }); }
-      const qty = parseInt(row.qty) || 0;
-      const schemeQty = parseInt(row.schemeQty) || 0;
-      const totalRequested = qty + schemeQty;
-
-      if (item.stock_qty < totalRequested) { await t.rollback(); return res.status(400).json({ error: `Insufficient stock for "${row.name}". Available: ${item.stock_qty}` }); }
-      await item.update({ stock_qty: item.stock_qty - totalRequested }, { transaction: t });
-      
-      await stockMovement.recordOut(item, qty, "sale", null, req.user ? req.user.id : null, `DM ${challan.challanNo} invoiced`, t);
-      if (schemeQty > 0) {
-        await stockMovement.recordOut(item, schemeQty, "sale", null, req.user ? req.user.id : null, `DM ${challan.challanNo} invoiced (Free Scheme)`, t);
-      }
-    }
 
     // Create Bill
     const bill = await Bill.create({
@@ -187,8 +187,27 @@ router.delete("/:id", protect, async (req, res) => {
     const c = await SalesChallan.findByPk(req.params.id);
     if (!c) return res.status(404).json({ error: "Not found" });
     if (c.status === "invoiced") return res.status(400).json({ error: "Cannot delete invoiced challan" });
-    await c.destroy();
-    res.json({ message: "Sales challan deleted" });
+    
+    const t = await sequelize.transaction();
+    try {
+      const items = c.items || [];
+      for (const row of items) {
+        if (!row.name) continue;
+        const item = await Item.findOne({ where: { name: row.name, batch: row.batch || "" }, transaction: t });
+        if (item) {
+          const qty = parseInt(row.qty) || 0;
+          const schemeQty = parseInt(row.schemeQty) || 0;
+          await item.update({ stock_qty: item.stock_qty + qty + schemeQty }, { transaction: t });
+          await stockMovement.recordIn(item, qty + schemeQty, "sale", null, req.user ? req.user.id : null, `DM ${c.challanNo} deleted`, t);
+        }
+      }
+      await c.destroy({ transaction: t });
+      await t.commit();
+      res.json({ message: "Sales challan deleted and stock restored" });
+    } catch(err) {
+      await t.rollback();
+      throw err;
+    }
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
