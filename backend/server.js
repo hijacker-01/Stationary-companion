@@ -64,8 +64,16 @@ require("./models/GSTAuditLog");
 
 const app = express();
 app.use(helmet());
-app.use(cors());
+app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }));
 app.use(express.json());
+
+const rateLimit = require("express-rate-limit");
+const globalLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 200, // limit each IP to 200 requests per windowMs
+  message: { error: "Too many requests from this IP, please try again later" }
+});
+app.use("/api", globalLimiter);
 
 app.use("/api/auth",           require("./routes/auth"));
 app.use("/api/items",          require("./routes/items"));
@@ -119,13 +127,18 @@ app.use("/api/plugins",         require("./routes/plugins"));
 app.use("/api/webhooks",        require("./routes/webhooks"));
 app.use("/api/api-keys",        require("./routes/api-keys"));
 
+const errorHandler = require("./middleware/errorHandler");
+app.use(errorHandler);
+
 const PORT = process.env.PORT || 5000;
 
 const { seedStateMaster } = require("./seeders/stateMasterSeeder");
 
-sequelize.sync({ alter: true })
+sequelize.authenticate()
   .then(async () => {
-    console.log("✅ Database connected & tables synced");
+    console.log("✅ Database connected successfully");
+    // In production, migrations should be run via CLI (e.g. sequelize-cli) 
+    // rather than auto-syncing.
     await seedStateMaster();
     app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
   })

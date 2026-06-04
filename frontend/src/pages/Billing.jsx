@@ -116,7 +116,7 @@ export default function Billing() {
   const fetchItems = () => {
     axios
       .get("http://localhost:5000/api/items", { headers: headers() })
-      .then((res) => setItems(res.data))
+      .then((res) => setItems(res.data.items || res.data))
       .catch((err) => console.error(err));
   };
 

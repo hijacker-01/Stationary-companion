@@ -8,11 +8,21 @@ router.use(protect);
 const pick = (obj, keys) => Object.fromEntries(keys.filter(k => k in obj).map(k => [k, obj[k]]));
 const ALLOWED = ["name","batch","hsn","pack","category","company","stock_qty","scheme_qty","unit","expiry","location","mrp","selling_price","cost_price","purchaseScheme","schedule","reorderPoint"];
 
-// Get all items
+// Get items (with pagination & search)
 router.get("/", async (req, res) => {
   try {
-    const items = await Item.findAll();
-    res.json(items);
+    const limit = parseInt(req.query.limit) || 100;
+    const offset = parseInt(req.query.offset) || 0;
+    const search = req.query.search;
+    
+    const where = {};
+    if (search) {
+      const { Op } = require("sequelize");
+      where.name = { [Op.iLike]: `%${search}%` };
+    }
+
+    const { count, rows } = await Item.findAndCountAll({ where, limit, offset, order: [['name', 'ASC']] });
+    res.json({ total: count, items: rows });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

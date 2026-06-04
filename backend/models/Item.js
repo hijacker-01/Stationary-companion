@@ -21,6 +21,12 @@ const Item = sequelize.define("Item", {
   reorderPoint:   { type: DataTypes.INTEGER, defaultValue: 10 },
   salesmanId:     { type: DataTypes.INTEGER },
   taxCategoryId:  { type: DataTypes.INTEGER },
+}, {
+  indexes: [
+    { fields: ['name'] },
+    { fields: ['batch'] },
+    { fields: ['category'] }
+  ]
 });
 
 module.exports = Item;

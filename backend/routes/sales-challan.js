@@ -77,19 +77,19 @@ router.post("/", protect, async (req, res) => {
       challanNo: await generateDmNo(t),
       status: "draft",
       userId: req.user ? req.user.id : null,
-    }, { transaction: t });
+    }, { transaction: t, lock: t.LOCK.UPDATE });
 
     const items = req.body.items || [];
     for (const row of items) {
       if (!row.name) continue;
-      const item = await Item.findOne({ where: { name: row.name, batch: row.batch || "" }, transaction: t });
+      const item = await Item.findOne({ where: { name: row.name, batch: row.batch || "" }, transaction: t, lock: t.LOCK.UPDATE });
       if (!item) { await t.rollback(); return res.status(400).json({ error: `Item "${row.name}" not found in inventory` }); }
       const qty = parseInt(row.qty) || 0;
       const schemeQty = parseInt(row.schemeQty) || 0;
       const totalRequested = qty + schemeQty;
 
       if (item.stock_qty < totalRequested) { await t.rollback(); return res.status(400).json({ error: `Insufficient stock for "${row.name}". Available: ${item.stock_qty}` }); }
-      await item.update({ stock_qty: item.stock_qty - totalRequested }, { transaction: t });
+      await item.update({ stock_qty: item.stock_qty - totalRequested }, { transaction: t, lock: t.LOCK.UPDATE });
       
       await stockMovement.recordOut(item, qty, "sale", null, req.user ? req.user.id : null, `DM ${challan.challanNo} created`, t);
       if (schemeQty > 0) {
@@ -101,7 +101,7 @@ router.post("/", protect, async (req, res) => {
       userId: req.user ? req.user.id : null, action: "create",
       entityType: "SalesChallan", entityId: challan.id,
       newValues: challan.toJSON(),
-    }, { transaction: t });
+    }, { transaction: t, lock: t.LOCK.UPDATE });
 
     await t.commit();
     res.status(201).json(challan);
@@ -112,16 +112,16 @@ router.post("/", protect, async (req, res) => {
 router.put("/:id", protect, async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const challan = await SalesChallan.findByPk(req.params.id, { transaction: t });
+    const challan = await SalesChallan.findByPk(req.params.id, { transaction: t, lock: t.LOCK.UPDATE });
     if (!challan) { await t.rollback(); return res.status(404).json({ error: "Not found" }); }
     if (challan.status === "invoiced") { await t.rollback(); return res.status(400).json({ error: "Cannot edit an invoiced challan" }); }
     const old = challan.toJSON();
-    await challan.update(req.body, { transaction: t });
+    await challan.update(req.body, { transaction: t, lock: t.LOCK.UPDATE });
     await AuditLog.create({
       userId: req.user ? req.user.id : null, action: "update",
       entityType: "SalesChallan", entityId: challan.id,
       oldValues: old, newValues: challan.toJSON(),
-    }, { transaction: t });
+    }, { transaction: t, lock: t.LOCK.UPDATE });
     await t.commit();
     res.json(challan);
   } catch (err) { await t.rollback(); res.status(400).json({ error: err.message }); }
@@ -131,7 +131,7 @@ router.put("/:id", protect, async (req, res) => {
 router.post("/:id/invoice", protect, async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const challan = await SalesChallan.findByPk(req.params.id, { transaction: t });
+    const challan = await SalesChallan.findByPk(req.params.id, { transaction: t, lock: t.LOCK.UPDATE });
     if (!challan) { await t.rollback(); return res.status(404).json({ error: "Not found" }); }
     if (challan.status === "invoiced") { await t.rollback(); return res.status(400).json({ error: "Already invoiced" }); }
     if (challan.status === "cancelled") { await t.rollback(); return res.status(400).json({ error: "Cancelled challan cannot be invoiced" }); }
@@ -149,32 +149,32 @@ router.post("/:id/invoice", protect, async (req, res) => {
       discount: challan.discount, total: challan.total,
       paymentMode: req.body.paymentMode || "credit",
       status: req.body.status || "unpaid",
-    }, { transaction: t });
+    }, { transaction: t, lock: t.LOCK.UPDATE });
 
     // Auto-add/update customer
     if (challan.customerName) {
-      let customer = await Customer.findOne({ where: { name: challan.customerName }, transaction: t });
+      let customer = await Customer.findOne({ where: { name: challan.customerName }, transaction: t, lock: t.LOCK.UPDATE });
       if (!customer) {
         customer = await Customer.create({
           name: challan.customerName, phone: challan.customerPhone || "",
           gstNumber: challan.customerGst || "", dlNumber: challan.customerDl || "",
-        }, { transaction: t });
+        }, { transaction: t, lock: t.LOCK.UPDATE });
       }
-      await customer.increment("totalPurchased", { by: bill.total, transaction: t });
-      if (bill.status === "unpaid") await customer.increment("balance", { by: bill.total, transaction: t });
+      await customer.increment("totalPurchased", { by: bill.total, transaction: t, lock: t.LOCK.UPDATE });
+      if (bill.status === "unpaid") await customer.increment("balance", { by: bill.total, transaction: t, lock: t.LOCK.UPDATE });
     }
 
     // Post accounting journal
     await accounting.postSalesJournal(bill, t);
 
     // Mark challan as invoiced
-    await challan.update({ status: "invoiced", invoicedAt: new Date(), billId: bill.id }, { transaction: t });
+    await challan.update({ status: "invoiced", invoicedAt: new Date(), billId: bill.id }, { transaction: t, lock: t.LOCK.UPDATE });
 
     await AuditLog.create({
       userId: req.user ? req.user.id : null, action: "convert",
       entityType: "SalesChallan", entityId: challan.id,
       newValues: { billId: bill.id },
-    }, { transaction: t });
+    }, { transaction: t, lock: t.LOCK.UPDATE });
 
     await t.commit();
     res.json({ message: "DM converted to Invoice", challan, bill });
@@ -193,15 +193,15 @@ router.delete("/:id", protect, async (req, res) => {
       const items = c.items || [];
       for (const row of items) {
         if (!row.name) continue;
-        const item = await Item.findOne({ where: { name: row.name, batch: row.batch || "" }, transaction: t });
+        const item = await Item.findOne({ where: { name: row.name, batch: row.batch || "" }, transaction: t, lock: t.LOCK.UPDATE });
         if (item) {
           const qty = parseInt(row.qty) || 0;
           const schemeQty = parseInt(row.schemeQty) || 0;
-          await item.update({ stock_qty: item.stock_qty + qty + schemeQty }, { transaction: t });
+          await item.update({ stock_qty: item.stock_qty + qty + schemeQty }, { transaction: t, lock: t.LOCK.UPDATE });
           await stockMovement.recordIn(item, qty + schemeQty, "sale", null, req.user ? req.user.id : null, `DM ${c.challanNo} deleted`, t);
         }
       }
-      await c.destroy({ transaction: t });
+      await c.destroy({ transaction: t, lock: t.LOCK.UPDATE });
       await t.commit();
       res.json({ message: "Sales challan deleted and stock restored" });
     } catch(err) {

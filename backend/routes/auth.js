@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const { register, login } = require("../controllers/authController");
+const validate = require("../middleware/validate");
+const { registerSchema, loginSchema } = require("../validators/authValidator");
 const rateLimit = require("express-rate-limit");
 
 const loginLimiter = rateLimit({
@@ -9,7 +11,7 @@ const loginLimiter = rateLimit({
   message: { error: "Too many login attempts from this IP, please try again after 15 minutes" },
 });
 
-router.post("/register", register);
-router.post("/login", loginLimiter, login);
+router.post("/register", validate(registerSchema), register);
+router.post("/login", loginLimiter, validate(loginSchema), login);
 
 module.exports = router;
