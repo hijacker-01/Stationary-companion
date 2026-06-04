@@ -26,7 +26,8 @@ const Item = sequelize.define("Item", {
     { fields: ['name'] },
     { fields: ['batch'] },
     { fields: ['category'] }
-  ]
+  ],
+  paranoid: true, // Enables Soft Deletes (deletedAt)
 });
 
 module.exports = Item;
