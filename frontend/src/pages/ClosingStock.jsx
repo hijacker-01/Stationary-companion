@@ -67,9 +67,9 @@ export default function ClosingStock() {
   const selected = inventoryData.find(r => r.id === selectedRow) || inventoryData[0];
 
   const DetailItem = ({ label, value, suffix = '' }) => (
-    <div className="flex items-center justify-between py-0.5">
-      <span className="text-gray-500 text-xs">{label}</span>
-      <span className="text-sm font-semibold text-gray-800">{typeof value === 'number' ? value.toFixed(2) : value}{suffix}</span>
+    <div className="flex items-center justify-between py-1 font-bold">
+      <span className="text-gray-500">{label}</span>
+      <span className="text-gray-900">{typeof value === 'number' ? value.toFixed(2) : value}{suffix}</span>
     </div>
   );
 
@@ -185,11 +185,11 @@ export default function ClosingStock() {
             </div>
 
             {/* 5-column detail grid */}
-            <div className="grid grid-cols-5 divide-x divide-gray-200 text-xs">
+            <div className="grid grid-cols-5 divide-x divide-gray-200 text-sm">
 
               {/* Pricing */}
-              <div className="px-4 py-2">
-                <p className="text-[9px] uppercase tracking-widest text-[#1b4985] mb-1.5 font-bold border-b border-gray-100 pb-1">Pricing</p>
+              <div className="px-5 py-4">
+                <p className="text-[11px] uppercase tracking-widest text-[#1b4985] mb-2 font-black border-b border-gray-100 pb-1">Pricing</p>
                 <DetailItem label="M.R.P." value={selected.mrp} />
                 <DetailItem label="Rate" value={selected.rate} />
                 <DetailItem label="Pur Rate" value={selected.purRate} />
@@ -199,8 +199,8 @@ export default function ClosingStock() {
               </div>
 
               {/* Margins */}
-              <div className="px-4 py-2">
-                <p className="text-[9px] uppercase tracking-widest text-[#1b4985] mb-1.5 font-bold border-b border-gray-100 pb-1">Margins & Deals</p>
+              <div className="px-5 py-4">
+                <p className="text-[11px] uppercase tracking-widest text-[#1b4985] mb-2 font-black border-b border-gray-100 pb-1">Margins & Deals</p>
                 <DetailItem label="Margin %" value={selected.marginPct} suffix=" %" />
                 <DetailItem label="W/o Deal" value={selected.woDeal} />
                 <DetailItem label="Margin (Deal)" value={selected.marginPct2} suffix=" %" />
@@ -209,16 +209,16 @@ export default function ClosingStock() {
               </div>
 
               {/* Tax */}
-              <div className="px-4 py-2">
-                <p className="text-[9px] uppercase tracking-widest text-[#1b4985] mb-1.5 font-bold border-b border-gray-100 pb-1">Tax</p>
+              <div className="px-5 py-4">
+                <p className="text-[11px] uppercase tracking-widest text-[#1b4985] mb-2 font-black border-b border-gray-100 pb-1">Tax</p>
                 <DetailItem label="Tax Type" value={selected.taxT} suffix=" %" />
                 <DetailItem label="CGST/SGST" value={selected.cgss} suffix=" %" />
                 <DetailItem label="Excise" value={selected.excise} suffix=" %" />
               </div>
 
               {/* Product Info */}
-              <div className="px-4 py-2">
-                <p className="text-[9px] uppercase tracking-widest text-[#1b4985] mb-1.5 font-bold border-b border-gray-100 pb-1">Product Info</p>
+              <div className="px-5 py-4">
+                <p className="text-[11px] uppercase tracking-widest text-[#1b4985] mb-2 font-black border-b border-gray-100 pb-1">Product Info</p>
                 <DetailItem label="Company" value={selected.company} />
                 <DetailItem label="HSN/SAC" value={selected.hsn} />
                 <DetailItem label="Mfr." value={selected.mfr} />
@@ -227,13 +227,13 @@ export default function ClosingStock() {
               </div>
 
               {/* Batch */}
-              <div className="px-4 py-2">
-                <p className="text-[9px] uppercase tracking-widest text-[#1b4985] mb-1.5 font-bold border-b border-gray-100 pb-1">Batch Detail</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="flex-1 bg-gray-50 border border-gray-200 rounded px-2 py-1 text-center text-xs font-semibold text-gray-800">
+              <div className="px-5 py-4">
+                <p className="text-[11px] uppercase tracking-widest text-[#1b4985] mb-2 font-black border-b border-gray-100 pb-1">Batch Detail</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="flex-1 bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-center text-sm font-bold text-gray-900">
                     {selected.batch}
                   </div>
-                  <div className="flex-1 bg-gray-50 border border-gray-200 rounded px-2 py-1 text-center text-xs font-semibold text-gray-800">
+                  <div className="flex-1 bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-center text-sm font-bold text-gray-900">
                     {selected.batchQty}
                   </div>
                 </div>
@@ -243,13 +243,13 @@ export default function ClosingStock() {
           </div>
 
           {/* Bottom Shortcut Bar */}
-          <div className="bg-gray-100 border-t border-gray-200 px-6 py-1 flex items-center gap-4 text-[10px] text-gray-500 font-medium flex-shrink-0">
-            <span><span className="text-[#1b4985] font-bold">F3</span> Edit</span>
-            <span><span className="text-[#1b4985] font-bold">F5</span> Index</span>
-            <span><span className="text-[#1b4985] font-bold">Enter</span> Register</span>
-            <span><span className="text-[#1b4985] font-bold">F6</span> Calculate Total</span>
-            <span><span className="text-[#1b4985] font-bold">F9</span> Store</span>
-            <span><span className="text-[#1b4985] font-bold">F10</span> Filter</span>
+          <div className="bg-gray-100 border-t border-gray-200 px-6 py-2.5 flex items-center gap-6 text-xs text-gray-600 font-bold flex-shrink-0 shadow-inner">
+            <span><span className="text-[#1b4985] font-black mr-1">F3</span> Edit</span>
+            <span><span className="text-[#1b4985] font-black mr-1">F5</span> Index</span>
+            <span><span className="text-red-600 font-black mr-1">Enter</span> Register</span>
+            <span><span className="text-[#1b4985] font-black mr-1">F6</span> Calculate Total</span>
+            <span><span className="text-[#1b4985] font-black mr-1">F10</span> Filter</span>
+            <span><span className="text-red-600 font-black mr-1">Alt+P</span> Print</span>
             <span><span className="text-red-500 font-bold">Ctrl+F1</span> Ageing</span>
             <div className="ml-auto text-gray-400">SUBHASH MEDICOSE · GSTIN: 08ABFCS9604F1ZK</div>
           </div>
