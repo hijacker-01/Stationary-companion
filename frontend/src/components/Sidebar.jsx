@@ -42,6 +42,7 @@ const aiTools = [
 ];
 
 const enterprise = [
+  { to: "/godown-master", label: "Godown Master (Multi-Loc)" },
   { to: "/wms", label: "Warehouse (WMS)" },
   { to: "/logistics", label: "Route & Delivery" },
   { to: "/approvals", label: "Approvals Inbox" },

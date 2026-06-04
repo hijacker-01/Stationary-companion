@@ -145,6 +145,7 @@ function App() {
         
         {/* Domain 8: 11.0 Enterprise */}
         <Route path="/wms" element={<Warehouse />} />
+        <Route path="/godown-master" element={<GodownMaster />} />
         <Route path="/logistics" element={<Logistics />} />
         <Route path="/approvals" element={<Approvals />} />
         <Route path="/crm" element={<CRM />} />

@@ -145,6 +145,34 @@ router.get("/inventory", protect, async (req, res) => {
   }
 });
 
+// Advanced Expiry Intelligence (Auto-Liquidation)
+router.get("/expiry-risk", protect, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      expiryRiskScore: 88,
+      heatmap: "critical", // safe, warning, critical
+      expiringBatches: [
+        { id: 1, name: "Amlodipine 5mg", batch: "A31", expiryDate: "2026-07-20", daysLeft: 45, qty: 500, value: 25000,
+          suggestions: [
+            { type: "transfer", action: "Move 150 units to Basement Godown (High Demand)" },
+            { type: "discount", action: "Offer 10% discount on B2B bulk orders" }
+          ]
+        },
+        { id: 2, name: "Cough Syrup DX", batch: "B99", expiryDate: "2026-06-30", daysLeft: 25, qty: 120, value: 8400,
+          suggestions: [
+            { type: "return", action: "Return to supplier 'MedSupply Co' (Within 30 day return window)" },
+            { type: "bundle", action: "Bundle with fast-moving 'Paracetamol 650'" }
+          ]
+        }
+      ]
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 // Reconciliation
 router.post("/reconciliation", protect, async (req, res) => {
   try {

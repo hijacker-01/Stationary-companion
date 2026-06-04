@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, Fragment } from "react";
 import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
+import BarcodeScannerModal from "../components/BarcodeScannerModal";
 import {
   Plus,
   Printer,
@@ -71,6 +72,7 @@ export default function Billing() {
     name: "",
   });
   const [expandedRows, setExpandedRows] = useState(new Set());
+  const [showScanner, setShowScanner] = useState(false);
   const [listFilter, setListFilter] = useState("All"); // Legacy quick filter
   const [advancedSearch, setAdvancedSearch] = useState({
     shop: "",
@@ -92,6 +94,7 @@ export default function Billing() {
       if (view !== "create") return;
       if (e.key === "F2") { e.preventDefault(); document.getElementById('search-product-0')?.focus(); }
       if (e.key === "F3") { e.preventDefault(); document.getElementById('search-customer')?.focus(); }
+      if (e.key === "F4") { e.preventDefault(); setShowScanner(true); }
       if (e.key === "F10") { e.preventDefault(); handleSaveBillRef.current?.(); }
       if (e.key === "Escape") { e.preventDefault(); resetForm(); }
     };
@@ -286,7 +289,30 @@ export default function Billing() {
     }
   };
 
-  const addRow = () => setRows([...rows, { ...emptyRow }]);
+  const addRow = () => {
+    setRows([...rows, { ...emptyRow }]);
+  };
+
+  const handleBarcodeScan = (barcodeStr) => {
+    setShowScanner(false);
+    // Find item with this barcode
+    const foundItem = items.find(i => i.barcode === barcodeStr || i.name.toLowerCase().includes(barcodeStr.toLowerCase()));
+    if (foundItem) {
+      // Find empty row or add new row
+      let targetRowIndex = rows.findIndex(r => !r.name);
+      if (targetRowIndex === -1) {
+        targetRowIndex = rows.length;
+        setRows(prev => [...prev, { ...emptyRow }]);
+      }
+      setTimeout(() => {
+        handleRowChange(targetRowIndex, "name", foundItem.name);
+        handleItemSelect(targetRowIndex, foundItem.name);
+      }, 50);
+    } else {
+      alert(`Barcode ${barcodeStr} not found in inventory.`);
+    }
+  };
+
   const removeRow = (i) => {
     setRows(rows.filter((_, idx) => idx !== i));
     setRowSchemes((prev) => {
@@ -642,7 +668,6 @@ export default function Billing() {
   }
 
   // ── CREATE VIEW ──
-  // 🟢 CREATE VIEW 🟢
   if (view === "create") {
     // Advanced GST Computation Engine
     const totals = rows.reduce((acc, r) => {
@@ -680,6 +705,7 @@ export default function Billing() {
     return (
       <div className="flex min-h-screen bg-[#1b4985] font-sans text-xs">
         <Sidebar />
+        {showScanner && <BarcodeScannerModal onClose={() => setShowScanner(false)} onScan={handleBarcodeScan} />}
         <main className="flex-1 overflow-y-hidden max-h-screen flex flex-col p-1 gap-1">
           {/* TOP HEADER SECTION */}
           <div className="flex bg-[#1b4985] border border-white text-white p-1 shrink-0 gap-2">
@@ -768,6 +794,12 @@ export default function Billing() {
                     <div>₹0.00</div>
                  </div>
               </div>
+              <button 
+                onClick={() => setShowScanner(true)}
+                className="mt-auto bg-[#2c7a7b] hover:bg-[#235e5e] text-white font-bold py-1 px-2 text-[10px]"
+              >
+                [F4] Scan Barcode
+              </button>
             </div>
           </div>
 
@@ -811,7 +843,7 @@ export default function Billing() {
                    <tr key={i} className={`border-b border-slate-300 text-black ${i%2===0?'bg-[#e6f0fa]':'bg-white'}`}>
                      <td className="px-1 border-r border-slate-300 text-center font-bold text-slate-500">{i+1}</td>
                      <td className="px-1 border-r border-slate-300 flex items-center justify-between group">
-                       <input list={`item-list-${i}`} value={row.searchStr !== undefined ? row.searchStr : row.name} onChange={(e) => handleItemSelect(i, e.target.value)} className="bg-transparent outline-none w-full text-black font-bold" placeholder={i === rows.length-1 ? "Type to add item..." : ""} />
+                       <input id={`search-product-${i}`} list={`item-list-${i}`} value={row.searchStr !== undefined ? row.searchStr : row.name} onChange={(e) => handleItemSelect(i, e.target.value)} className="bg-transparent outline-none w-full text-black font-bold" placeholder={i === rows.length-1 ? "Type to add item..." : ""} />
                        <datalist id={`item-list-${i}`}>{items.map(it => <option key={it.id} value={`${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`} />)}</datalist>
                        {isNearExpiry && !isLowStock && <span className="bg-[#ff9900] text-black font-bold px-1 py-0.5 ml-1 text-[9px] shrink-0 border border-slate-500">Near Expiry</span>}
                        {isLowStock && <span className="bg-[#cc0000] text-white font-bold px-1 py-0.5 ml-1 text-[9px] shrink-0 border border-slate-500">Low Stock</span>}
@@ -896,162 +928,6 @@ export default function Billing() {
 
 
 
-
-  // Number to Words converter for Indian Rupees
-  const numberToWords = (num) => {
-    num = Math.abs(Math.round(Number(num)));
-    const a = [
-      "",
-      "One ",
-      "Two ",
-      "Three ",
-      "Four ",
-      "Five ",
-      "Six ",
-      "Seven ",
-      "Eight ",
-      "Nine ",
-      "Ten ",
-      "Eleven ",
-      "Twelve ",
-      "Thirteen ",
-      "Fourteen ",
-      "Fifteen ",
-      "Sixteen ",
-      "Seventeen ",
-      "Eighteen ",
-      "Nineteen ",
-    ];
-    const b = [
-      "",
-      "",
-      "Twenty",
-      "Thirty",
-      "Forty",
-      "Fifty",
-      "Sixty",
-      "Seventy",
-      "Eighty",
-      "Ninety",
-    ];
-    if ((num = num.toString()).length > 9) return "overflow";
-    let n = ("000000000" + num)
-      .substr(-9)
-      .match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
-    if (!n) return;
-    let str = "";
-    str +=
-      n[1] != 0
-        ? (a[Number(n[1])] || b[n[1][0]] + " " + a[n[1][1]]) + "Crore "
-        : "";
-    str +=
-      n[2] != 0
-        ? (a[Number(n[2])] || b[n[2][0]] + " " + a[n[2][1]]) + "Lakh "
-        : "";
-    str +=
-      n[3] != 0
-        ? (a[Number(n[3])] || b[n[3][0]] + " " + a[n[3][1]]) + "Thousand "
-        : "";
-    str +=
-      n[4] != 0
-        ? (a[Number(n[4])] || b[n[4][0]] + " " + a[n[4][1]]) + "Hundred "
-        : "";
-    str +=
-      n[5] != 0
-        ? (str != "" ? "and " : "") +
-          (a[Number(n[5])] || b[n[5][0]] + " " + a[n[5][1]]) +
-          "Only"
-        : "";
-    return str || "Zero";
-  };
-
-  if (view === "preview" && activeBill) {
-    const totalGst = activeBill.gstAmount || 0;
-    const cgst = totalGst / 2;
-    const sgst = totalGst / 2;
-    const roundOff = (Math.round(activeBill.total) - activeBill.total).toFixed(
-      2,
-    );
-    const grandTotal = Math.round(activeBill.total);
-
-    return (
-      <div className="flex min-h-screen bg-slate-100 print:bg-white">
-        <Sidebar />
-        <main className="flex-1 p-8 overflow-y-auto max-h-screen print:p-0 print:overflow-visible">
-          <div className="flex items-center justify-between mb-8 max-w-[210mm] mx-auto print:hidden">
-            <button
-              onClick={resetForm}
-              className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition cursor-pointer"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Invoices
-            </button>
-            <button
-              onClick={() => window.print()}
-              className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-md cursor-pointer transition"
-            >
-              <Printer className="w-4.5 h-4.5" />
-              Print / Save PDF
-            </button>
-          </div>
-
-          {/* Invoice Page Container */}
-          <div
-            id="invoice"
-            className="bg-white border border-slate-200 rounded-lg max-w-[210mm] mx-auto p-10 print:border-0 print:shadow-none shadow-lg print:p-4 text-xs font-sans text-slate-800 leading-relaxed"
-          >
-            {/* Invoice Header */}
-            <div className="text-center border-b-2 border-slate-800 pb-4 mb-4">
-              <h1 className="text-3xl font-extrabold uppercase tracking-wide text-slate-900">
-                {settings.companyName || "PHARMA DISTRIBUTORS"}
-              </h1>
-              <p className="text-slate-500 text-sm mt-1">
-                {settings.companyAddress || "123, Wholesale Market, Mumbai, MH"}
-              </p>
-              <div className="flex justify-center gap-6 mt-2.5 text-slate-600 font-semibold text-[11px]">
-                <p>Phone: {settings.companyPhone || "+91-XXXXXXXXXX"}</p>
-                <p>DL No: {settings.dlNumber || "MH-MZ3-123456"}</p>
-                <p>GSTIN: {settings.gstNumber || "27AAAAA0000A1Z5"}</p>
-              </div>
-            </div>
-
-            {/* Meta Details Block */}
-            <div className="grid grid-cols-2 gap-6 border-b border-slate-300 pb-4 mb-4">
-              <div className="pr-4 border-r border-slate-200">
-                <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px] mb-1.5">
-                  Billed To
-                </p>
-                <p className="font-bold uppercase text-slate-900 text-sm">
-                  {activeBill.customerName}
-                </p>
-                <p className="text-slate-600 mt-1">
-                  {activeBill.customerAddress || "Walk-in Customer"}
-                </p>
-                <p className="text-slate-600">
-                  Phone: {activeBill.customerPhone || "N/A"}
-                </p>
-                <p className="mt-2 font-semibold text-slate-800">
-                  DL No: {activeBill.customerDl || "N/A"}
-                </p>
-                {activeBill.customerGst && (
-                  <p className="font-semibold text-slate-800">
-                    GSTIN: {activeBill.customerGst}
-                  </p>
-                )}
-              </div>
-              <div className="pl-4 space-y-1.5">
-                <div className="flex justify-between text-slate-600">
-                  <span className="font-bold">Invoice No:</span>{" "}
-                  <span className="font-mono text-slate-900 font-semibold">
-                    {activeBill.billNo}
-                  </span>
-                </div>
-                <div className="flex justify-between text-slate-600">
-                  <span className="font-bold">Invoice Date:</span>{" "}
-                  <span className="text-slate-900 font-semibold">
-                    {new Date(activeBill.createdAt).toLocaleDateString("en-IN")}
-                  </span>
-                </div>
                 <div className="flex justify-between text-slate-600">
                   <span className="font-bold">Due Date:</span>{" "}
                   <span className="text-slate-900 font-semibold">
