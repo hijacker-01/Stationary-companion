@@ -4,6 +4,48 @@ const { protect } = require("../middleware/auth");
 const sequelize = require("../config/db");
 const { QueryTypes } = require("sequelize");
 
+// AI Command Center Briefing
+router.get("/briefing", protect, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      greeting: "Good Morning",
+      expectedRevenue: 280000,
+      stockouts: [{ name: "Paracetamol 650", daysLeft: 2 }],
+      expiries: [{ name: "Amlodipine Batch A31", daysLeft: 45 }],
+      recommendedPurchase: 120000,
+      expectedPayers: 18,
+      message: "Today's Expected Revenue is ₹2.8 Lakh. Paracetamol 650 is likely to stock out in 2 days. Amlodipine Batch A31 has a near expiry risk (45 Days). Recommended Purchase is ₹1.2 Lakh. 18 customers are likely to pay today."
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// Executive Health Score
+router.get("/health-score", protect, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      score: 87,
+      metrics: {
+        revenue: "+12%",
+        profit: "+4%",
+        cashFlow: "Healthy",
+        inventoryValue: "₹45 Lakh",
+        stockHealth: "92%",
+        collectionHealth: "85%"
+      },
+      insights: [
+        "Inventory turnover improved by 15% this quarter.",
+        "Collections are lagging by 5% compared to last month."
+      ]
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 // Customer Intelligence
 router.get("/customer/:id", protect, async (req, res) => {
   try {

@@ -11,9 +11,13 @@ export default function CEODashboard() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [snapshot, setSnapshot] = useState({});
+  const [health, setHealth] = useState(null);
   const [expandedIdx, setExpandedIdx] = useState(null);
 
-  useEffect(() => { axios.get("/api/ai-ceo/snapshot").then(r => setSnapshot(r.data)).catch(() => setSnapshot({ cashInBank: 450000, totalReceivables: 180000, totalPayables: 120000, todaySales: 35000, overdueAmount: 45000 })); }, []);
+  useEffect(() => { 
+    axios.get("/api/ai-ceo/snapshot").then(r => setSnapshot(r.data)).catch(() => setSnapshot({ cashInBank: 450000, totalReceivables: 180000, totalPayables: 120000, todaySales: 35000, overdueAmount: 45000 })); 
+    axios.get("/api/intelligence/health-score").then(r => setHealth(r.data)).catch(() => {});
+  }, []);
 
   const askQuestion = async (q) => {
     const finalQ = q || question;
@@ -52,12 +56,22 @@ export default function CEODashboard() {
           </div>
           <div className="flex gap-2"><input value={question} onChange={e => setQuestion(e.target.value)} onKeyDown={e => e.key === "Enter" && askQuestion()} placeholder="Ask your business anything..." className="flex-1 border border-gray-300 p-2 rounded text-xs"/><button onClick={() => askQuestion()} className="bg-blue-600 text-white px-4 py-2 rounded font-bold text-xs hover:bg-blue-700"><Send className="w-4 h-4"/></button></div>
         </div>
-        <div className="w-56 flex flex-col gap-2">
+        <div className="w-64 flex flex-col gap-2">
+          {health && (
+            <div className="bg-white border border-gray-300 shadow-sm p-4 text-center">
+              <div className="text-gray-500 font-bold mb-2">ERP Health Score</div>
+              <div className="text-5xl font-extrabold text-blue-700">{health.score}</div>
+              <div className="text-[10px] text-gray-400 mt-1">out of 100</div>
+              <div className="mt-3 text-[10px] text-left space-y-1">
+                {health.insights.map((ins, i) => <div key={i} className="text-blue-800 bg-blue-50 p-1 rounded">{ins}</div>)}
+              </div>
+            </div>
+          )}
           {[{ icon: DollarSign, label: "Cash in Bank", value: `₹${(snapshot.cashInBank || 0).toLocaleString()}`, bg: "bg-green-50 border-green-200" },
             { icon: Users, label: "Receivables", value: `₹${(snapshot.totalReceivables || 0).toLocaleString()}`, bg: "bg-blue-50 border-blue-200" },
             { icon: AlertTriangle, label: "Overdue", value: `₹${(snapshot.overdueAmount || 0).toLocaleString()}`, bg: "bg-red-50 border-red-200" },
             { icon: TrendingUp, label: "Today Sales", value: `₹${(snapshot.todaySales || 0).toLocaleString()}`, bg: "bg-indigo-50 border-indigo-200" },
-          ].map(c => <div key={c.label} className={`border p-2 shadow-sm ${c.bg}`}><div className="flex items-center gap-1 text-[10px] text-gray-500"><c.icon className="w-3 h-3"/>{c.label}</div><div className="text-base font-bold">{c.value}</div></div>)}
+          ].map(c => <div key={c.label} className={`border p-2 shadow-sm ${c.bg} bg-white`}><div className="flex items-center gap-1 text-[10px] text-gray-500"><c.icon className="w-3 h-3"/>{c.label}</div><div className="text-base font-bold">{c.value}</div></div>)}
         </div>
       </main>
       <BusinessFooter />

@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AICopilotWidget from "./components/AICopilotWidget";
+import AICockpit from "./pages/AICockpit";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
@@ -88,12 +90,14 @@ function App() {
   return (
     <BrowserRouter>
       <Toaster position="top-right" />
+      <AICopilotWidget />
       <GlobalHooks />
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
         
         <Route element={<ProtectedRoute allowedRoles={['admin', 'user']} />}>
+          <Route path="/ai-cockpit" element={<AICockpit />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/inventory" element={<Inventory />} />
         <Route path="/expiry" element={<ExpiryBox />} />

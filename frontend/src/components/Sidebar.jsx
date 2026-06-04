@@ -34,6 +34,7 @@ const inventory = [
 ];
 
 const aiTools = [
+  { to: "/ai-cockpit", label: "AI Cockpit", badge: "AI" },
   { to: "/ai-ledger", label: "AI Smart Ledger", badge: "AI" },
   { to: "/reorder-center", label: "AI Re-Order Agent", badge: "AI" },
   { to: "/expiry-guard", label: "AI Expiry Guard", badge: "AI" },
