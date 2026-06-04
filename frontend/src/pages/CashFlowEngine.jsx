@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
 import { TrendingUp, AlertTriangle, DollarSign, Clock } from "lucide-react";
@@ -14,12 +14,12 @@ export default function CashFlowEngine() {
   const [simForm, setSimForm] = useState({ customerId: "", delayDays: 30 });
 
   useEffect(() => {
-    axios.get("/api/cashflow/forecast", { headers: headers() }).then(r => setForecasts(r.data)).catch(() => setForecasts([{ period: "7d", predictedInflow: 100000, predictedOutflow: 60000, netPosition: 40000, confidence: 85 }]));
-    axios.get("/api/cashflow/risks", { headers: headers() }).then(r => setRisks(r.data)).catch(() => {});
-    axios.get("/api/cashflow/pressure", { headers: headers() }).then(r => setPressure(r.data)).catch(() => {});
+    axios.get("/api/cashflow/forecast").then(r => setForecasts(r.data)).catch(() => setForecasts([{ period: "7d", predictedInflow: 100000, predictedOutflow: 60000, netPosition: 40000, confidence: 85 }]));
+    axios.get("/api/cashflow/risks").then(r => setRisks(r.data)).catch(() => {});
+    axios.get("/api/cashflow/pressure").then(r => setPressure(r.data)).catch(() => {});
   }, []);
 
-  const simulate = async () => { try { const r = await axios.post("/api/cashflow/simulate", simForm, { headers: headers() }); setSimResult(r.data); } catch (e) { alert(e.message); } };
+  const simulate = async () => { try { const r = await axios.post("/api/cashflow/simulate", simForm); setSimResult(r.data); } catch (e) {  } };
   const riskColor = (l) => ({ critical: "bg-red-600 text-white", high: "bg-orange-500 text-white", medium: "bg-yellow-400 text-black", low: "bg-green-500 text-white" }[l] || "bg-gray-200");
 
   return (

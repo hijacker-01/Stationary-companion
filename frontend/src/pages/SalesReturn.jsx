@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import { CornerDownLeft, Plus, Printer, CheckCircle2, AlertTriangle, Search, Eye, Trash2, ArrowLeft } from "lucide-react";
 
@@ -18,11 +18,11 @@ export default function SalesReturn() {
   const [activeReturn, setActiveReturn] = useState(null);
 
   const fetchReturns = () =>
-    axios.get("http://localhost:5000/api/sales-return", { headers: headers() })
+    axios.get("/sales-return")
       .then(r => setReturns(r.data));
 
   const fetchBills = () =>
-    axios.get("http://localhost:5000/api/billing", { headers: headers() })
+    axios.get("/billing")
       .then(r => setBills(r.data));
 
   useEffect(() => { fetchReturns(); fetchBills(); }, []);
@@ -45,9 +45,9 @@ export default function SalesReturn() {
   const handleSubmit = async () => {
     const items = returnItems.filter(i => i.selected && i.returnQty > 0)
       .map(i => ({ ...i, qty: i.returnQty }));
-    if (items.length === 0) return alert("Select at least one item to return");
+    if (items.length === 0) return 
     try {
-      const res = await axios.post("http://localhost:5000/api/sales-return", {
+      const res = await axios.post("/sales-return", {
         originalBillId: selectedBill.id,
         originalBillNo: selectedBill.billNo,
         customerName:   selectedBill.customerName,
@@ -58,18 +58,18 @@ export default function SalesReturn() {
         totalAmount: parseFloat(totalAmount.toFixed(2)),
         reason,
         restockItems: restock,
-      }, { headers: headers() });
+      });
       setActiveReturn(res.data);
       setView("preview");
       fetchReturns();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to create return");
+      
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this return? Stock will be reversed.")) return;
-    await axios.delete(`http://localhost:5000/api/sales-return/${id}`, { headers: headers() });
+    await axios.delete(`/sales-return/${id}`);
     fetchReturns();
   };
 

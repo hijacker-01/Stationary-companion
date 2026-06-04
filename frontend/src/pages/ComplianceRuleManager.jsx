@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
 import { Settings, ShieldAlert, Check, X, Shield, RefreshCcw } from "lucide-react";
@@ -12,7 +12,7 @@ export default function ComplianceRuleManager() {
 
   const fetchRules = () => {
     setLoading(true);
-    axios.get("/api/compliance-rules", { headers: headers() })
+    axios.get("/api/compliance-rules")
       .then(res => setRules(res.data))
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -22,16 +22,16 @@ export default function ComplianceRuleManager() {
 
   const seedRules = async () => {
     try {
-      await axios.post("/api/compliance-rules/seed", {}, { headers: headers() });
+      await axios.post("/api/compliance-rules/seed", {});
       fetchRules();
     } catch (e) {
-      alert("Error seeding rules");
+      
     }
   };
 
   const toggleRule = async (id, currentStatus) => {
     try {
-      await axios.put(`/api/compliance-rules/${id}`, { isActive: !currentStatus }, { headers: headers() });
+      await axios.put(`/api/compliance-rules/${id}`, { isActive: !currentStatus });
       fetchRules();
     } catch (e) {}
   };

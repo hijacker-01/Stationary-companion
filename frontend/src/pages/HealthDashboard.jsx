@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Header from '../components/Header';
 import BusinessFooter from '../components/BusinessFooter';
 import { Activity, AlertTriangle, CheckCircle, Info } from 'lucide-react';
-import axios from 'axios';
+import axios from "../api/axios";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { Gift, Percent, Plus, Save, X, Search, CheckSquare, Square } from "lucide-react";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
@@ -23,7 +23,7 @@ export default function Schemes() {
     // Simulated fetch
     const fetchSchemes = async () => {
       try {
-        const { data } = await axios.get("/api/schemes", { headers: headers() });
+        const { data } = await axios.get("/api/schemes");
         setSchemes(data);
       } catch (err) {
         setSchemes([

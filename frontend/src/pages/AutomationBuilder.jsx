@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
 import { Zap, Play, Pause, Trash2, Settings, ChevronRight, RefreshCw } from "lucide-react";
@@ -18,16 +18,16 @@ export default function AutomationBuilder() {
   const logRef = useRef(null);
 
   useEffect(() => {
-    axios.get("/api/automation/rules", { headers: headers() }).then(r => setRules(r.data)).catch(() => {});
-    axios.get("/api/automation/logs", { headers: headers() }).then(r => setLogs(r.data)).catch(() => {});
+    axios.get("/api/automation/rules").then(r => setRules(r.data)).catch(() => {});
+    axios.get("/api/automation/logs").then(r => setLogs(r.data)).catch(() => {});
   }, []);
 
-  useEffect(() => { const iv = setInterval(() => { axios.get("/api/automation/logs", { headers: headers() }).then(r => setLogs(r.data)).catch(() => {}); }, 10000); return () => clearInterval(iv); }, []);
+  useEffect(() => { const iv = setInterval(() => { axios.get("/api/automation/logs").then(r => setLogs(r.data)).catch(() => {}); }, 10000); return () => clearInterval(iv); }, []);
 
-  const createRule = async () => { try { await axios.post("/api/automation/rules", form, { headers: headers() }); setShowModal(false); setStep(1); const r = await axios.get("/api/automation/rules", { headers: headers() }); setRules(r.data); } catch (e) { alert(e.message); } };
-  const toggleRule = async (id, isActive) => { try { await axios.put(`/api/automation/rules/${id}`, { isActive: !isActive }, { headers: headers() }); setRules(rules.map(r => r.id === id ? { ...r, isActive: !r.isActive } : r)); } catch (e) {} };
-  const deleteRule = async (id) => { if (!confirm("Delete this rule?")) return; try { await axios.delete(`/api/automation/rules/${id}`, { headers: headers() }); setRules(rules.filter(r => r.id !== id)); } catch (e) {} };
-  const testRule = async (id) => { try { const r = await axios.post(`/api/automation/test/${id}`, {}, { headers: headers() }); alert(`Test fired: ${r.data.message}`); const l = await axios.get("/api/automation/logs", { headers: headers() }); setLogs(l.data); } catch (e) { alert(e.message); } };
+  const createRule = async () => { try { await axios.post("/api/automation/rules", form); setShowModal(false); setStep(1); const r = await axios.get("/api/automation/rules"); setRules(r.data); } catch (e) {  } };
+  const toggleRule = async (id, isActive) => { try { await axios.put(`/api/automation/rules/${id}`, { isActive: !isActive }); setRules(rules.map(r => r.id === id ? { ...r, isActive: !r.isActive } : r)); } catch (e) {} };
+  const deleteRule = async (id) => { if (!confirm("Delete this rule?")) return; try { await axios.delete(`/api/automation/rules/${id}`); setRules(rules.filter(r => r.id !== id)); } catch (e) {} };
+  const testRule = async (id) => { try { const r = await axios.post(`/api/automation/test/${id}`, {});  const l = await axios.get("/api/automation/logs"); setLogs(l.data); } catch (e) {  } };
   const resultBadge = (r) => ({ success: "bg-green-100 text-green-700", failure: "bg-red-100 text-red-700", skipped: "bg-gray-200 text-gray-600" }[r] || "bg-gray-200");
   const triggerBadge = "bg-blue-100 text-blue-700";
   const actionBadge = "bg-purple-100 text-purple-700";

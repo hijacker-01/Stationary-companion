@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { 
   TrendingUp, TrendingDown, Users, Package, FileText, 
   AlertCircle, DollarSign, Activity, BarChart2, ShieldAlert,
@@ -25,7 +25,7 @@ export default function ProfitAnalytics() {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`/api/analytics/profit?filter=${filter}`, { headers: headers() });
+      const res = await axios.get(`/api/analytics/profit?filter=${filter}`);
       setData(res.data);
       setErrorMsg(null);
     } catch (err) {
@@ -42,7 +42,7 @@ export default function ProfitAnalytics() {
     if (!aiQuery) return;
     setIsAnalyzing(true);
     try {
-      const res = await axios.post("/api/analytics/copilot", { query: aiQuery }, { headers: headers() });
+      const res = await axios.post("/api/analytics/copilot", { query: aiQuery });
       setAiResponse(res.data);
     } catch (err) {
       console.error(err);

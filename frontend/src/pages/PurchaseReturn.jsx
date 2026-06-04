@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import { Plus, Printer, Send, Trash2, Eye, ArrowLeft, X } from "lucide-react";
 
@@ -17,9 +17,9 @@ export default function PurchaseReturn() {
   const [activeReturn, setActiveReturn] = useState(null);
   const [suppliers, setSuppliers] = useState([]);
 
-  const fetchReturns = () => axios.get("http://localhost:5000/api/purchase-return", { headers: headers() }).then(r => setReturns(r.data));
-  const fetchItems = () => axios.get("http://localhost:5000/api/items", { headers: headers() }).then(r => setItems(r.data));
-  const fetchSuppliers = () => axios.get("http://localhost:5000/api/suppliers", { headers: headers() }).then(r => setSuppliers(r.data));
+  const fetchReturns = () => axios.get("/purchase-return").then(r => setReturns(r.data));
+  const fetchItems = () => axios.get("/items").then(r => setItems(r.data));
+  const fetchSuppliers = () => axios.get("/suppliers").then(r => setSuppliers(r.data));
 
   useEffect(() => { fetchReturns(); fetchItems(); fetchSuppliers(); }, []);
 
@@ -35,16 +35,16 @@ export default function PurchaseReturn() {
   const gstAmt = returnItems.reduce((s, i) => { const b = parseFloat(i.selling_price || 0) * parseInt(i.qty || 0); return s + (b * (i.gst || 0) / 100); }, 0);
 
   const handleSubmit = async () => {
-    if (!supplierName) return alert("Supplier required");
+    if (!supplierName) return 
     const valid = returnItems.filter(i => i.name && i.qty > 0);
-    if (!valid.length) return alert("Add items");
+    if (!valid.length) return 
     try {
-      const res = await axios.post("http://localhost:5000/api/purchase-return", { supplierName, originalPoNo, reason, items: valid, subtotal: +subtotal.toFixed(2), gstAmount: +gstAmt.toFixed(2), totalAmount: +(subtotal + gstAmt).toFixed(2) }, { headers: headers() });
+      const res = await axios.post("/purchase-return", { supplierName, originalPoNo, reason, items: valid, subtotal: +subtotal.toFixed(2), gstAmount: +gstAmt.toFixed(2), totalAmount: +(subtotal + gstAmt).toFixed(2) });
       setActiveReturn(res.data); setView("preview"); fetchReturns(); fetchItems();
-    } catch (err) { alert(err.response?.data?.error || "Failed"); }
+    } catch (err) {  }
   };
 
-  const handleDelete = async (id) => { if (!confirm("Delete?")) return; await axios.delete(`http://localhost:5000/api/purchase-return/${id}`, { headers: headers() }); fetchReturns(); fetchItems(); };
+  const handleDelete = async (id) => { if (!confirm("Delete?")) return; await axios.delete(`/purchase-return/${id}`); fetchReturns(); fetchItems(); };
 
   // ── PREVIEW ──
   if (view === "preview" && activeReturn) return (

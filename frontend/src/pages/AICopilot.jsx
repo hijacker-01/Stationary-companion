@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { Bot, Send, User } from "lucide-react";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
@@ -32,7 +32,7 @@ export default function AICopilot() {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/ai/copilot", { prompt: input }, { headers: headers() });
+      const res = await axios.post("/ai/copilot", { prompt: input });
       setMessages((prev) => [...prev, { role: "assistant", content: res.data.response || "Here is your data." }]);
     } catch (err) {
       console.error(err);

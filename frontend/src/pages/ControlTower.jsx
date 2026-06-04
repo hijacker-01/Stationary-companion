@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
 import { Building2, ArrowRightLeft, BarChart3, MapPin, TrendingUp } from "lucide-react";
@@ -15,13 +15,13 @@ export default function ControlTower() {
   const [form, setForm] = useState({ fromBranch: "", toBranch: "", fromBranchId: "", toBranchId: "", items: "[]", notes: "" });
 
   useEffect(() => {
-    axios.get("/api/distribution/branches", { headers: headers() }).then(r => setBranches(r.data)).catch(() => setBranches([{ id: 1, name: "HQ Mumbai", city: "Mumbai", code: "MUM-01" }]));
-    axios.get("/api/distribution/transfers", { headers: headers() }).then(r => setTransfers(r.data)).catch(() => {});
-    axios.get("/api/distribution/benchmark", { headers: headers() }).then(r => setBenchmark(r.data)).catch(() => {});
-    axios.get("/api/distribution/optimizer", { headers: headers() }).then(r => setSuggestions(r.data?.suggestions || [])).catch(() => {});
+    axios.get("/api/distribution/branches").then(r => setBranches(r.data)).catch(() => setBranches([{ id: 1, name: "HQ Mumbai", city: "Mumbai", code: "MUM-01" }]));
+    axios.get("/api/distribution/transfers").then(r => setTransfers(r.data)).catch(() => {});
+    axios.get("/api/distribution/benchmark").then(r => setBenchmark(r.data)).catch(() => {});
+    axios.get("/api/distribution/optimizer").then(r => setSuggestions(r.data?.suggestions || [])).catch(() => {});
   }, []);
 
-  const createTransfer = async () => { try { await axios.post("/api/distribution/transfer", form, { headers: headers() }); setShowModal(false); const r = await axios.get("/api/distribution/transfers", { headers: headers() }); setTransfers(r.data); } catch (e) { alert(e.message); } };
+  const createTransfer = async () => { try { await axios.post("/api/distribution/transfer", form); setShowModal(false); const r = await axios.get("/api/distribution/transfers"); setTransfers(r.data); } catch (e) {  } };
   const statusBadge = (s) => ({ draft: "bg-gray-200", approved: "bg-green-100 text-green-700", in_transit: "bg-blue-100 text-blue-700", received: "bg-green-600 text-white", cancelled: "bg-red-100 text-red-700" }[s] || "bg-gray-200");
 
   return (

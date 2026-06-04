@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
 import { QrCode, FileText, CheckCircle, Truck, XCircle } from "lucide-react";
@@ -12,7 +12,7 @@ export default function EInvoiceCenter() {
   const [activeTab, setActiveTab] = useState("einvoice");
 
   useEffect(() => {
-    axios.get("/api/gst/einvoice/logs", { headers: headers() })
+    axios.get("/api/gst/einvoice/logs")
       .then(res => setLogs(res.data))
       .catch(() => {})
       .finally(() => setLoading(false));

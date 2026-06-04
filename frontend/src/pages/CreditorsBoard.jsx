@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
@@ -24,7 +24,7 @@ export default function CreditorsBoard() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:5000/api/creditors", { headers: headers() })
+      .get("/creditors")
       .then((res) => setData(res.data))
       .catch(() => setData({ totalPayable: 0, totalOverdue: 0, creditors: [] }))
       .finally(() => setLoading(false));

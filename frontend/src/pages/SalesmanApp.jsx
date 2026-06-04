@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { Search, ShoppingCart, User, Plus, Minus, CheckCircle, ArrowRight } from "lucide-react";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
@@ -23,8 +23,8 @@ export default function SalesmanApp() {
   useEffect(() => {
     // Fetch initial data
     Promise.all([
-      axios.get("http://localhost:5000/api/customers", { headers: headers() }).catch(() => ({ data: [] })),
-      axios.get("http://localhost:5000/api/inventory", { headers: headers() }).catch(() => ({ data: [] }))
+      axios.get("/customers").catch(() => ({ data: [] })),
+      axios.get("/inventory").catch(() => ({ data: [] }))
     ]).then(([custRes, invRes]) => {
       // Mock data if backend empty
       const c = custRes.data.length ? custRes.data : [

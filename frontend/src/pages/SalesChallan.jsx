@@ -1,5 +1,5 @@
 import { useEffect, useState, Fragment } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
 import {
@@ -101,12 +101,12 @@ export default function SalesChallan() {
     setExpandedRows(newSet);
   };
 
-  const fetchBills = () => axios.get("http://localhost:5000/api/sales-challan", { headers: headers() }).then((res) => setBills(res.data));
-  const fetchItems = () => axios.get("http://localhost:5000/api/items", { headers: headers() }).then((res) => setItems(res.data));
-  const fetchSchemes = () => axios.get("http://localhost:5000/api/schemes", { headers: headers() }).then((res) => setAllSchemes(res.data));
-  const fetchCustomers = () => axios.get("http://localhost:5000/api/customers", { headers: headers() }).then((res) => setCustomers(res.data || []));
-  const fetchSalesmen = () => axios.get("http://localhost:5000/api/salesman", { headers: headers() }).then((res) => setSalesmen(res.data || []));
-  const fetchSettings = () => axios.get("http://localhost:5000/api/settings", { headers: headers() }).then((res) => setSettings(res.data || {}));
+  const fetchBills = () => axios.get("/sales-challan").then((res) => setBills(res.data));
+  const fetchItems = () => axios.get("/items").then((res) => setItems(res.data));
+  const fetchSchemes = () => axios.get("/schemes").then((res) => setAllSchemes(res.data));
+  const fetchCustomers = () => axios.get("/customers").then((res) => setCustomers(res.data || []));
+  const fetchSalesmen = () => axios.get("/salesman").then((res) => setSalesmen(res.data || []));
+  const fetchSettings = () => axios.get("/settings").then((res) => setSettings(res.data || {}));
 
   const handleCustomerSelect = (name) => {
     const found = customers.find((c) => c.name.toLowerCase() === name.toLowerCase());
@@ -127,7 +127,7 @@ export default function SalesChallan() {
   const checkScheme = async (index, itemName, qty) => {
     if (!itemName) { setRowSchemes((prev) => { const n = { ...prev }; delete n[index]; return n; }); return; }
     try {
-      const res = await axios.get(`http://localhost:5000/api/schemes/check`, { params: { itemName, qty }, headers: headers() });
+      const res = await axios.get(`/schemes/check`, { params: { itemName, qty },  });
       setRowSchemes((prev) => ({ ...prev, [index]: res.data || [] }));
     } catch { setRowSchemes((prev) => { const n = { ...prev }; delete n[index]; return n; }); }
   };
@@ -140,8 +140,8 @@ export default function SalesChallan() {
     const batch = batchPart?.trim();
     const found = items.find((i) => i.name === name && (batch ? i.batch === batch : true));
     if (found) {
-      if (found.expiry && new Date(found.expiry) < new Date()) alert("⚠️ WARNING: This batch is expired!");
-      if (found.schedule && found.schedule !== "None") alert(`🚨 DRUG COMPLIANCE WARNING:\nThis item is ${found.schedule}. Prescription MANDATORY.`);
+      if (found.expiry && new Date(found.expiry) < new Date()) 
+      if (found.schedule && found.schedule !== "None") 
       updated[index] = { ...updated[index], name: found.name, batch: found.batch || "", hsn: found.hsn || "",
         pack: found.pack || "", expiry: found.expiry || "", mrp: found.mrp || "",
         selling_price: found.selling_price || found.mrp || "", unit: found.unit || "strips",
@@ -182,12 +182,12 @@ export default function SalesChallan() {
   const total = subtotal + gstAmount - parseFloat(discount || 0);
 
   const handleSaveBill = async () => {
-    if (!customer.name) return alert("Customer name is required");
-    if (rows.every((r) => !r.name)) return alert("Add at least one item");
+    if (!customer.name) return 
+    if (rows.every((r) => !r.name)) return 
     for (const row of rows.filter((r) => r.name)) {
       const totalAvailable = (row.availableQty || 0) + (row.availableSchemeQty || 0);
       const totalRequested = parseInt(row.qty || 0) + parseInt(row.schemeQty || 0);
-      if (row.availableQty !== null && totalRequested > totalAvailable) return alert(`Insufficient stock for "${row.name}".`);
+      if (row.availableQty !== null && totalRequested > totalAvailable) return 
     }
     const payload = { customerName: customer.name, customerPhone: customer.phone, customerAddress: customer.address,
       customerDl: customer.dlNumber, customerGst: customer.gstNumber, dueDate: customer.dueDate || null,
@@ -196,23 +196,23 @@ export default function SalesChallan() {
       discount: parseFloat(parseFloat(discount || 0).toFixed(2)), total: parseFloat(total.toFixed(2)), paymentMode, status: "paid",
     };
     try {
-      const res = await axios.post("http://localhost:5000/api/sales-challan", payload, { headers: headers() });
+      const res = await axios.post("/sales-challan", payload);
       setActiveBill(res.data); setView("preview"); fetchBills(); fetchItems();
-    } catch (err) { alert(err.response?.data?.error || "Failed to create bill"); }
+    } catch (err) {  }
   };
 
   const handleConvertToInvoice = async (id) => {
     const pm = window.prompt("Enter Payment Mode (cash / credit / upi / bank):", "cash");
     if (!pm) return;
     try {
-      await axios.post(`http://localhost:5000/api/sales-challan/${id}/invoice`, { paymentMode: pm, status: "unpaid" }, { headers: headers() });
-      alert("Converted to Invoice!"); fetchBills();
-    } catch (e) { alert(e.response?.data?.error || "Error converting"); }
+      await axios.post(`/sales-challan/${id}/invoice`, { paymentMode: pm, status: "unpaid" });
+       fetchBills();
+    } catch (e) {  }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this bill?")) return;
-    await axios.delete(`http://localhost:5000/api/sales-challan/${id}`, { headers: headers() });
+    await axios.delete(`/sales-challan/${id}`);
     fetchBills(); fetchItems();
   };
 

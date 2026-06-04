@@ -26,7 +26,7 @@ export default function LedgerView() {
       await apiClient.post("/ledger/seed");
       fetchLedgers();
     } catch (err) {
-      alert("Failed to seed ledgers");
+      
     }
   };
 

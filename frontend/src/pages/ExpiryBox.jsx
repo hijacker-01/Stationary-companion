@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import {
   XCircle, AlertOctagon, AlertTriangle, CheckCircle2, Search, Clock, Package
@@ -41,7 +41,7 @@ export default function ExpiryBox() {
   const fetchExpiry = () => {
     setLoading(true);
     axios
-      .get(`http://localhost:5000/api/expiry?days=${days}`, {
+      .get(`/expiry?days=${days}`, {
         headers: { Authorization: `Bearer ${token()}` },
       })
       .then((res) => setItems(res.data))

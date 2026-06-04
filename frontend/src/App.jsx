@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -86,6 +87,7 @@ function GlobalHooks() {
 function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" />
       <GlobalHooks />
       <Routes>
         <Route path="/" element={<Login />} />

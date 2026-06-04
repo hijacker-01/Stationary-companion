@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { PackageOpen } from "lucide-react";
 
 const token = () => localStorage.getItem("token");
@@ -12,7 +12,7 @@ export default function InventoryValuation() {
   const fetchValuation = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://localhost:5000/api/analytics/valuation", { headers: headers() });
+      const res = await axios.get("/analytics/valuation");
       setData(res.data);
     } catch (err) {
       console.error(err);

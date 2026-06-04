@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import { BookOpen, Plus, Trash2, ArrowRightLeft } from "lucide-react";
 
@@ -22,9 +22,9 @@ export default function JournalVouchers() {
   const fetchData = async () => {
     try {
       const [jRes, cRes, sRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/journal", { headers: headers() }),
-        axios.get("http://localhost:5000/api/customers", { headers: headers() }),
-        axios.get("http://localhost:5000/api/suppliers", { headers: headers() })
+        axios.get("/journal"),
+        axios.get("/customers"),
+        axios.get("/suppliers")
       ]);
       setJvs(jRes.data);
       setCustomers(cRes.data);
@@ -44,29 +44,29 @@ export default function JournalVouchers() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.debitPartyId || !form.creditPartyId) return alert("Please select both Debit and Credit parties");
+    if (!form.debitPartyId || !form.creditPartyId) return 
     if (form.debitPartyType === form.creditPartyType && form.debitPartyId === form.creditPartyId) {
-      return alert("Debit and Credit party cannot be exactly the same.");
+      return 
     }
-    if (!form.amount || form.amount <= 0) return alert("Amount must be greater than zero");
+    if (!form.amount || form.amount <= 0) return 
 
     try {
-      await axios.post("http://localhost:5000/api/journal", form, { headers: headers() });
+      await axios.post("/journal", form);
       setShowModal(false);
       setForm({ date: new Date().toISOString().split("T")[0], debitPartyType: "customer", debitPartyId: "", debitPartyName: "", creditPartyType: "supplier", creditPartyId: "", creditPartyName: "", amount: "", narration: "" });
       fetchData();
     } catch (err) {
-      alert("Error saving JV: " + err.response?.data?.error || err.message);
+      
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Reverse and delete this Journal Voucher? This will adjust both party balances back.")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/journal/${id}`, { headers: headers() });
+      await axios.delete(`/journal/${id}`);
       fetchData();
     } catch (err) {
-      alert("Error deleting JV");
+      
     }
   };
 

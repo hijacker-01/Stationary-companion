@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 
-const API   = "http://localhost:5000/api";
+const API   = "";
 const token = () => localStorage.getItem("token");
 const ax    = (method, url, data) =>
   axios({ method, url: `${API}${url}`, data,

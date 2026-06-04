@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
@@ -22,7 +22,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get("http://localhost:5000/api/dashboard", { headers: headers() })
+    axios.get("/dashboard")
       .then(r => setData(r.data))
       .catch((err) => { console.error('Dashboard fetch failed:', err); })
       .finally(() => setLoading(false));

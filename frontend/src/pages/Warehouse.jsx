@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { Package, MapPin, Grid, Layers, Archive, ArrowRight, ArrowLeft } from "lucide-react";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
@@ -17,7 +17,7 @@ export default function Warehouse() {
     // Simulate API fetch
     const fetchWMS = async () => {
       try {
-        const { data } = await axios.get("/api/enterprise/wms/bins", { headers: headers() });
+        const { data } = await axios.get("/api/enterprise/wms/bins");
         setBins(data.data || data);
         setHierarchy(data.hierarchy);
         setPendingTasks(data.pendingTasks);

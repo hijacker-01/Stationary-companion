@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 
-const API = "http://localhost:5000/api";
+const API = "";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const token = () => localStorage.getItem("token");
@@ -121,8 +121,8 @@ export default function AILedger() {
     setLoading(true);
     try {
       const { data } = await ax("post", "/ai/invoice/sync-rag");
-      alert(`✅ RAG synced — ${data.synced} products embedded`);
-    } catch { alert("RAG sync failed"); }
+      
+    } catch {  }
     finally { setLoading(false); }
   }
 

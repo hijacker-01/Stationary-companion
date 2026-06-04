@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import { Receipt, Plus, Trash2, IndianRupee } from "lucide-react";
 
@@ -13,7 +13,7 @@ export default function Expenses() {
 
   const fetchExpenses = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/expenses", { headers: headers() });
+      const res = await axios.get("/expenses");
       setExpenses(res.data);
     } catch (err) {
       console.error(err);
@@ -25,22 +25,22 @@ export default function Expenses() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/expenses", form, { headers: headers() });
+      await axios.post("/expenses", form);
       setShowModal(false);
       setForm({ date: new Date().toISOString().split("T")[0], category: "Misc", amount: "", paymentMode: "cash", note: "" });
       fetchExpenses();
     } catch (err) {
-      alert("Error saving expense: " + err.message);
+      
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this expense record?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/expenses/${id}`, { headers: headers() });
+      await axios.delete(`/expenses/${id}`);
       fetchExpenses();
     } catch (err) {
-      alert("Error deleting expense");
+      
     }
   };
 

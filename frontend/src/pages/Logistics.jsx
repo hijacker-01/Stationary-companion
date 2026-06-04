@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { Truck, Users, Map, Clock, CheckCircle } from "lucide-react";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
@@ -17,9 +17,9 @@ export default function Logistics() {
     const fetchLogistics = async () => {
       try {
         const [drv, veh, del] = await Promise.all([
-          axios.get("/api/logistics/drivers", { headers: headers() }),
-          axios.get("/api/logistics/vehicles", { headers: headers() }),
-          axios.get("/api/logistics/deliveries", { headers: headers() })
+          axios.get("/api/logistics/drivers"),
+          axios.get("/api/logistics/vehicles"),
+          axios.get("/api/logistics/deliveries")
         ]);
         setDrivers(drv.data);
         setVehicles(veh.data);

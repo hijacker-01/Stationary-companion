@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
 import { Puzzle, Globe, Key, Power, Settings, Trash2, Eye, EyeOff, Copy } from "lucide-react";
@@ -19,18 +19,18 @@ export default function PlatformAdmin() {
   const [newKey, setNewKey] = useState(null);
 
   useEffect(() => {
-    axios.get("/api/plugins", { headers: headers() }).then(r => setPlugins(r.data)).catch(() => {});
-    axios.get("/api/webhooks", { headers: headers() }).then(r => setWebhooks(r.data)).catch(() => {});
-    axios.get("/api/api-keys", { headers: headers() }).then(r => setApiKeys(r.data)).catch(() => {});
+    axios.get("/api/plugins").then(r => setPlugins(r.data)).catch(() => {});
+    axios.get("/api/webhooks").then(r => setWebhooks(r.data)).catch(() => {});
+    axios.get("/api/api-keys").then(r => setApiKeys(r.data)).catch(() => {});
   }, []);
 
-  const togglePlugin = async (id) => { try { await axios.post(`/api/plugins/${id}/toggle`, {}, { headers: headers() }); setPlugins(plugins.map(p => p.id === id ? { ...p, isActive: !p.isActive } : p)); } catch (e) {} };
-  const deletePlugin = async (id) => { if (!confirm("Uninstall?")) return; try { await axios.delete(`/api/plugins/${id}`, { headers: headers() }); setPlugins(plugins.filter(p => p.id !== id)); } catch (e) {} };
-  const installPlugin = async () => { try { const r = await axios.post("/api/plugins/install", form, { headers: headers() }); setPlugins([...plugins, r.data]); setShowModal(null); } catch (e) { alert(e.message); } };
-  const addWebhook = async () => { try { const r = await axios.post("/api/webhooks", form, { headers: headers() }); setWebhooks([...webhooks, r.data]); setShowModal(null); } catch (e) { alert(e.message); } };
-  const deleteWebhook = async (id) => { try { await axios.delete(`/api/webhooks/${id}`, { headers: headers() }); setWebhooks(webhooks.filter(w => w.id !== id)); } catch (e) {} };
-  const generateKey = async () => { try { const r = await axios.post("/api/api-keys", form, { headers: headers() }); setApiKeys([...apiKeys, r.data]); setNewKey(r.data.key); setShowModal(null); } catch (e) { alert(e.message); } };
-  const revokeKey = async (id) => { try { await axios.delete(`/api/api-keys/${id}`, { headers: headers() }); setApiKeys(apiKeys.filter(k => k.id !== id)); } catch (e) {} };
+  const togglePlugin = async (id) => { try { await axios.post(`/api/plugins/${id}/toggle`, {}); setPlugins(plugins.map(p => p.id === id ? { ...p, isActive: !p.isActive } : p)); } catch (e) {} };
+  const deletePlugin = async (id) => { if (!confirm("Uninstall?")) return; try { await axios.delete(`/api/plugins/${id}`); setPlugins(plugins.filter(p => p.id !== id)); } catch (e) {} };
+  const installPlugin = async () => { try { const r = await axios.post("/api/plugins/install", form); setPlugins([...plugins, r.data]); setShowModal(null); } catch (e) {  } };
+  const addWebhook = async () => { try { const r = await axios.post("/api/webhooks", form); setWebhooks([...webhooks, r.data]); setShowModal(null); } catch (e) {  } };
+  const deleteWebhook = async (id) => { try { await axios.delete(`/api/webhooks/${id}`); setWebhooks(webhooks.filter(w => w.id !== id)); } catch (e) {} };
+  const generateKey = async () => { try { const r = await axios.post("/api/api-keys", form); setApiKeys([...apiKeys, r.data]); setNewKey(r.data.key); setShowModal(null); } catch (e) {  } };
+  const revokeKey = async (id) => { try { await axios.delete(`/api/api-keys/${id}`); setApiKeys(apiKeys.filter(k => k.id !== id)); } catch (e) {} };
   const maskKey = (key) => key ? `${key.substring(0, 8)}...${key.substring(key.length - 4)}` : "";
 
   return (

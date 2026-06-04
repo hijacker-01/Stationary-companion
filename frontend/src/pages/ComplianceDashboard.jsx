@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
 import { Shield, AlertTriangle, FileCheck, Activity, Bell, Check } from "lucide-react";
@@ -15,14 +15,14 @@ export default function ComplianceDashboard() {
   const [form, setForm] = useState({ type: "drug_license", title: "", documentNo: "", issuedBy: "", validFrom: "", validTo: "", alertDays: 30 });
 
   useEffect(() => {
-    axios.get("/api/compliance/dashboard", { headers: headers() }).then(r => setItems(r.data)).catch(() => setItems([{ id: 1, type: "drug_license", title: "Wholesale Drug License", documentNo: "DL-1234", validTo: "2026-12-31", status: "valid" }]));
-    axios.get("/api/compliance/alerts", { headers: headers() }).then(r => setAlerts(r.data)).catch(() => {});
-    axios.get("/api/compliance/schedule-h", { headers: headers() }).then(r => setScheduleH(r.data)).catch(() => []);
-    axios.get("/api/compliance/gst-health", { headers: headers() }).then(r => setGstHealth(r.data)).catch(() => setGstHealth({ filingReadiness: 85, inputCreditMatch: 92, outputTaxMatch: 96 }));
+    axios.get("/api/compliance/dashboard").then(r => setItems(r.data)).catch(() => setItems([{ id: 1, type: "drug_license", title: "Wholesale Drug License", documentNo: "DL-1234", validTo: "2026-12-31", status: "valid" }]));
+    axios.get("/api/compliance/alerts").then(r => setAlerts(r.data)).catch(() => {});
+    axios.get("/api/compliance/schedule-h").then(r => setScheduleH(r.data)).catch(() => []);
+    axios.get("/api/compliance/gst-health").then(r => setGstHealth(r.data)).catch(() => setGstHealth({ filingReadiness: 85, inputCreditMatch: 92, outputTaxMatch: 96 }));
   }, []);
 
-  const addItem = async () => { try { await axios.post("/api/compliance/items", form, { headers: headers() }); setShowModal(false); const r = await axios.get("/api/compliance/dashboard", { headers: headers() }); setItems(r.data); } catch (e) { alert(e.message); } };
-  const ackAlert = async (id) => { try { await axios.post(`/api/compliance/alerts/${id}/acknowledge`, {}, { headers: headers() }); setAlerts(alerts.filter(a => a.id !== id)); } catch (e) {} };
+  const addItem = async () => { try { await axios.post("/api/compliance/items", form); setShowModal(false); const r = await axios.get("/api/compliance/dashboard"); setItems(r.data); } catch (e) {  } };
+  const ackAlert = async (id) => { try { await axios.post(`/api/compliance/alerts/${id}/acknowledge`, {}); setAlerts(alerts.filter(a => a.id !== id)); } catch (e) {} };
   const daysLeft = (d) => d ? Math.round((new Date(d) - new Date()) / 86400000) : null;
   const statusBadge = (s) => ({ valid: "bg-green-100 text-green-700", expiring_soon: "bg-yellow-100 text-yellow-700", expired: "bg-red-100 text-red-700", pending_renewal: "bg-blue-100 text-blue-700" }[s] || "bg-gray-200");
   const sevColor = (s) => ({ critical: "border-red-500 bg-red-50", high: "border-orange-400 bg-orange-50", medium: "border-yellow-400 bg-yellow-50", low: "border-blue-300 bg-blue-50" }[s] || "border-gray-300");

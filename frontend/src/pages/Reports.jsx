@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -49,42 +49,42 @@ export default function Reports() {
 
   const fetchSales = () => {
     const params = dateFrom && dateTo ? `?from=${dateFrom}&to=${dateTo}` : "";
-    return axios.get(`http://localhost:5000/api/reports/sales${params}`, { headers: headers() })
+    return axios.get(`/reports/sales${params}`)
       .then(res => setSales(res.data));
   };
 
   const fetchStock = () =>
-    axios.get("http://localhost:5000/api/reports/stock", { headers: headers() })
+    axios.get("/reports/stock")
       .then(res => setStock(res.data));
 
   const fetchExpiry = () =>
-    axios.get("http://localhost:5000/api/reports/expiry-summary", { headers: headers() })
+    axios.get("/reports/expiry-summary")
       .then(res => setExpiry(res.data));
 
   const fetchOutstanding = () =>
-    axios.get("http://localhost:5000/api/reports/outstanding", { headers: headers() })
+    axios.get("/reports/outstanding")
       .then(res => setOutstanding(res.data));
 
   const fetchSalesmanSales = () =>
-    axios.get("http://localhost:5000/api/reports/salesman-sales", { headers: headers() })
+    axios.get("/reports/salesman-sales")
       .then(res => setSalesmanSales(res.data || []));
 
   const fetchItemSales = () =>
-    axios.get("http://localhost:5000/api/reports/item-sales", { headers: headers() })
+    axios.get("/reports/item-sales")
       .then(res => setItemSales(res.data || []));
 
   const fetchGstData = () => {
     const { month, year } = gstPeriod;
     const p = `?month=${month}&year=${year}`;
     return Promise.all([
-      axios.get(`http://localhost:5000/api/gst/gstr1${p}`, { headers: headers() }).then(res => setGstr1Data(res.data)).catch(() => {}),
-      axios.get(`http://localhost:5000/api/gst/gstr2${p}`, { headers: headers() }).then(res => setGstr2Data(res.data)).catch(() => {}),
-      axios.get(`http://localhost:5000/api/gst/gstr3b${p}`, { headers: headers() }).then(res => setGstr3bData(res.data)).catch(() => {})
+      axios.get(`/gst/gstr1${p}`).then(res => setGstr1Data(res.data)).catch(() => {}),
+      axios.get(`/gst/gstr2${p}`).then(res => setGstr2Data(res.data)).catch(() => {}),
+      axios.get(`/gst/gstr3b${p}`).then(res => setGstr3bData(res.data)).catch(() => {})
     ]);
   };
 
   const fetchPnl = () =>
-    axios.get("http://localhost:5000/api/reports/pnl", { headers: headers() })
+    axios.get("/reports/pnl")
       .then(res => setPnlData(res.data)).catch(() => {});
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 import { useEffect, useState, Fragment } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import {
   Factory,
@@ -55,11 +55,11 @@ export default function Suppliers() {
   const [poItemSchemes, setPoItemSchemes] = useState({});
 
   const fetchSuppliers = () =>
-    axios.get("http://localhost:5000/api/suppliers", { headers: headers() }).then(r => setSuppliers(r.data)).catch(err => console.error('Failed to fetch suppliers:', err));
+    axios.get("/suppliers").then(r => setSuppliers(r.data)).catch(err => console.error('Failed to fetch suppliers:', err));
   const fetchOrders = () =>
-    axios.get("http://localhost:5000/api/suppliers/orders", { headers: headers() }).then(r => setOrders(r.data)).catch(err => console.error('Failed to fetch orders:', err));
+    axios.get("/suppliers/orders").then(r => setOrders(r.data)).catch(err => console.error('Failed to fetch orders:', err));
   const fetchSchemes = () =>
-    axios.get("http://localhost:5000/api/schemes", { headers: headers() }).then(r => setAllSchemes(r.data)).catch(err => console.error('Failed to fetch schemes:', err));
+    axios.get("/schemes").then(r => setAllSchemes(r.data)).catch(err => console.error('Failed to fetch schemes:', err));
 
   useEffect(() => { fetchSuppliers(); fetchOrders(); fetchSchemes(); }, []);
 
@@ -70,9 +70,9 @@ export default function Suppliers() {
       return;
     }
     try {
-      const res = await axios.get("http://localhost:5000/api/schemes/check", {
+      const res = await axios.get("/schemes/check", {
         params: { itemName, qty },
-        headers: headers(),
+        
       });
       setPoItemSchemes(prev => ({ ...prev, [index]: res.data }));
     } catch {
@@ -89,25 +89,25 @@ export default function Suppliers() {
   const total = subtotal + gstAmount;
 
   const handleSaveSupplier = async () => {
-    if (!supForm.name) return alert("Supplier name required");
+    if (!supForm.name) return 
     try {
       if (editSupId) {
-        await axios.put(`http://localhost:5000/api/suppliers/${editSupId}`, supForm, { headers: headers() });
+        await axios.put(`/suppliers/${editSupId}`, supForm);
       } else {
-        await axios.post("http://localhost:5000/api/suppliers", supForm, { headers: headers() });
+        await axios.post("/suppliers", supForm);
       }
       setShowSupModal(false); setSupForm(emptySupplier); setEditSupId(null);
       fetchSuppliers();
-    } catch(err) { alert(err.response?.data?.error || "Error"); }
+    } catch(err) {  }
   };
 
   const handleSavePO = async () => {
-    if (!poSupplier) return alert("Select a supplier");
+    if (!poSupplier) return 
     const validItems = poItems.filter(i => i.name);
-    if (validItems.length === 0) return alert('Add at least one item');
+    if (validItems.length === 0) return 
     const sup = suppliers.find(s => s.name.toLowerCase() === poSupplier.toLowerCase());
     try {
-      await axios.post("http://localhost:5000/api/suppliers/orders", {
+      await axios.post("/suppliers/orders", {
         supplierId: sup?.id,
         supplierName: poSupplier,
         items: poItems.filter(i => i.name),
@@ -119,45 +119,45 @@ export default function Suppliers() {
         expectedDate: poExpected || null,
         notes: poNotes,
         status: "pending",
-      }, { headers: headers() });
+      });
       setShowPOModal(false);
       setPoItems([{ ...emptyItem }]);
       setPoSupplier(""); setPoNotes(""); setPoExpected("");
       setPoItemSchemes({});
       fetchOrders();
-    } catch(err) { alert(err.response?.data?.error || "Error"); }
+    } catch(err) {  }
   };
 
   const handleReceive = async () => {
     try {
-      await axios.put(`http://localhost:5000/api/suppliers/orders/${activeOrder.id}/receive`,
+      await axios.put(`/suppliers/orders/${activeOrder.id}/receive`,
         { amountPaid: parseFloat(receiveAmount) },
-        { headers: headers() }
+        {  }
       );
       setShowReceiveModal(false); setActiveOrder(null); setReceiveAmount(0);
       fetchOrders();
-    } catch(err) { alert(err.response?.data?.error || "Error"); }
+    } catch(err) {  }
   };
 
   const handleDeleteSupplier = async (id) => {
     if (!window.confirm("Delete supplier?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/suppliers/${id}`, { headers: headers() });
+      await axios.delete(`/suppliers/${id}`);
       fetchSuppliers();
     } catch (err) {
       console.error('Failed to delete supplier:', err);
-      alert(err.response?.data?.error || 'Failed to delete supplier');
+      
     }
   };
 
   const handleDeleteOrder = async (id) => {
     if (!window.confirm("Delete this purchase order?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/suppliers/orders/${id}`, { headers: headers() });
+      await axios.delete(`/suppliers/orders/${id}`);
       fetchOrders();
     } catch (err) {
       console.error('Failed to delete order:', err);
-      alert(err.response?.data?.error || 'Failed to delete order');
+      
     }
   };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { UserCircle, IndianRupee, FileText, AlertTriangle, CreditCard } from "lucide-react";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
@@ -27,7 +27,7 @@ export default function CustomerPortal() {
   useEffect(() => {
     // Fetch customer data. Assuming an endpoint exists, fallback to dummy data on failure
     axios
-      .get("http://localhost:5000/api/portal/customer", { headers: headers() })
+      .get("/portal/customer")
       .then((res) => {
         if (res.data) {
           setData((prev) => ({ ...prev, ...res.data }));

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import { MessageSquare, Send, User } from "lucide-react";
 
@@ -17,7 +17,7 @@ export default function DirectMessages() {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/users", { headers: headers() });
+      const res = await axios.get("/users");
       setUsers(res.data.filter(u => u.id !== currentUser.id));
     } catch (err) {
       console.error(err);
@@ -27,7 +27,7 @@ export default function DirectMessages() {
   const fetchUnreadCounts = async () => {
     if (!currentUser.id) return;
     try {
-      const res = await axios.get(`http://localhost:5000/api/messages/unread/${currentUser.id}`, { headers: headers() });
+      const res = await axios.get(`/messages/unread/${currentUser.id}`);
       setUnreads(res.data);
     } catch (err) {
       console.error(err);
@@ -37,7 +37,7 @@ export default function DirectMessages() {
   const fetchMessages = async (otherId) => {
     if (!currentUser.id || !otherId) return;
     try {
-      const res = await axios.get(`http://localhost:5000/api/messages/history/${currentUser.id}/${otherId}`, { headers: headers() });
+      const res = await axios.get(`/messages/history/${currentUser.id}/${otherId}`);
       setMessages(res.data);
       scrollToBottom();
       fetchUnreadCounts(); // refresh unread counts since viewing them marks them read
@@ -76,18 +76,18 @@ export default function DirectMessages() {
     if (!newMessage.trim() || !selectedUser) return;
     
     try {
-      await axios.post("http://localhost:5000/api/messages/send", {
+      await axios.post("/messages/send", {
         senderId: currentUser.id,
         senderName: currentUser.name,
         receiverId: selectedUser.id,
         receiverName: selectedUser.name,
         message: newMessage
-      }, { headers: headers() });
+      });
       
       setNewMessage("");
       fetchMessages(selectedUser.id);
     } catch (err) {
-      alert("Failed to send message");
+      
     }
   };
 

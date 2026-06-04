@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
 import { Brain, Send, ChevronDown, ChevronRight, DollarSign, Users, AlertTriangle, TrendingUp } from "lucide-react";
@@ -13,7 +13,7 @@ export default function CEODashboard() {
   const [snapshot, setSnapshot] = useState({});
   const [expandedIdx, setExpandedIdx] = useState(null);
 
-  useEffect(() => { axios.get("/api/ai-ceo/snapshot", { headers: headers() }).then(r => setSnapshot(r.data)).catch(() => setSnapshot({ cashInBank: 450000, totalReceivables: 180000, totalPayables: 120000, todaySales: 35000, overdueAmount: 45000 })); }, []);
+  useEffect(() => { axios.get("/api/ai-ceo/snapshot").then(r => setSnapshot(r.data)).catch(() => setSnapshot({ cashInBank: 450000, totalReceivables: 180000, totalPayables: 120000, todaySales: 35000, overdueAmount: 45000 })); }, []);
 
   const askQuestion = async (q) => {
     const finalQ = q || question;
@@ -21,7 +21,7 @@ export default function CEODashboard() {
     setMessages(prev => [...prev, { role: "user", content: finalQ }]);
     setQuestion(""); setLoading(true);
     try {
-      const r = await axios.post("/api/ai-ceo/ask", { question: finalQ }, { headers: headers() });
+      const r = await axios.post("/api/ai-ceo/ask", { question: finalQ });
       setMessages(prev => [...prev, { role: "ai", ...r.data }]);
     } catch (e) { setMessages(prev => [...prev, { role: "ai", answer: "Sorry, I couldn't process that question. Please try again.", reasoning: e.message, evidence: [], recommendedActions: [] }]); }
     setLoading(false);

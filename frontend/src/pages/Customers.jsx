@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import {
   Users, IndianRupee, AlertTriangle, CheckCircle2, Search,
@@ -27,7 +27,7 @@ export default function Customers() {
   const [filterBalance, setFilterBalance] = useState("all");
 
   const fetchCustomers = () =>
-    axios.get("http://localhost:5000/api/customers", { headers: headers() })
+    axios.get("/customers")
       .then(r => setCustomers(r.data))
       .catch(err => console.error("Failed to fetch customers:", err));
 
@@ -35,49 +35,49 @@ export default function Customers() {
 
   const fetchLedger = async (customer) => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/customers/${customer.id}/ledger`, { headers: headers() });
+      const res = await axios.get(`/customers/${customer.id}/ledger`);
       setLedger(res.data);
       setActiveCustomer(customer);
       setShowLedger(true);
     } catch (err) {
       console.error('Failed to fetch ledger:', err);
-      alert(err.response?.data?.error || 'Failed to load ledger');
+      
     }
   };
 
   const handleSave = async () => {
-    if (!form.name) return alert("Customer name required");
+    if (!form.name) return 
     try {
       if (editId) {
-        await axios.put(`http://localhost:5000/api/customers/${editId}`, form, { headers: headers() });
+        await axios.put(`/customers/${editId}`, form);
       } else {
-        await axios.post("http://localhost:5000/api/customers", form, { headers: headers() });
+        await axios.post("/customers", form);
       }
       setShowModal(false); setForm(emptyCustomer); setEditId(null);
       fetchCustomers();
-    } catch(err) { alert(err.response?.data?.error || "Error"); }
+    } catch(err) {  }
   };
 
   const handlePayment = async () => {
     const amt = parseFloat(payForm.amount);
-    if (isNaN(amt) || amt <= 0) return alert("Enter valid amount");
+    if (isNaN(amt) || amt <= 0) return 
     try {
-      await axios.post(`http://localhost:5000/api/customers/${payForm.customerId}/payment`,
-        payForm, { headers: headers() });
+      await axios.post(`/customers/${payForm.customerId}/payment`,
+        payForm);
       setShowPayment(false); setPayForm(emptyPayment);
       fetchCustomers();
       if (showLedger && activeCustomer) fetchLedger(activeCustomer);
-    } catch(err) { alert(err.response?.data?.error || "Error"); }
+    } catch(err) {  }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this customer?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/customers/${id}`, { headers: headers() });
+      await axios.delete(`/customers/${id}`);
       fetchCustomers();
     } catch (err) {
       console.error('Failed to delete customer:', err);
-      alert(err.response?.data?.error || 'Failed to delete customer');
+      
     }
   };
 

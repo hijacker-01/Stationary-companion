@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import { Truck, CheckCircle, Package, UserPlus } from "lucide-react";
 
@@ -23,9 +23,9 @@ export default function DeliveryMan() {
 
   const fetchData = async () => {
     try {
-      const dmRes = await axios.get("http://localhost:5000/api/delivery-man", { headers: headers() });
+      const dmRes = await axios.get("/delivery-man");
       setDms(dmRes.data);
-      const billsRes = await axios.get("http://localhost:5000/api/delivery-man/bills/pending", { headers: headers() });
+      const billsRes = await axios.get("/delivery-man/bills/pending");
       setPendingBills(billsRes.data);
     } catch (err) {
       console.error(err);
@@ -38,28 +38,28 @@ export default function DeliveryMan() {
   const handleCreateDm = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/delivery-man", form, { headers: headers() });
+      await axios.post("/delivery-man", form);
       setForm({ name: "", phone: "", vehicleNo: "", route: "" });
       fetchData();
-      alert("Delivery Man Added");
+      
     } catch (err) {
-      alert("Error: " + err.message);
+      
     }
   };
 
   // -- DISPATCH --
   const handleAssign = async () => {
-    if (!selectedDm || selectedBills.length === 0) return alert("Select a DM and at least one bill");
+    if (!selectedDm || selectedBills.length === 0) return 
     try {
-      await axios.post("http://localhost:5000/api/delivery-man/assign", {
+      await axios.post("/delivery-man/assign", {
         dmId: selectedDm,
         billIds: selectedBills
-      }, { headers: headers() });
-      alert("Bills dispatched successfully!");
+      });
+      
       setSelectedBills([]);
       fetchData();
     } catch (err) {
-      alert("Error assigning bills");
+      
     }
   };
 
@@ -67,7 +67,7 @@ export default function DeliveryMan() {
   const fetchDmBills = async (dmId) => {
     try {
       // We can fetch all bills and filter by dmId and status "dispatched"
-      const res = await axios.get("http://localhost:5000/api/billing", { headers: headers() });
+      const res = await axios.get("/billing");
       const assigned = res.data.filter(b => b.deliveryManId === parseInt(dmId) && b.deliveryStatus === "dispatched");
       setDmBills(assigned);
       const initialSettlements = {};
@@ -90,17 +90,17 @@ export default function DeliveryMan() {
       .map(billId => ({ billId, ...settlements[billId] }))
       .filter(s => s.status !== "pending"); // Only send delivered/returned
     
-    if (data.length === 0) return alert("No actions selected");
+    if (data.length === 0) return 
 
     try {
-      const res = await axios.post("http://localhost:5000/api/delivery-man/clearance", {
+      const res = await axios.post("/delivery-man/clearance", {
         dmId: clearanceDm,
         settlements: data
-      }, { headers: headers() });
-      alert(`Clearance completed! Collected: ₹${res.data.totalCollected}`);
+      });
+      
       fetchDmBills(clearanceDm);
     } catch (err) {
-      alert("Clearance failed");
+      
     }
   };
 

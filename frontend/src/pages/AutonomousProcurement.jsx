@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
 import { ShoppingCart, TrendingUp, Award, Zap, ChevronDown, ChevronRight, Check, X } from "lucide-react";
@@ -18,16 +18,16 @@ export default function AutonomousProcurement() {
   const [responses, setResponses] = useState([]);
 
   useEffect(() => {
-    axios.get("/api/procurement/dashboard", { headers: headers() }).then(r => setDashboard(r.data)).catch(() => {});
-    axios.get("/api/procurement/supplier-scores", { headers: headers() }).then(r => setScores(r.data)).catch(() => setScores([{ id: 1, supplierName: "MedSupply Co", onTimeDeliveryRate: 92, qualityScore: 88, avgLeadDays: 5, totalOrders: 45, overallScore: 89 }]));
-    axios.get("/api/procurement/rfqs", { headers: headers() }).then(r => setRfqs(r.data)).catch(() => {});
-    axios.get("/api/procurement/auto-po", { headers: headers() }).then(r => setAutoPOs(r.data)).catch(() => {});
+    axios.get("/api/procurement/dashboard").then(r => setDashboard(r.data)).catch(() => {});
+    axios.get("/api/procurement/supplier-scores").then(r => setScores(r.data)).catch(() => setScores([{ id: 1, supplierName: "MedSupply Co", onTimeDeliveryRate: 92, qualityScore: 88, avgLeadDays: 5, totalOrders: 45, overallScore: 89 }]));
+    axios.get("/api/procurement/rfqs").then(r => setRfqs(r.data)).catch(() => {});
+    axios.get("/api/procurement/auto-po").then(r => setAutoPOs(r.data)).catch(() => {});
   }, []);
 
   const createRFQ = async () => {
-    try { await axios.post("/api/procurement/rfq", form, { headers: headers() }); setShowModal(false); setForm({ itemName: "", requiredQty: "", urgency: "medium", deadline: "" }); const r = await axios.get("/api/procurement/rfqs", { headers: headers() }); setRfqs(r.data); } catch (e) { alert(e.response?.data?.error || e.message); }
+    try { await axios.post("/api/procurement/rfq", form); setShowModal(false); setForm({ itemName: "", requiredQty: "", urgency: "medium", deadline: "" }); const r = await axios.get("/api/procurement/rfqs"); setRfqs(r.data); } catch (e) {  }
   };
-  const viewResponses = async (rfqId) => { if (expandedRfq === rfqId) { setExpandedRfq(null); return; } try { const r = await axios.get(`/api/procurement/rfq/${rfqId}/responses`, { headers: headers() }); setResponses(r.data); setExpandedRfq(rfqId); } catch (e) {} };
+  const viewResponses = async (rfqId) => { if (expandedRfq === rfqId) { setExpandedRfq(null); return; } try { const r = await axios.get(`/api/procurement/rfq/${rfqId}/responses`); setResponses(r.data); setExpandedRfq(rfqId); } catch (e) {} };
   const scoreColor = (s) => s >= 80 ? "text-green-700 bg-green-100" : s >= 50 ? "text-yellow-700 bg-yellow-100" : "text-red-700 bg-red-100";
   const urgencyBadge = (u) => ({ critical: "bg-red-600 text-white", high: "bg-orange-500 text-white", medium: "bg-yellow-400 text-black", low: "bg-gray-300 text-gray-700" }[u] || "bg-gray-200");
 

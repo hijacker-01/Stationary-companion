@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
 import { BarChart3, Gift, Package, TrendingUp, TrendingDown } from "lucide-react";
@@ -14,11 +14,11 @@ export default function SupplierPortal() {
   const [form, setForm] = useState({ schemeName: "", type: "buy_get_free", minQty: "", freeQty: "", discountPercent: "", validFrom: "", validTo: "", supplierName: "Self", supplierId: 1 });
 
   useEffect(() => {
-    axios.get("/api/marketplace/supplier/sell-through", { headers: headers() }).then(r => setSellThrough(r.data)).catch(() => setSellThrough([{ id: 1, name: "Dolo 650", stockAtDistributor: 200, sold30d: 150, velocity: 5.0, trend: "up" }]));
-    axios.get("/api/marketplace/schemes", { headers: headers() }).then(r => setSchemes(r.data)).catch(() => {});
+    axios.get("/api/marketplace/supplier/sell-through").then(r => setSellThrough(r.data)).catch(() => setSellThrough([{ id: 1, name: "Dolo 650", stockAtDistributor: 200, sold30d: 150, velocity: 5.0, trend: "up" }]));
+    axios.get("/api/marketplace/schemes").then(r => setSchemes(r.data)).catch(() => {});
   }, []);
 
-  const pushScheme = async () => { try { await axios.post("/api/marketplace/supplier/push-scheme", form, { headers: headers() }); setShowModal(false); const r = await axios.get("/api/marketplace/schemes", { headers: headers() }); setSchemes(r.data); } catch (e) { alert(e.message); } };
+  const pushScheme = async () => { try { await axios.post("/api/marketplace/supplier/push-scheme", form); setShowModal(false); const r = await axios.get("/api/marketplace/schemes"); setSchemes(r.data); } catch (e) {  } };
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f4f4f4] text-xs text-gray-800">

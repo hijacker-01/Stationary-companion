@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import BusinessFooter from '../components/BusinessFooter';
 import { TrendingUp, DollarSign, Package, PieChart, Bell, RefreshCw } from 'lucide-react';
-import axios from 'axios';
+import axios from "../api/axios";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });

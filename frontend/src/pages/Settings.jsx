@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import {
   Settings as SettingsIcon,
@@ -81,20 +81,20 @@ export default function Settings() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:5000/api/settings", { headers: headers() })
+      .get("/settings")
       .then((res) => setSettings(res.data))
       .catch((err) => console.error("Error fetching settings:", err));
   }, []);
 
   const handleSave = async () => {
     try {
-      await axios.put("http://localhost:5000/api/settings", settings, {
-        headers: headers(),
+      await axios.put("/settings", settings, {
+        
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch {
-      alert("Failed to save settings");
+      
     }
   };
 
@@ -105,12 +105,12 @@ export default function Settings() {
     setLoadingGst(true);
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/gst/gstr1?month=${gstMonth}&year=${gstYear}`,
-        { headers: headers() },
+        `/gst/gstr1?month=${gstMonth}&year=${gstYear}`,
+        {  },
       );
       setGstr1(res.data);
     } catch {
-      alert("Failed to fetch GSTR-1 data");
+      
     } finally {
       setLoadingGst(false);
     }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
 import { Building, FileText, CheckCircle, Plus } from "lucide-react";
@@ -14,11 +14,11 @@ export default function InstitutionalSales() {
   const [form, setForm] = useState({ institution: "", type: "hospital", title: "", total: "", emd: "", terms: "" });
 
   useEffect(() => {
-    axios.get("/api/institutional/tenders", { headers: headers() }).then(r => setTenders(r.data)).catch(() => setTenders([{ id: 1, tenderNo: "TND-001", institution: "City Hospital", type: "hospital", title: "Q3 Medicine Supply", status: "open", total: 500000, emd: 25000 }]));
-    axios.get("/api/institutional/bills", { headers: headers() }).then(r => setBills(r.data)).catch(() => {});
+    axios.get("/api/institutional/tenders").then(r => setTenders(r.data)).catch(() => setTenders([{ id: 1, tenderNo: "TND-001", institution: "City Hospital", type: "hospital", title: "Q3 Medicine Supply", status: "open", total: 500000, emd: 25000 }]));
+    axios.get("/api/institutional/bills").then(r => setBills(r.data)).catch(() => {});
   }, []);
 
-  const createTender = async () => { try { await axios.post("/api/institutional/tenders", form, { headers: headers() }); setShowModal(false); const r = await axios.get("/api/institutional/tenders", { headers: headers() }); setTenders(r.data); } catch (e) { alert(e.message); } };
+  const createTender = async () => { try { await axios.post("/api/institutional/tenders", form); setShowModal(false); const r = await axios.get("/api/institutional/tenders"); setTenders(r.data); } catch (e) {  } };
   const typeBadge = (t) => ({ hospital: "bg-blue-100 text-blue-700", government: "bg-green-100 text-green-700", medical_college: "bg-purple-100 text-purple-700", psu: "bg-indigo-100 text-indigo-700", defense: "bg-gray-700 text-white" }[t] || "bg-gray-200");
   const statusBadge = (s) => ({ open: "bg-yellow-100 text-yellow-700", bid_submitted: "bg-blue-100 text-blue-700", awarded: "bg-green-600 text-white", lost: "bg-red-100 text-red-700", completed: "bg-green-100 text-green-700" }[s] || "bg-gray-200");
 

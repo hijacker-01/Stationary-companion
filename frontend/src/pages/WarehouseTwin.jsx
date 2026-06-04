@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
 import { Grid3X3, Thermometer, Eye, Zap } from "lucide-react";
@@ -15,9 +15,9 @@ export default function WarehouseTwin() {
   const [zoneFilter, setZoneFilter] = useState("all");
 
   useEffect(() => {
-    axios.get("/api/warehouse-twin/layout", { headers: headers() }).then(r => setBins(r.data)).catch(() => setBins(Array.from({length: 36}, (_, i) => ({ id: i+1, bin_code: `${["A","B","C"][Math.floor(i/12)]}${(i%4)+1}-${["T","M","B"][Math.floor((i%12)/4)]}`, zone: ["A","B","C"][Math.floor(i/12)], rack: String((i%4)+1), shelf: ["T","M","B"][Math.floor((i%12)/4)], capacityUsed: Math.round(Math.random()*100), accessCount: Math.round(Math.random()*50), itemCount: Math.round(Math.random()*20), temperature: Math.round((20+Math.random()*8)*10)/10, humidity: Math.round((40+Math.random()*30)*10)/10 }))));
-    axios.get("/api/warehouse-twin/picking", { headers: headers() }).then(r => setTasks(r.data)).catch(() => {});
-    axios.get("/api/warehouse-twin/optimize", { headers: headers() }).then(r => setSuggestions(r.data?.suggestions || [])).catch(() => {});
+    axios.get("/api/warehouse-twin/layout").then(r => setBins(r.data)).catch(() => setBins(Array.from({length: 36}, (_, i) => ({ id: i+1, bin_code: `${["A","B","C"][Math.floor(i/12)]}${(i%4)+1}-${["T","M","B"][Math.floor((i%12)/4)]}`, zone: ["A","B","C"][Math.floor(i/12)], rack: String((i%4)+1), shelf: ["T","M","B"][Math.floor((i%12)/4)], capacityUsed: Math.round(Math.random()*100), accessCount: Math.round(Math.random()*50), itemCount: Math.round(Math.random()*20), temperature: Math.round((20+Math.random()*8)*10)/10, humidity: Math.round((40+Math.random()*30)*10)/10 }))));
+    axios.get("/api/warehouse-twin/picking").then(r => setTasks(r.data)).catch(() => {});
+    axios.get("/api/warehouse-twin/optimize").then(r => setSuggestions(r.data?.suggestions || [])).catch(() => {});
   }, []);
 
   const filtered = zoneFilter === "all" ? bins : bins.filter(b => b.zone === zoneFilter);

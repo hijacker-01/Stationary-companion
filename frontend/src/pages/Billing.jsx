@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, Fragment } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import {
   Plus,
@@ -108,33 +108,33 @@ export default function Billing() {
 
   const fetchBills = () => {
     axios
-      .get("http://localhost:5000/api/billing", { headers: headers() })
+      .get("/billing")
       .then((res) => setBills(res.data))
       .catch((err) => console.error(err));
   };
 
   const fetchItems = () => {
     axios
-      .get("http://localhost:5000/api/items", { headers: headers() })
+      .get("/items")
       .then((res) => setItems(res.data.items || res.data))
       .catch((err) => console.error(err));
   };
 
   const fetchSchemes = () =>
     axios
-      .get("http://localhost:5000/api/schemes", { headers: headers() })
+      .get("/schemes")
       .then((res) => setAllSchemes(res.data))
       .catch((err) => console.error(err));
 
   const fetchCustomers = () =>
     axios
-      .get("http://localhost:5000/api/customers", { headers: headers() })
+      .get("/customers")
       .then((res) => setCustomers(res.data || []))
       .catch((err) => console.error(err));
 
   const fetchSalesmen = () =>
     axios
-      .get("http://localhost:5000/api/salesman", { headers: headers() })
+      .get("/salesman")
       .then((res) => setSalesmen(res.data || []))
       .catch((err) => console.error(err));
 
@@ -167,7 +167,7 @@ export default function Billing() {
 
   const fetchSettings = () =>
     axios
-      .get("http://localhost:5000/api/settings", { headers: headers() })
+      .get("/settings")
       .then((res) => setSettings(res.data || {}))
       .catch((err) => console.error(err));
 
@@ -191,9 +191,9 @@ export default function Billing() {
       return;
     }
     try {
-      const res = await axios.get(`http://localhost:5000/api/schemes/check`, {
+      const res = await axios.get(`/schemes/check`, {
         params: { itemName, qty },
-        headers: headers(),
+        
       });
       const schemes = res.data || [];
       setRowSchemes((prev) => ({ ...prev, [index]: schemes }));
@@ -222,14 +222,12 @@ export default function Billing() {
 
     if (found) {
       if (found.expiry && new Date(found.expiry) < new Date()) {
-        alert("⚠️ WARNING: This batch is expired and should not be billed!");
+        
       }
 
       // Drug schedule warning enforcement
       if (found.schedule && found.schedule !== "None") {
-        alert(
-          `🚨 DRUG COMPLIANCE WARNING:\n\nThis item is classified under ${found.schedule}.\nA registered medical practitioner's prescription is MANDATORY before dispensing this drug.`,
-        );
+        
       }
 
       updated[index] = {
@@ -317,8 +315,8 @@ export default function Billing() {
   const total = subtotal + gstAmount - parseFloat(discount || 0);
 
   const handleSaveBill = async () => {
-    if (!customer.name) return alert("Customer name is required");
-    if (rows.every((r) => !r.name)) return alert("Add at least one item");
+    if (!customer.name) return 
+    if (rows.every((r) => !r.name)) return 
 
     // Check stock availability on frontend before submitting
     for (const row of rows.filter((r) => r.name)) {
@@ -327,9 +325,7 @@ export default function Billing() {
       const totalRequested =
         parseInt(row.qty || 0) + parseInt(row.schemeQty || 0);
       if (row.availableQty !== null && totalRequested > totalAvailable) {
-        return alert(
-          `Insufficient total stock for "${row.name}". Total Available: ${totalAvailable}, Total Requested: ${totalRequested}`,
-        );
+        return 
       }
     }
 
@@ -354,30 +350,30 @@ export default function Billing() {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/billing",
+        "/billing",
         payload,
-        { headers: headers() },
+        {  },
       );
       setActiveBill(res.data);
       setView("preview");
       fetchBills();
       fetchItems(); // Refresh items to get updated stock
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to create bill");
+      
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this bill?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/billing/${id}`, {
-        headers: headers(),
+      await axios.delete(`/billing/${id}`, {
+        
       });
       fetchBills();
       fetchItems(); // Refresh items since stock is restored on bill deletion
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.error || "Failed to delete bill");
+      
     }
   };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { Users, Calendar, Brain, Phone, MapPin, Search } from "lucide-react";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
@@ -15,7 +15,7 @@ export default function CRM() {
     // Simulated fetch
     const fetchCRM = async () => {
       try {
-        const { data } = await axios.get("/api/enterprise/crm/leads", { headers: headers() });
+        const { data } = await axios.get("/api/enterprise/crm/leads");
         setContacts(data.data || data);
       } catch (err) {
         setContacts([

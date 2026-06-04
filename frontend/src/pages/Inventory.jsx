@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import { 
@@ -24,18 +24,18 @@ export default function Inventory() {
   const [showAdjModal, setShowAdjModal] = useState(false);
 
   const fetchItems = () => {
-    axios.get("http://localhost:5000/api/items", { headers: headers() })
+    axios.get("/items")
       .then(res => setItems(res.data));
   };
 
   const fetchSchemes = () =>
-    axios.get("http://localhost:5000/api/schemes", { headers: headers() })
+    axios.get("/schemes")
       .then(res => setAllSchemes(res.data)).catch(() => {});
 
   useEffect(() => { fetchItems(); fetchSchemes(); }, []);
 
   const handleSubmit = async () => {
-    if (!form.name || !form.expiry) return alert("Name and Expiry are required");
+    if (!form.name || !form.expiry) return 
     const payload = {
       ...form,
       stock_qty: parseInt(form.stock_qty) || 0,
@@ -47,16 +47,16 @@ export default function Inventory() {
     };
     try {
       if (editId) {
-        await axios.put(`http://localhost:5000/api/items/${editId}`, payload, { headers: headers() });
+        await axios.put(`/items/${editId}`, payload);
       } else {
-        await axios.post("http://localhost:5000/api/items", payload, { headers: headers() });
+        await axios.post("/items", payload);
       }
       setShowModal(false);
       setForm({ ...empty });
       setEditId(null);
       fetchItems();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to save item");
+      
     }
   };
 
@@ -77,10 +77,10 @@ export default function Inventory() {
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this item?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/items/${id}`, { headers: headers() });
+      await axios.delete(`/items/${id}`);
       fetchItems();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to delete item");
+      
     }
   };
 
@@ -99,15 +99,15 @@ export default function Inventory() {
 
   const handleAdjustmentSubmit = async () => {
     if (!adjForm.quantity || parseInt(adjForm.quantity) <= 0) {
-      return alert("Please specify a valid positive quantity");
+      return 
     }
     try {
-      await axios.post("http://localhost:5000/api/stock-adjust", adjForm, { headers: headers() });
+      await axios.post("/stock-adjust", adjForm);
       setShowAdjModal(false);
       setAdjForm(emptyAdj);
       fetchItems();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to submit stock adjustment");
+      
     }
   };
 

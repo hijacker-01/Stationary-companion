@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios from "../api/axios";
 import { User, Mail, Lock, Building, Phone, MapPin, Shield, Check, ArrowRight, ArrowLeft } from "lucide-react";
 
 export default function Register() {
@@ -53,8 +53,8 @@ export default function Register() {
     setLoading(true);
     setError("");
     try {
-      await axios.post("http://localhost:5000/api/auth/register", form);
-      alert("Registration completed successfully! Please log in.");
+      await axios.post("/auth/register", form);
+      
       navigate("/");
     } catch (err) {
       setError(err.response?.data?.error || "Registration failed. Try again.");

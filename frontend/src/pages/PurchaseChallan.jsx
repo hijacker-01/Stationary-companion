@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, Fragment } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
 import {
@@ -105,12 +105,12 @@ export default function PurchaseChallan() {
     setExpandedRows(newSet);
   };
 
-  const fetchBills = () => axios.get("http://localhost:5000/api/purchase-challan", { headers: headers() }).then((res) => setBills(res.data)).catch((err) => console.error("Failed to fetch bills:", err));
-  const fetchItems = () => axios.get("http://localhost:5000/api/items", { headers: headers() }).then((res) => setItems(res.data)).catch((err) => console.error("Failed to fetch items:", err));
-  const fetchSchemes = () => axios.get("http://localhost:5000/api/schemes", { headers: headers() }).then((res) => setAllSchemes(res.data)).catch((err) => console.error("Failed to fetch schemes:", err));
-  const fetchSuppliers = () => axios.get("http://localhost:5000/api/suppliers", { headers: headers() }).then((res) => setSuppliers(res.data || [])).catch((err) => console.error("Failed to fetch suppliers:", err));
-  const fetchSalesmen = () => axios.get("http://localhost:5000/api/salesman", { headers: headers() }).then((res) => setSalesmen(res.data || [])).catch((err) => console.error("Failed to fetch salesmen:", err));
-  const fetchSettings = () => axios.get("http://localhost:5000/api/settings", { headers: headers() }).then((res) => setSettings(res.data || {})).catch((err) => console.error("Failed to fetch settings:", err));
+  const fetchBills = () => axios.get("/purchase-challan").then((res) => setBills(res.data)).catch((err) => console.error("Failed to fetch bills:", err));
+  const fetchItems = () => axios.get("/items").then((res) => setItems(res.data)).catch((err) => console.error("Failed to fetch items:", err));
+  const fetchSchemes = () => axios.get("/schemes").then((res) => setAllSchemes(res.data)).catch((err) => console.error("Failed to fetch schemes:", err));
+  const fetchSuppliers = () => axios.get("/suppliers").then((res) => setSuppliers(res.data || [])).catch((err) => console.error("Failed to fetch suppliers:", err));
+  const fetchSalesmen = () => axios.get("/salesman").then((res) => setSalesmen(res.data || [])).catch((err) => console.error("Failed to fetch salesmen:", err));
+  const fetchSettings = () => axios.get("/settings").then((res) => setSettings(res.data || {})).catch((err) => console.error("Failed to fetch settings:", err));
 
   const handleSupplierSelect = (name) => {
     const found = suppliers.find((c) => c.name.toLowerCase() === name.toLowerCase());
@@ -131,7 +131,7 @@ export default function PurchaseChallan() {
   const checkScheme = async (index, itemName, qty) => {
     if (!itemName) { setRowSchemes((prev) => { const n = { ...prev }; delete n[index]; return n; }); return; }
     try {
-      const res = await axios.get(`http://localhost:5000/api/schemes/check`, { params: { itemName, qty }, headers: headers() });
+      const res = await axios.get(`/schemes/check`, { params: { itemName, qty },  });
       setRowSchemes((prev) => ({ ...prev, [index]: res.data || [] }));
     } catch { setRowSchemes((prev) => { const n = { ...prev }; delete n[index]; return n; }); }
   };
@@ -144,8 +144,8 @@ export default function PurchaseChallan() {
     const batch = batchPart?.trim();
     const found = items.find((i) => i.name === name && (batch ? i.batch === batch : true));
     if (found) {
-      if (found.expiry && new Date(found.expiry) < new Date()) alert("⚠️ WARNING: This batch is expired!");
-      if (found.schedule && found.schedule !== "None") alert(`🚨 DRUG COMPLIANCE WARNING:\nThis item is ${found.schedule}. Prescription MANDATORY.`);
+      if (found.expiry && new Date(found.expiry) < new Date()) 
+      if (found.schedule && found.schedule !== "None") 
       updated[index] = { ...updated[index], name: found.name, batch: found.batch || "", hsn: found.hsn || "",
         pack: found.pack || "", expiry: found.expiry || "", mrp: found.mrp || "",
         rate: found.rate || found.mrp || "", unit: found.unit || "strips",
@@ -199,8 +199,8 @@ export default function PurchaseChallan() {
   const total = subtotal + gstAmount - parseFloat(discount || 0);
 
   const handleSaveBill = async () => {
-    if (!supplier.name) return alert("Supplier name is required");
-    if (rows.every((r) => !r.name)) return alert("Add at least one item");
+    if (!supplier.name) return 
+    if (rows.every((r) => !r.name)) return 
     const payload = { supplierName: supplier.name, supplierPhone: supplier.phone, supplierAddress: supplier.address,
       supplierDl: supplier.dlNumber, supplierGst: supplier.gstNumber, dueDate: supplier.dueDate || null,
       transportDetails: supplier.transportDetails, salesmanId: selectedSalesman.id || null, salesmanName: selectedSalesman.name || "",
@@ -208,35 +208,35 @@ export default function PurchaseChallan() {
       discount: parseFloat(parseFloat(discount || 0).toFixed(2)), total: parseFloat(total.toFixed(2)), paymentMode, status: "pending",
     };
     try {
-      const res = await axios.post("http://localhost:5000/api/purchase-challan", payload, { headers: headers() });
+      const res = await axios.post("/purchase-challan", payload);
       setActiveBill(res.data); setView("preview"); fetchBills(); fetchItems();
-    } catch (err) { alert(err.response?.data?.error || "Failed to create challan"); }
+    } catch (err) {  }
   };
 
   const handleApprove = async (id) => {
     if (!window.confirm("Approve this challan?")) return;
     try {
-      await axios.post(`http://localhost:5000/api/purchase-challan/${id}/approve`, {}, { headers: headers() });
+      await axios.post(`/purchase-challan/${id}/approve`, {});
       fetchBills();
-    } catch (e) { alert("Error approving challan"); }
+    } catch (e) {  }
   };
 
   const handleConvertToInvoice = async (id) => {
     const invoiceNo = window.prompt("Enter Invoice No for the bill:");
     if (!invoiceNo) return;
     try {
-      await axios.post(`http://localhost:5000/api/purchase-challan/${id}/convert`, { invoiceNo }, { headers: headers() });
-      alert("Converted to Bill!"); fetchBills();
-    } catch (e) { alert(e.response?.data?.error || "Error converting"); }
+      await axios.post(`/purchase-challan/${id}/convert`, { invoiceNo });
+       fetchBills();
+    } catch (e) {  }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this bill?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/purchase-challan/${id}`, { headers: headers() });
+      await axios.delete(`/purchase-challan/${id}`);
       fetchBills(); fetchItems();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to delete challan");
+      
     }
   };
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { ShieldAlert, CheckCircle, XCircle, FileText, IndianRupee } from "lucide-react";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
@@ -14,7 +14,7 @@ export default function Approvals() {
     // Simulated fetch
     const fetchApprovals = async () => {
       try {
-        const { data } = await axios.get("/api/enterprise/approvals", { headers: headers() });
+        const { data } = await axios.get("/api/enterprise/approvals");
         setApprovals(data.data || data);
       } catch (err) {
         setApprovals([

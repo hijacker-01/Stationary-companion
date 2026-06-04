@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import {
   Users as UsersIcon,
@@ -79,7 +79,7 @@ export default function Users() {
 
   const fetchUsers = () => {
     setLoading(true);
-    axios.get("http://localhost:5000/api/users", { headers: headers() })
+    axios.get("/users")
       .then(res => setUsers(res.data))
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -99,22 +99,22 @@ export default function Users() {
     setForm(f => ({ ...f, role, permissions: ROLE_DEFAULT_PERMS[role] || [] }));
 
   const handleSubmit = async () => {
-    if (!form.name || !form.email) return alert("Name and email are required");
-    if (!editId && !form.password) return alert("Password is required for new users");
+    if (!form.name || !form.email) return 
+    if (!editId && !form.password) return 
     try {
       if (editId) {
         const payload = { ...form };
         if (!payload.password) delete payload.password;
-        await axios.put(`http://localhost:5000/api/users/${editId}`, payload, { headers: headers() });
+        await axios.put(`/users/${editId}`, payload);
       } else {
-        await axios.post("http://localhost:5000/api/users", form, { headers: headers() });
+        await axios.post("/users", form);
       }
       setView("list");
       setForm(emptyForm);
       setEditId(null);
       fetchUsers();
     } catch (err) {
-      alert(err.response?.data?.error || "Something went wrong");
+      
     }
   };
 
@@ -125,9 +125,9 @@ export default function Users() {
   };
 
   const handleDelete = async (id) => {
-    if (id === currentUser.id) return alert("You cannot delete yourself");
+    if (id === currentUser.id) return 
     if (!window.confirm("Delete this user? This action cannot be undone.")) return;
-    await axios.delete(`http://localhost:5000/api/users/${id}`, { headers: headers() });
+    await axios.delete(`/users/${id}`);
     fetchUsers();
   };
 

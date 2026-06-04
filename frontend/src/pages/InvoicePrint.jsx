@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import { useParams } from "react-router-dom";
 import { Printer, Loader2 } from "lucide-react";
 
@@ -26,7 +26,7 @@ export default function InvoicePrint() {
 
   useEffect(() => {
     axios
-      .get(`http://localhost:5000/api/billing/${id}`, { headers: headers() })
+      .get(`/billing/${id}`)
       .then((res) => setBill(res.data))
       .catch(() => setBill(null))
       .finally(() => setLoading(false));

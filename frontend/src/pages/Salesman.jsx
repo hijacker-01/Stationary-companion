@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import { Users, CheckCircle2, Target, Plus, Pencil, Trash2 } from "lucide-react";
 
@@ -13,20 +13,20 @@ export default function SalesmanPage() {
   const [editId, setEditId] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  const fetch = () => axios.get("http://localhost:5000/api/salesman", { headers: headers() }).then(r => setList(r.data));
+  const fetch = () => axios.get("/salesman").then(r => setList(r.data));
   useEffect(() => { fetch(); }, []);
 
   const handleSubmit = async () => {
-    if (!form.name) return alert("Name required");
+    if (!form.name) return 
     try {
-      if (editId) await axios.put(`http://localhost:5000/api/salesman/${editId}`, form, { headers: headers() });
-      else await axios.post("http://localhost:5000/api/salesman", form, { headers: headers() });
+      if (editId) await axios.put(`/salesman/${editId}`, form);
+      else await axios.post("/salesman", form);
       setShowModal(false); setForm(emptyForm); setEditId(null); fetch();
-    } catch (err) { alert(err.response?.data?.error || "Error"); }
+    } catch (err) {  }
   };
 
   const handleEdit = (s) => { setForm({ name: s.name, phone: s.phone||"", email: s.email||"", area: s.area||"", target: s.target||0, commission: s.commission||0 }); setEditId(s.id); setShowModal(true); };
-  const handleDelete = async (id) => { if (!confirm("Delete?")) return; await axios.delete(`http://localhost:5000/api/salesman/${id}`, { headers: headers() }); fetch(); };
+  const handleDelete = async (id) => { if (!confirm("Delete?")) return; await axios.delete(`/salesman/${id}`); fetch(); };
 
   const summaryCards = [
     { label: "Total Salesmen", value: list.length, icon: Users, color: "bg-teal-50 text-teal-600", borderColor: "border-teal-500" },

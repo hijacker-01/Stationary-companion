@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import {
   Plus,
   X,
@@ -38,7 +38,7 @@ export default function ReceiptVoucher() {
     setLoading(true);
     try {
       const { data } = await axios.get(`${API}/api/vouchers`, {
-        headers: headers(),
+        
         params: { direction: "in" },
       });
       setVouchers(Array.isArray(data) ? data : data.data || []);
@@ -78,7 +78,7 @@ export default function ReceiptVoucher() {
           reference: form.reference,
           note: form.remarks,
         },
-        { headers: headers() }
+        {  }
       );
       showToast("Receipt saved successfully");
       resetForm();
@@ -93,7 +93,7 @@ export default function ReceiptVoucher() {
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this receipt voucher?")) return;
     try {
-      await axios.delete(`${API}/api/vouchers/${id}`, { headers: headers() });
+      await axios.delete(`${API}/api/vouchers/${id}`);
       showToast("Receipt deleted");
       fetchVouchers();
     } catch (e) {

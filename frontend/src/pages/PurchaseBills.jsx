@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import { Upload, FileText, CheckCircle2, AlertCircle, Plus, Trash2, Wand2 } from "lucide-react";
 
@@ -20,7 +20,7 @@ export default function PurchaseBills() {
   const [items, setItems] = useState([]);
 
   useEffect(() => {
-    axios.get("http://localhost:5000/api/suppliers", { headers: headers() })
+    axios.get("/suppliers")
       .then(res => { setSuppliers(res.data); setLoadingSuppliers(false); })
       .catch(err => console.error(err));
   }, []);
@@ -41,7 +41,7 @@ export default function PurchaseBills() {
     formData.append("invoice", file);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/suppliers/extract-invoice", formData, {
+      const res = await axios.post("/suppliers/extract-invoice", formData, {
         headers: {
           ...headers(),
           "Content-Type": "multipart/form-data"
@@ -64,9 +64,9 @@ export default function PurchaseBills() {
       }));
 
       setItems(data.items);
-      alert("✅ Invoice successfully extracted using AI OCR!");
+      
     } catch (err) {
-      alert("Extraction failed: " + (err.response?.data?.error || err.message));
+      );
     } finally {
       setExtracting(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -97,18 +97,18 @@ export default function PurchaseBills() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.supplierId) return alert("Please select a valid supplier from the master.");
-    if (items.length === 0) return alert("Add at least one item to the bill.");
+    if (!form.supplierId) return 
+    if (items.length === 0) return 
 
     setSaving(true);
     try {
       const payload = { ...form, items, subtotal, gstAmount, discount: 0, total };
-      await axios.post("http://localhost:5000/api/suppliers/direct-purchase", payload, { headers: headers() });
-      alert("🎉 Purchase Bill Saved & Inventory Updated Successfully!");
+      await axios.post("/suppliers/direct-purchase", payload);
+      
       setForm({ supplierId: "", supplierName: "", invoiceNo: "", date: new Date().toISOString().split("T")[0], paymentMode: "credit" });
       setItems([]);
     } catch (err) {
-      alert("Error saving bill: " + err.message);
+      
     } finally {
       setSaving(false);
     }

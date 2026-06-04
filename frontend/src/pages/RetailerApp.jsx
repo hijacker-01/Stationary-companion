@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
 import { ShoppingBag, Search, Plus, Minus, Package } from "lucide-react";
@@ -14,14 +14,14 @@ export default function RetailerApp() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    axios.get(`/api/marketplace/catalog?search=${search}`, { headers: headers() }).then(r => setItems(r.data)).catch(() => setItems([{ id: 1, name: "Paracetamol 500mg", mrp: 30, selling_price: 25, stock_qty: 500, schemes: [{ name: "Buy 10 Get 2", type: "buy_get_free" }] }]));
-    axios.get("/api/marketplace/orders", { headers: headers() }).then(r => setOrders(r.data)).catch(() => {});
+    axios.get(`/api/marketplace/catalog?search=${search}`).then(r => setItems(r.data)).catch(() => setItems([{ id: 1, name: "Paracetamol 500mg", mrp: 30, selling_price: 25, stock_qty: 500, schemes: [{ name: "Buy 10 Get 2", type: "buy_get_free" }] }]));
+    axios.get("/api/marketplace/orders").then(r => setOrders(r.data)).catch(() => {});
   }, [search]);
 
   const addToCart = (item) => { const ex = cart.find(c => c.id === item.id); if (ex) setCart(cart.map(c => c.id === item.id ? { ...c, qty: c.qty + 1 } : c)); else setCart([...cart, { ...item, qty: 1, rate: item.selling_price || item.mrp }]); };
   const updateQty = (id, delta) => setCart(cart.map(c => c.id === id ? { ...c, qty: Math.max(0, c.qty + delta) } : c).filter(c => c.qty > 0));
   const cartTotal = cart.reduce((s, c) => s + c.qty * c.rate, 0);
-  const placeOrder = async () => { try { await axios.post("/api/marketplace/order", { customerId: 1, customerName: "Retail Customer", items: cart.map(c => ({ id: c.id, name: c.name, qty: c.qty, rate: c.rate })) }, { headers: headers() }); setCart([]); alert("Order placed!"); const r = await axios.get("/api/marketplace/orders", { headers: headers() }); setOrders(r.data); setTab("orders"); } catch (e) { alert(e.message); } };
+  const placeOrder = async () => { try { await axios.post("/api/marketplace/order", { customerId: 1, customerName: "Retail Customer", items: cart.map(c => ({ id: c.id, name: c.name, qty: c.qty, rate: c.rate })) }); setCart([]);  const r = await axios.get("/api/marketplace/orders"); setOrders(r.data); setTab("orders"); } catch (e) {  } };
   const statusBadge = (s) => ({ placed: "bg-yellow-100 text-yellow-700", confirmed: "bg-blue-100 text-blue-700", dispatched: "bg-indigo-100 text-indigo-700", delivered: "bg-green-100 text-green-700", cancelled: "bg-red-100 text-red-700" }[s] || "bg-gray-200");
 
   return (

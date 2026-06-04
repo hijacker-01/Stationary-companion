@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
 import { ShieldCheck, AlertCircle, FileText, CheckCircle, Clock } from "lucide-react";
@@ -11,7 +11,7 @@ export default function GSTDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get("/api/gst/dashboard", { headers: headers() })
+    axios.get("/api/gst/dashboard")
       .then(res => setStats(res.data))
       .catch(() => {})
       .finally(() => setLoading(false));

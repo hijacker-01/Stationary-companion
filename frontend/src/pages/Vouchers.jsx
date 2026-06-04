@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import { 
   Plus, Search, Trash2, ArrowUpRight, ArrowDownLeft, 
@@ -29,15 +29,15 @@ export default function Vouchers() {
   const [search, setSearch] = useState("");
 
   const fetchVouchers = () => {
-    axios.get("http://localhost:5000/api/vouchers", { headers: headers() })
+    axios.get("/vouchers")
       .then(res => setVouchers(res.data))
       .catch(err => console.error(err));
   };
 
   const fetchParties = () => {
-    axios.get("http://localhost:5000/api/customers", { headers: headers() })
+    axios.get("/customers")
       .then(res => setCustomers(res.data || []));
-    axios.get("http://localhost:5000/api/suppliers", { headers: headers() })
+    axios.get("/suppliers")
       .then(res => setSuppliers(res.data || []));
   };
 
@@ -48,7 +48,7 @@ export default function Vouchers() {
 
   const handleCreateVoucher = async () => {
     if (!form.partyId || !form.amount || parseFloat(form.amount) <= 0) {
-      return alert("Please select a valid party and amount.");
+      return 
     }
 
     const partyList = form.type === "customer" ? customers : suppliers;
@@ -60,26 +60,26 @@ export default function Vouchers() {
     };
 
     try {
-      await axios.post("http://localhost:5000/api/vouchers", payload, { headers: headers() });
+      await axios.post("/vouchers", payload);
       setShowModal(false);
       setForm(emptyForm);
       fetchVouchers();
       fetchParties(); // update party balances
-      alert("Voucher created successfully!");
+      
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to create voucher");
+      
     }
   };
 
   const handleDeleteVoucher = async (id) => {
     if (!window.confirm("Are you sure you want to reverse this voucher transaction? This will restore/decrement account balances.")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/vouchers/${id}`, { headers: headers() });
+      await axios.delete(`/vouchers/${id}`);
       fetchVouchers();
       fetchParties();
-      alert("Voucher reversed and account balances updated.");
+      
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to delete voucher");
+      
     }
   };
 
