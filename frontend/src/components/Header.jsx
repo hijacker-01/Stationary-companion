@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Search, X } from "lucide-react";
 
 export default function Header() {
   const navigate = useNavigate();
@@ -49,6 +49,7 @@ export default function Header() {
     ]},
     { label: "Stocks", items: [
       { label: "Current Stock", path: "/inventory" },
+      { label: "Closing Stock", path: "/closing-stock" },
       { label: "Near Expiry", path: "/expiry" },
       { label: "Stock Adjustment", path: "/stock-adjust" },
     ]},
@@ -77,11 +78,88 @@ export default function Header() {
 
   const [openMenu, setOpenMenu] = useState(null);
 
+  // --- Search State ---
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [highlightIdx, setHighlightIdx] = useState(0);
+  const searchRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // Build flat searchable index from all menus
+  const searchIndex = useMemo(() => {
+    const items = [];
+    menus.forEach(menu => {
+      menu.items.forEach(item => {
+        items.push({ label: item.label, path: item.path, category: menu.label });
+      });
+    });
+    // Add direct links
+    items.push({ label: "Dashboard", path: "/dashboard", category: "Navigation" });
+    items.push({ label: "Settings", path: "/settings", category: "Navigation" });
+    items.push({ label: "Dispatch Summary", path: "/dispatch-summary", category: "Reports" });
+    items.push({ label: "GST Dashboard", path: "/gst-dashboard", category: "Compliance" });
+    items.push({ label: "E-Invoice Center", path: "/einvoice", category: "Compliance" });
+    items.push({ label: "CEO Dashboard", path: "/ceo-dashboard", category: "Enterprise" });
+    items.push({ label: "Control Tower", path: "/control-tower", category: "Enterprise" });
+    return items;
+  }, []);
+
+  // Filter results
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase();
+    return searchIndex.filter(item =>
+      item.label.toLowerCase().includes(q) || item.category.toLowerCase().includes(q)
+    ).slice(0, 10);
+  }, [searchQuery, searchIndex]);
+
+  // Reset highlight when results change
+  useEffect(() => { setHighlightIdx(0); }, [searchResults]);
+
+  // Keyboard navigation inside search
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightIdx(i => Math.min(i + 1, searchResults.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightIdx(i => Math.max(i - 1, 0));
+    } else if (e.key === "Enter" && searchResults[highlightIdx]) {
+      e.preventDefault();
+      navigate(searchResults[highlightIdx].path);
+      setSearchQuery("");
+      setSearchFocused(false);
+      inputRef.current?.blur();
+    } else if (e.key === "Escape") {
+      setSearchQuery("");
+      setSearchFocused(false);
+      inputRef.current?.blur();
+    }
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handler = () => setOpenMenu(null);
+    const handler = (e) => {
+      setOpenMenu(null);
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setSearchFocused(false);
+      }
+    };
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
+  }, []);
+
+  // Ctrl+K shortcut to focus search
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        inputRef.current?.focus();
+        setSearchFocused(true);
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
   }, []);
 
   return (
@@ -127,6 +205,55 @@ export default function Header() {
             )}
           </div>
         ))}
+
+        {/* Search Bar — after Portals */}
+        <div ref={searchRef} className="relative ml-2" onClick={e => e.stopPropagation()}>
+          <div className={`flex items-center bg-white border rounded h-[24px] px-2 transition-all ${searchFocused ? 'w-[260px] border-[#1b4985] shadow-sm' : 'w-[180px] border-gray-300'}`}>
+            <Search className="w-3 h-3 text-gray-400 flex-shrink-0" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onKeyDown={handleSearchKeyDown}
+              placeholder="Search pages..."
+              className="flex-1 bg-transparent outline-none text-[11px] text-gray-700 px-1.5 placeholder-gray-400"
+            />
+            {searchQuery ? (
+              <button onClick={() => { setSearchQuery(""); inputRef.current?.focus(); }} className="text-gray-400 hover:text-gray-600">
+                <X className="w-3 h-3" />
+              </button>
+            ) : (
+              <span className="text-[9px] text-gray-400 font-mono flex-shrink-0">Ctrl+K</span>
+            )}
+          </div>
+
+          {/* Search Results Dropdown */}
+          {searchFocused && searchQuery.trim() && (
+            <div className="absolute top-full left-0 mt-1 w-[300px] bg-white border border-gray-200 rounded-md shadow-xl z-[100] py-1 max-h-[320px] overflow-y-auto">
+              {searchResults.length === 0 ? (
+                <div className="px-4 py-3 text-xs text-gray-400 text-center">No pages found for "{searchQuery}"</div>
+              ) : (
+                searchResults.map((item, i) => (
+                  <button
+                    key={i}
+                    onClick={() => { navigate(item.path); setSearchQuery(""); setSearchFocused(false); }}
+                    onMouseEnter={() => setHighlightIdx(i)}
+                    className={`w-full text-left px-4 py-2 flex items-center justify-between transition-colors
+                      ${highlightIdx === i ? 'bg-[#dbeafe]' : 'hover:bg-gray-50'}
+                    `}
+                  >
+                    <span className={`text-[12px] font-medium ${highlightIdx === i ? 'text-[#1b4985]' : 'text-gray-800'}`}>
+                      {item.label}
+                    </span>
+                    <span className="text-[9px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{item.category}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
         
         {/* Direct nav links */}
         <button onClick={() => navigate("/dashboard")} className="px-3 py-1 text-xs font-semibold text-gray-800 hover:bg-gray-200 ml-auto">Dashboard</button>
