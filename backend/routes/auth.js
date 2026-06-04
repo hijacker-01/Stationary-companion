@@ -13,5 +13,9 @@ const loginLimiter = rateLimit({
 
 router.post("/register", validate(registerSchema), register);
 router.post("/login", loginLimiter, validate(loginSchema), login);
+router.post("/logout", (req, res) => {
+  res.clearCookie("token");
+  res.json({ message: "Logged out" });
+});
 
 module.exports = router;

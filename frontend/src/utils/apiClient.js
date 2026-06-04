@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 const apiClient = axios.create({
   baseURL: "http://localhost:5000/api",
   timeout: 15000,
+  withCredentials: true
 });
 
 apiClient.interceptors.request.use((config) => {

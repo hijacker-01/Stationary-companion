@@ -38,7 +38,7 @@ const generateBillNo = async (transaction) => {
 };
 
 // Get all bills
-router.get("/", async (req, res) => {
+router.get("/", protect, async (req, res) => {
   try {
     const bills = await Bill.findAll({ order: [["createdAt", "DESC"]] });
     res.json(bills);
@@ -48,7 +48,7 @@ router.get("/", async (req, res) => {
 });
 
 // Get single bill
-router.get("/:id", async (req, res) => {
+router.get("/:id", protect, async (req, res) => {
   try {
     const bill = await Bill.findByPk(req.params.id);
     if (!bill) return res.status(404).json({ error: "Bill not found" });

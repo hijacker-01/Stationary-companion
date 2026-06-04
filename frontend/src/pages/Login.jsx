@@ -15,7 +15,7 @@ export default function Login() {
     setError("");
     try {
       const res = await axios.post("/auth/login", form);
-      localStorage.setItem("token", res.data.token);
+      toast.success("Login Successful!");
       localStorage.setItem("user", JSON.stringify(res.data.user));
       navigate("/dashboard");
     } catch (err) {

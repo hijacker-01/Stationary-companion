@@ -14,7 +14,9 @@ bin-release/
 *.apk
 
 # Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-node_modules/
+node_modules
+.env
+/
 .DS_Store
 .env
 *.log

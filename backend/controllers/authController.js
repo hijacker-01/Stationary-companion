@@ -52,8 +52,16 @@ exports.login = async (req, res) => {
       process.env.JWT_SECRET, 
       { expiresIn: "24h" }
     );
+    
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
     const { password: _, ...userWithoutPassword } = user.toJSON();
-    res.json({ token, user: userWithoutPassword });
+    res.json({ user: userWithoutPassword }); // Removed token from JSON response
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

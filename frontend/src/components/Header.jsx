@@ -258,7 +258,10 @@ export default function Header() {
         {/* Direct nav links */}
         <button onClick={() => navigate("/dashboard")} className="px-3 py-1 text-xs font-semibold text-gray-800 hover:bg-gray-200 ml-auto">Dashboard</button>
         <button onClick={() => navigate("/settings")} className="px-3 py-1 text-xs font-semibold text-gray-800 hover:bg-gray-200">Settings</button>
-        <button onClick={() => { localStorage.clear(); navigate("/"); }} className="px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50">Exit</button>
+        <button onClick={async () => { 
+          try { await axios.post("/auth/logout"); } catch(e){}
+          localStorage.clear(); navigate("/"); 
+        }} className="px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50">Exit</button>
       </div>
 
       {/* Quick Action Sub-bar */}

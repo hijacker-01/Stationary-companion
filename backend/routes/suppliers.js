@@ -15,7 +15,17 @@ const path = require("path");
 const fs = require("fs");
 const sharp = require("sharp");
 
-const upload = multer({ dest: path.join(__dirname, "../uploads/") });
+const upload = multer({ 
+  dest: path.join(__dirname, "../uploads/"),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === "image/jpeg" || file.mimetype === "image/png" || file.mimetype === "application/pdf") {
+      cb(null, true);
+    } else {
+      cb(new Error("Invalid file type. Only JPG, PNG, and PDF are allowed."), false);
+    }
+  }
+});
 
 const genPO = () => {
   const now = new Date();
