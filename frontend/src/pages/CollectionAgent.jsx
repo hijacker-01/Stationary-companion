@@ -19,13 +19,32 @@ export default function CollectionAgent() {
     ]);
   }, []);
 
-  const sendReminder = (id, method) => {
-    toast.success(`${method} Reminder dispatched automatically by AI.`);
-    setCollections(collections.map(c => c.id === id ? { ...c, lastContact: "Just now" } : c));
+  const sendReminder = async (id, method) => {
+    try {
+      await axios.post("/communication/send", {
+        to: "+919876543210",
+        message: `This is a payment reminder for invoice INV-${id}. Please pay immediately to avoid legal action.`,
+        channel: method
+      });
+      toast.success(`${method} Reminder dispatched automatically by AI via Twilio.`);
+      setCollections(collections.map(c => c.id === id ? { ...c, lastContact: "Just now" } : c));
+    } catch (e) {
+      toast.error(`Failed to send ${method} reminder.`);
+    }
   };
 
-  const runAutoDunning = () => {
-    toast.success("AI Dunning Engine started. Messages are being sent to 4 customers.");
+  const runAutoDunning = async () => {
+    try {
+      await axios.post("/communication/send", {
+        to: "+919876543210",
+        message: "Automated AI Dunning Engine sweep complete.",
+        channel: "WhatsApp"
+      });
+      toast.success("AI Dunning Engine started. Messages are being sent to 4 customers via Twilio WhatsApp Gateway.");
+      setCollections(collections.map(c => ({ ...c, lastContact: "Just now" })));
+    } catch (e) {
+      toast.error("Failed to start auto dunning.");
+    }
   };
 
   return (

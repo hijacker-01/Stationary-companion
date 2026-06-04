@@ -164,7 +164,7 @@ export default function ReorderCenter() {
                 Cancel
               </button>
               <button 
-                onClick={() => }
+                onClick={() => runAiReorder()}
                 className="px-6 py-1.5 ml-4 bg-gradient-to-r from-purple-600 to-indigo-600 border border-purple-800 rounded shadow-sm text-white text-[13px] font-bold hover:from-purple-700 hover:to-indigo-700 transition-all transform hover:scale-[1.02]"
               >
                 ✨ Run AI Reorder Agent

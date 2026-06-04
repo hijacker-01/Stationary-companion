@@ -66,7 +66,7 @@ export default function PurchaseBills() {
       setItems(data.items);
       
     } catch (err) {
-      );
+      console.error(err);
     } finally {
       setExtracting(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

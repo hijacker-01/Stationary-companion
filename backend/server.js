@@ -122,6 +122,7 @@ app.use("/api/cashflow",        require("./routes/cashflow"));
 app.use("/api/warehouse-twin",  require("./routes/warehouse-twin"));
 app.use("/api/compliance",      require("./routes/compliance"));
 app.use("/api/compliance-rules",require("./routes/compliance-rules"));
+app.use("/api/communication",   require("./routes/communication"));
 app.use("/api/automation",      require("./routes/automation"));
 app.use("/api/plugins",         require("./routes/plugins"));
 app.use("/api/webhooks",        require("./routes/webhooks"));

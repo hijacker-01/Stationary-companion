@@ -40,6 +40,7 @@ const aiTools = [
   { to: "/ai-ledger", label: "AI Smart Ledger", badge: "AI" },
   { to: "/reorder-center", label: "AI Re-Order Agent", badge: "AI" },
   { to: "/expiry-guard", label: "AI Expiry Guard", badge: "AI" },
+  { to: "/pricing-engine", label: "AI Pricing Engine", badge: "AI" },
   { to: "/copilot", label: "AI Copilot", badge: "AI" },
 ];
 
