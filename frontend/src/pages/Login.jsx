@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "../api/axios";
 import { Mail, Lock, ArrowRight, ShieldCheck, Zap, BarChart3 } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });

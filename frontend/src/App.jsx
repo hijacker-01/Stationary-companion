@@ -45,6 +45,7 @@ import SalesmanApp from "./pages/SalesmanApp";
 
 // 11.0 Enterprise Imports
 import Warehouse from "./pages/Warehouse";
+import GodownMaster from "./pages/GodownMaster";
 import Logistics from "./pages/Logistics";
 import Approvals from "./pages/Approvals";
 import CRM from "./pages/CRM";
