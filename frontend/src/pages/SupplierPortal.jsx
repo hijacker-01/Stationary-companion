@@ -14,7 +14,7 @@ export default function SupplierPortal() {
   const [form, setForm] = useState({ schemeName: "", type: "buy_get_free", minQty: "", freeQty: "", discountPercent: "", validFrom: "", validTo: "", supplierName: "Self", supplierId: 1 });
 
   useEffect(() => {
-    axios.get("/api/marketplace/supplier/sell-through").then(r => setSellThrough(r.data)).catch(() => setSellThrough([{ id: 1, name: "Dolo 650", stockAtDistributor: 200, sold30d: 150, velocity: 5.0, trend: "up" }]));
+    axios.get("/api/marketplace/supplier/sell-through").then(r => setSellThrough(r.data)).catch(() => {});
     axios.get("/api/marketplace/schemes").then(r => setSchemes(r.data)).catch(() => {});
   }, []);
 
