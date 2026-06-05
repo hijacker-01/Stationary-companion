@@ -107,9 +107,9 @@ export default function PurchaseChallan() {
 
   const fetchBills = () => axios.get("/purchase-challan").then((res) => setBills(res.data.rows || res.data || [])).catch((err) => console.error("Failed to fetch bills:", err));
   const fetchItems = () => axios.get("/items").then((res) => setItems(res.data)).catch((err) => console.error("Failed to fetch items:", err));
-  const fetchSchemes = () => axios.get("/schemes").then((res) => setAllSchemes(res.data)).catch((err) => console.error("Failed to fetch schemes:", err));
-  const fetchSuppliers = () => axios.get("/suppliers").then((res) => setSuppliers(res.data || [])).catch((err) => console.error("Failed to fetch suppliers:", err));
-  const fetchSalesmen = () => axios.get("/salesman").then((res) => setSalesmen(res.data || [])).catch((err) => console.error("Failed to fetch salesmen:", err));
+  const fetchSchemes = () => axios.get("/schemes").then((res) => setAllSchemes(res.data.rows || res.data.schemes || res.data || [])).catch((err) => console.error("Failed to fetch schemes:", err));
+  const fetchSuppliers = () => axios.get("/suppliers").then((res) => setSuppliers(res.data.rows || res.data.suppliers || res.data || [])).catch((err) => console.error("Failed to fetch suppliers:", err));
+  const fetchSalesmen = () => axios.get("/salesman").then((res) => setSalesmen(res.data.rows || res.data.salesmen || res.data || [])).catch((err) => console.error("Failed to fetch salesmen:", err));
   const fetchSettings = () => axios.get("/settings").then((res) => setSettings(res.data || {})).catch((err) => console.error("Failed to fetch settings:", err));
 
   const handleSupplierSelect = (name) => {
@@ -204,7 +204,16 @@ export default function PurchaseChallan() {
     const payload = { supplierName: supplier.name, supplierPhone: supplier.phone, supplierAddress: supplier.address,
       supplierDl: supplier.dlNumber, supplierGst: supplier.gstNumber, dueDate: supplier.dueDate || null,
       transportDetails: supplier.transportDetails, salesmanId: selectedSalesman.id || null, salesmanName: selectedSalesman.name || "",
-      items: rows.filter((r) => r.name), subtotal: parseFloat(subtotal.toFixed(2)), gstAmount: parseFloat(gstAmount.toFixed(2)),
+      items: rows.filter((r) => r.name).map(r => ({
+        ...r,
+        qty: parseInt(r.qty) || 1,
+        schemeQty: parseInt(r.schemeQty) || 0,
+        discount: parseFloat(r.discount) || 0,
+        gst: parseFloat(r.gst) || 0,
+        amount: parseFloat(r.amount) || 0,
+        mrp: parseFloat(r.mrp) || 0,
+        selling_price: parseFloat(r.selling_price) || 0,
+      })), subtotal: parseFloat(subtotal.toFixed(2)) || 0, gstAmount: parseFloat(gstAmount.toFixed(2)) || 0,
       discount: parseFloat(parseFloat(discount || 0).toFixed(2)), total: parseFloat(total.toFixed(2)), paymentMode, status: "pending",
     };
     try {

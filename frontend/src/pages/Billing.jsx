@@ -134,19 +134,19 @@ export default function Billing() {
   const fetchSchemes = () =>
     axios
       .get("/schemes")
-      .then((res) => setAllSchemes(res.data))
+      .then((res) => setAllSchemes(res.data.rows || res.data.schemes || res.data || []))
       .catch((err) => console.error(err));
 
   const fetchCustomers = () =>
     axios
       .get("/customers")
-      .then((res) => setCustomers(res.data || []))
+      .then((res) => setCustomers(res.data.rows || res.data.customers || res.data || []))
       .catch((err) => console.error(err));
 
   const fetchSalesmen = () =>
     axios
       .get("/salesman")
-      .then((res) => setSalesmen(res.data || []))
+      .then((res) => setSalesmen(res.data.rows || res.data.salesmen || res.data || []))
       .catch((err) => console.error(err));
 
   const handleCustomerSelect = (name) => {
@@ -354,11 +354,20 @@ export default function Billing() {
       transportDetails: customer.transportDetails,
       salesmanId: selectedSalesman.id || null,
       salesmanName: selectedSalesman.name || "",
-      items: rows.filter((r) => r.name),
-      subtotal: parseFloat(subtotal.toFixed(2)),
-      gstAmount: parseFloat(gstAmount.toFixed(2)),
-      discount: parseFloat(parseFloat(discount || 0).toFixed(2)),
-      total: parseFloat(total.toFixed(2)),
+      items: rows.filter((r) => r.name).map(r => ({
+        ...r,
+        qty: parseInt(r.qty) || 1,
+        schemeQty: parseInt(r.schemeQty) || 0,
+        discount: parseFloat(r.discount) || 0,
+        gst: parseFloat(r.gst) || 0,
+        amount: parseFloat(r.amount) || 0,
+        mrp: parseFloat(r.mrp) || 0,
+        selling_price: parseFloat(r.selling_price) || 0,
+      })),
+      subtotal: parseFloat(subtotal.toFixed(2)) || 0,
+      gstAmount: parseFloat(gstAmount.toFixed(2)) || 0,
+      discount: parseFloat(parseFloat(discount || 0).toFixed(2)) || 0,
+      total: parseFloat(total.toFixed(2)) || 0,
       paymentMode,
       status: "paid",
     };
@@ -374,7 +383,8 @@ export default function Billing() {
       fetchBills();
       fetchItems(); // Refresh items to get updated stock
     } catch (err) {
-      
+      console.error(err);
+      alert(err.response?.data?.error || err.response?.data?.message || err.message);
     }
   };
 

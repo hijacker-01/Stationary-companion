@@ -108,9 +108,9 @@ export default function SalesChallan() {
 
   const fetchBills = () => axios.get("/sales-challan").then((res) => setBills(res.data.rows || res.data || []));
   const fetchItems = () => axios.get("/items").then((res) => setItems(res.data));
-  const fetchSchemes = () => axios.get("/schemes").then((res) => setAllSchemes(res.data));
-  const fetchCustomers = () => axios.get("/customers").then((res) => setCustomers(res.data || []));
-  const fetchSalesmen = () => axios.get("/salesman").then((res) => setSalesmen(res.data || []));
+  const fetchSchemes = () => axios.get("/schemes").then((res) => setAllSchemes(res.data.rows || res.data.schemes || res.data || []));
+  const fetchCustomers = () => axios.get("/customers").then((res) => setCustomers(res.data.rows || res.data.customers || res.data || []));
+  const fetchSalesmen = () => axios.get("/salesman").then((res) => setSalesmen(res.data.rows || res.data.salesmen || res.data || []));
   const fetchSettings = () => axios.get("/settings").then((res) => setSettings(res.data || {}));
 
   const handleCustomerSelect = (name) => {
@@ -197,7 +197,16 @@ export default function SalesChallan() {
     const payload = { customerName: customer.name, customerPhone: customer.phone, customerAddress: customer.address,
       customerDl: customer.dlNumber, customerGst: customer.gstNumber, dueDate: customer.dueDate || null,
       transportDetails: customer.transportDetails, salesmanId: selectedSalesman.id || null, salesmanName: selectedSalesman.name || "",
-      items: rows.filter((r) => r.name), subtotal: parseFloat(subtotal.toFixed(2)), gstAmount: parseFloat(gstAmount.toFixed(2)),
+      items: rows.filter((r) => r.name).map(r => ({
+        ...r,
+        qty: parseInt(r.qty) || 1,
+        schemeQty: parseInt(r.schemeQty) || 0,
+        discount: parseFloat(r.discount) || 0,
+        gst: parseFloat(r.gst) || 0,
+        amount: parseFloat(r.amount) || 0,
+        mrp: parseFloat(r.mrp) || 0,
+        selling_price: parseFloat(r.selling_price) || 0,
+      })), subtotal: parseFloat(subtotal.toFixed(2)) || 0, gstAmount: parseFloat(gstAmount.toFixed(2)) || 0,
       discount: parseFloat(parseFloat(discount || 0).toFixed(2)), total: parseFloat(total.toFixed(2)), paymentMode, status: "paid",
     };
     try {
