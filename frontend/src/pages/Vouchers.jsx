@@ -30,15 +30,15 @@ export default function Vouchers() {
 
   const fetchVouchers = () => {
     axios.get("/vouchers")
-      .then(res => setVouchers(res.data))
+      .then(res => setVouchers(res.data?.rows || res.data?.items || res.data?.data || res.data || []))
       .catch(err => console.error(err));
   };
 
   const fetchParties = () => {
     axios.get("/customers")
-      .then(res => setCustomers(res.data || []));
+      .then(res => setCustomers(res.data?.rows || res.data?.items || res.data?.data || res.data || []));
     axios.get("/suppliers")
-      .then(res => setSuppliers(res.data || []));
+      .then(res => setSuppliers(res.data?.rows || res.data?.items || res.data?.data || res.data || []));
   };
 
   useEffect(() => {

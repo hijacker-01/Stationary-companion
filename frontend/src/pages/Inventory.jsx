@@ -52,7 +52,7 @@ export default function Inventory() {
 
   const fetchSchemes = () =>
     axios.get("/schemes")
-      .then(res => setAllSchemes(res.data)).catch(() => {});
+      .then(res => setAllSchemes(res.data?.rows || res.data?.items || res.data?.data || res.data || [])).catch(() => {});
 
   useEffect(() => { fetchSchemes(); }, []);
   useEffect(() => { fetchItems(); }, [page, debouncedSearch]);

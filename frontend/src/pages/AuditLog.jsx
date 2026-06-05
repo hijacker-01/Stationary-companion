@@ -10,7 +10,7 @@ export default function AuditLog() {
     const fetchLogs = async () => {
       try {
         const res = await apiClient.get("/audit");
-        setLogs(res.data);
+        setLogs(res.data?.rows || res.data?.items || res.data?.data || res.data || []);
       } catch (err) {
         console.error(err);
       } finally {

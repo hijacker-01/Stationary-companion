@@ -14,7 +14,7 @@ export default function Expenses() {
   const fetchExpenses = async () => {
     try {
       const res = await axios.get("/expenses");
-      setExpenses(res.data);
+      setExpenses(res.data?.rows || res.data?.items || res.data?.data || res.data || []);
     } catch (err) {
       console.error(err);
     }

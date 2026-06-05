@@ -38,7 +38,7 @@ export default function DirectMessages() {
     if (!currentUser.id || !otherId) return;
     try {
       const res = await axios.get(`/messages/history/${currentUser.id}/${otherId}`);
-      setMessages(res.data);
+      setMessages(res.data?.rows || res.data?.items || res.data?.data || res.data || []);
       scrollToBottom();
       fetchUnreadCounts(); // refresh unread counts since viewing them marks them read
     } catch (err) {

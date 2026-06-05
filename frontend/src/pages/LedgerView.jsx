@@ -15,7 +15,7 @@ export default function LedgerView() {
   const fetchLedgers = async () => {
     try {
       const res = await apiClient.get("/ledger/trial-balance");
-      setAccounts(res.data);
+      setAccounts(res.data?.rows || res.data?.items || res.data?.data || res.data || []);
     } catch (err) {
       console.error(err);
     } finally {

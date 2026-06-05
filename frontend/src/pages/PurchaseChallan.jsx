@@ -105,11 +105,11 @@ export default function PurchaseChallan() {
     setExpandedRows(newSet);
   };
 
-  const fetchBills = () => axios.get("/purchase-challan").then((res) => setBills(res.data.rows || res.data || [])).catch((err) => console.error("Failed to fetch bills:", err));
-  const fetchItems = () => axios.get("/items").then((res) => setItems(res.data)).catch((err) => console.error("Failed to fetch items:", err));
-  const fetchSchemes = () => axios.get("/schemes").then((res) => setAllSchemes(res.data.rows || res.data.schemes || res.data || [])).catch((err) => console.error("Failed to fetch schemes:", err));
-  const fetchSuppliers = () => axios.get("/suppliers").then((res) => setSuppliers(res.data.rows || res.data.suppliers || res.data || [])).catch((err) => console.error("Failed to fetch suppliers:", err));
-  const fetchSalesmen = () => axios.get("/salesman").then((res) => setSalesmen(res.data.rows || res.data.salesmen || res.data || [])).catch((err) => console.error("Failed to fetch salesmen:", err));
+  const fetchBills = () => axios.get("/purchase-challan").then((res) => setBills(res.data?.data || res.data?.rows || res.data || [])).catch((err) => console.error("Failed to fetch bills:", err));
+  const fetchItems = () => axios.get("/items").then((res) => setItems(res.data?.rows || res.data?.items || res.data?.data || res.data || [])).catch((err) => console.error("Failed to fetch items:", err));
+  const fetchSchemes = () => axios.get("/schemes").then((res) => setAllSchemes(res.data?.data || res.data?.rows || res.data?.items || res.data || [])).catch((err) => console.error("Failed to fetch schemes:", err));
+  const fetchSuppliers = () => axios.get("/suppliers").then((res) => setSuppliers(res.data?.data || res.data?.rows || res.data?.items || res.data || [])).catch((err) => console.error("Failed to fetch suppliers:", err));
+  const fetchSalesmen = () => axios.get("/salesman").then((res) => setSalesmen(res.data?.data || res.data?.rows || res.data?.items || res.data || [])).catch((err) => console.error("Failed to fetch salesmen:", err));
   const fetchSettings = () => axios.get("/settings").then((res) => setSettings(res.data || {})).catch((err) => console.error("Failed to fetch settings:", err));
 
   const handleSupplierSelect = (name) => {

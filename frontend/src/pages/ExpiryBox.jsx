@@ -44,7 +44,7 @@ export default function ExpiryBox() {
       .get(`/expiry?days=${days}`, {
         headers: { Authorization: `Bearer ${token()}` },
       })
-      .then((res) => setItems(res.data))
+      .then((res) => setItems(res.data?.rows || res.data?.items || res.data?.data || res.data || []))
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
   };

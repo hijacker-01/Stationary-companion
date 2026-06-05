@@ -13,7 +13,7 @@ export default function ComplianceRuleManager() {
   const fetchRules = () => {
     setLoading(true);
     axios.get("/api/compliance-rules")
-      .then(res => setRules(res.data))
+      .then(res => setRules(res.data?.rows || res.data?.items || res.data?.data || res.data || []))
       .catch(() => {})
       .finally(() => setLoading(false));
   };

@@ -67,11 +67,11 @@ export default function Reports() {
 
   const fetchSalesmanSales = () =>
     axios.get("/reports/salesman-sales")
-      .then(res => setSalesmanSales(res.data || []));
+      .then(res => setSalesmanSales(res.data?.rows || res.data?.items || res.data?.data || res.data || []));
 
   const fetchItemSales = () =>
     axios.get("/reports/item-sales")
-      .then(res => setItemSales(res.data || []));
+      .then(res => setItemSales(res.data?.rows || res.data?.items || res.data?.data || res.data || []));
 
   const fetchGstData = () => {
     const { month, year } = gstPeriod;

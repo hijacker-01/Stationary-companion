@@ -21,7 +21,7 @@ export default function PurchaseBills() {
 
   useEffect(() => {
     axios.get("/suppliers")
-      .then(res => { setSuppliers(res.data); setLoadingSuppliers(false); })
+      .then(res => { setSuppliers(res.data?.rows || res.data?.items || res.data?.data || res.data || []); setLoadingSuppliers(false); })
       .catch(err => console.error(err));
   }, []);
 

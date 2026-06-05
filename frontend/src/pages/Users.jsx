@@ -80,7 +80,7 @@ export default function Users() {
   const fetchUsers = () => {
     setLoading(true);
     axios.get("/users")
-      .then(res => setUsers(res.data))
+      .then(res => setUsers(res.data?.rows || res.data?.items || res.data?.data || res.data || []))
       .catch(() => {})
       .finally(() => setLoading(false));
   };

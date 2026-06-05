@@ -106,11 +106,11 @@ export default function SalesChallan() {
     setExpandedRows(newSet);
   };
 
-  const fetchBills = () => axios.get("/sales-challan").then((res) => setBills(res.data.rows || res.data || []));
-  const fetchItems = () => axios.get("/items").then((res) => setItems(res.data));
-  const fetchSchemes = () => axios.get("/schemes").then((res) => setAllSchemes(res.data.rows || res.data.schemes || res.data || []));
-  const fetchCustomers = () => axios.get("/customers").then((res) => setCustomers(res.data.rows || res.data.customers || res.data || []));
-  const fetchSalesmen = () => axios.get("/salesman").then((res) => setSalesmen(res.data.rows || res.data.salesmen || res.data || []));
+  const fetchBills = () => axios.get("/sales-challan").then((res) => setBills(res.data?.data || res.data?.rows || res.data || []));
+  const fetchItems = () => axios.get("/items").then((res) => setItems(res.data?.rows || res.data?.items || res.data?.data || res.data || []));
+  const fetchSchemes = () => axios.get("/schemes").then((res) => setAllSchemes(res.data?.data || res.data?.rows || res.data?.items || res.data || []));
+  const fetchCustomers = () => axios.get("/customers").then((res) => setCustomers(res.data?.data || res.data?.rows || res.data?.items || res.data || []));
+  const fetchSalesmen = () => axios.get("/salesman").then((res) => setSalesmen(res.data?.data || res.data?.rows || res.data?.items || res.data || []));
   const fetchSettings = () => axios.get("/settings").then((res) => setSettings(res.data || {}));
 
   const handleCustomerSelect = (name) => {

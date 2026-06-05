@@ -13,7 +13,7 @@ export default function EInvoiceCenter() {
 
   useEffect(() => {
     axios.get("/api/gst/einvoice/logs")
-      .then(res => setLogs(res.data))
+      .then(res => setLogs(res.data?.rows || res.data?.items || res.data?.data || res.data || []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);

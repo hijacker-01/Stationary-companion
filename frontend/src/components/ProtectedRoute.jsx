@@ -1,11 +1,11 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 export default function ProtectedRoute({ allowedRoles }) {
-  const token = localStorage.getItem("token");
+
   const userStr = localStorage.getItem("user");
   const location = useLocation();
 
-  if (!token || !userStr) {
+  if (!userStr) {
     // Not logged in
     return <Navigate to="/" state={{ from: location }} replace />;
   }

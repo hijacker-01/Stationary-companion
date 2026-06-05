@@ -120,33 +120,33 @@ export default function Billing() {
   const fetchBills = () => {
     axios
       .get("/billing")
-      .then((res) => setBills(res.data.rows || res.data || []))
+      .then((res) => setBills(res.data?.data || res.data?.rows || res.data || []))
       .catch((err) => console.error(err));
   };
 
   const fetchItems = () => {
     axios
       .get("/items")
-      .then((res) => setItems(res.data.items || res.data))
+      .then((res) => setItems(res.data?.data || res.data?.rows || res.data?.items || res.data || []))
       .catch((err) => console.error(err));
   };
 
   const fetchSchemes = () =>
     axios
       .get("/schemes")
-      .then((res) => setAllSchemes(res.data.rows || res.data.schemes || res.data || []))
+      .then((res) => setAllSchemes(res.data?.data || res.data?.rows || res.data?.items || res.data || []))
       .catch((err) => console.error(err));
 
   const fetchCustomers = () =>
     axios
       .get("/customers")
-      .then((res) => setCustomers(res.data.rows || res.data.customers || res.data || []))
+      .then((res) => setCustomers(res.data?.data || res.data?.rows || res.data?.items || res.data || []))
       .catch((err) => console.error(err));
 
   const fetchSalesmen = () =>
     axios
       .get("/salesman")
-      .then((res) => setSalesmen(res.data.rows || res.data.salesmen || res.data || []))
+      .then((res) => setSalesmen(res.data?.data || res.data?.rows || res.data?.items || res.data || []))
       .catch((err) => console.error(err));
 
   const handleCustomerSelect = (name) => {
@@ -712,7 +712,7 @@ export default function Billing() {
     return (
       <div className="flex min-h-screen bg-[#1b4985] font-sans text-xs">
         <Sidebar />
-        <BarcodeScannerModal isOpen={showScanner} onClose={() => setShowScanner(false)} onScan={handleBarcodeScan} />
+        {showScanner && <BarcodeScannerModal onClose={() => setShowScanner(false)} onScan={handleBarcodeScan} />}
         <main className="flex-1 overflow-y-hidden max-h-screen flex flex-col p-1 gap-1">
           {/* TOP HEADER SECTION */}
           <div className="flex bg-[#1b4985] border border-white text-white p-1 shrink-0 gap-2">
