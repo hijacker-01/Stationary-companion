@@ -11,18 +11,23 @@ const ALLOWED = ["name","batch","hsn","pack","category","company","stock_qty","s
 // Get items (with pagination & search)
 router.get("/", async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 100;
-    const offset = parseInt(req.query.offset) || 0;
-    const search = req.query.search;
+    const { page = 1, limit = 50, search = '' } = req.query;
+    const offset = (page - 1) * limit;
     
     const where = {};
     if (search) {
       const { Op } = require("sequelize");
-      where.name = { [Op.iLike]: `%${search}%` };
+      where.name = { [Op.like]: `%${search}%` };
     }
 
-    const { count, rows } = await Item.findAndCountAll({ where, limit, offset, order: [['name', 'ASC']] });
-    res.json({ total: count, items: rows });
+    const { count, rows } = await Item.findAndCountAll({ where, limit: parseInt(limit), offset: parseInt(offset), order: [['name', 'ASC']] });
+    
+    res.json({
+      data: rows,
+      total: count,
+      page: parseInt(page),
+      totalPages: Math.ceil(count / limit)
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

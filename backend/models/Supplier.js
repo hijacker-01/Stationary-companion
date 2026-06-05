@@ -19,6 +19,7 @@ const Supplier = sequelize.define("Supplier", {
   tradeName:    { type: DataTypes.STRING },
   stateCode:    { type: DataTypes.STRING(2) },
   registrationType: { type: DataTypes.ENUM("regular", "composition", "unregistered", "sez"), defaultValue: "regular" },
+  isActive:     { type: DataTypes.BOOLEAN, defaultValue: true },
 }, {
   paranoid: true
 });

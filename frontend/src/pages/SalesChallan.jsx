@@ -16,6 +16,7 @@ import {
   Package,
   X,
 } from "lucide-react";
+import { useConfirm } from "../hooks/useConfirm";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
@@ -69,6 +70,7 @@ export default function SalesChallan() {
     pdCheque: 'With', woRepl: 'T-All', loadCash: 'No',
     partyCategory: 'All', remark: '', moreOptions: 'No',
   });
+  const { confirm, ConfirmModalComponent } = useConfirm();
 
   const [filters, setFilters] = useState({
     dateFrom: new Date().toISOString().slice(0, 10),
@@ -211,7 +213,13 @@ export default function SalesChallan() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this bill?")) return;
+    const isConfirmed = await confirm({
+      title: "Delete Bill",
+      message: "Are you sure you want to delete this bill?",
+      confirmText: "Delete",
+      confirmStyle: "bg-red-600 hover:bg-red-700"
+    });
+    if (!isConfirmed) return;
     await axios.delete(`/sales-challan/${id}`);
     fetchBills(); fetchItems();
   };
@@ -374,6 +382,7 @@ export default function SalesChallan() {
             <div className="ml-auto text-gray-400">SUBHASH MEDICOSE · GSTIN: 08ABFCS9604F1ZK</div>
           </div>
         </main>
+        <ConfirmModalComponent />
       </div>
     </div>
   );

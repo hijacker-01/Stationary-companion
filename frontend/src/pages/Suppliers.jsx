@@ -1,6 +1,10 @@
 import { useEffect, useState, Fragment } from "react";
 import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
+import { useDebounce } from "use-debounce";
+import { toast } from "react-hot-toast";
+import EmptyState from "../components/EmptyState";
+import { useConfirm } from "../hooks/useConfirm";
 import {
   Factory,
   ClipboardList,
@@ -18,6 +22,7 @@ import {
   Package,
   CheckCircle2,
   Plus,
+  AlertTriangle,
 } from "lucide-react";
 
 const token = () => localStorage.getItem("token");
@@ -37,7 +42,13 @@ const STATUS_COLOR = {
 export default function Suppliers() {
   const [tab, setTab] = useState("suppliers");
   const [suppliers, setSuppliers] = useState([]);
+  const [totalSuppliers, setTotalSuppliers] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [includeInactive, setIncludeInactive] = useState(false);
   const [orders, setOrders] = useState([]);
+  
   const [showSupModal, setShowSupModal] = useState(false);
   const [showPOModal, setShowPOModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
@@ -51,17 +62,36 @@ export default function Suppliers() {
   const [activeOrder, setActiveOrder] = useState(null);
   const [receiveAmount, setReceiveAmount] = useState(0);
   const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebounce(search, 300);
   const [allSchemes, setAllSchemes] = useState([]);
   const [poItemSchemes, setPoItemSchemes] = useState({});
 
-  const fetchSuppliers = () =>
-    axios.get("/suppliers").then(r => setSuppliers(r.data)).catch(err => console.error('Failed to fetch suppliers:', err));
+  const { confirm, ConfirmModalComponent } = useConfirm();
+
+  const fetchSuppliers = () => {
+    setIsLoading(true);
+    axios.get(`/suppliers?page=${page}&limit=50&search=${debouncedSearch}&includeInactive=${includeInactive}`)
+      .then(r => {
+        setSuppliers(r.data.data);
+        setTotalSuppliers(r.data.total);
+        setPage(r.data.page);
+        setTotalPages(r.data.totalPages);
+      })
+      .catch(err => {
+        console.error('Failed to fetch suppliers:', err);
+        toast.error('Failed to load suppliers');
+      })
+      .finally(() => setIsLoading(false));
+  };
+
   const fetchOrders = () =>
     axios.get("/suppliers/orders").then(r => setOrders(r.data)).catch(err => console.error('Failed to fetch orders:', err));
   const fetchSchemes = () =>
     axios.get("/schemes").then(r => setAllSchemes(r.data)).catch(err => console.error('Failed to fetch schemes:', err));
 
-  useEffect(() => { fetchSuppliers(); fetchOrders(); fetchSchemes(); }, []);
+  useEffect(() => { fetchOrders(); fetchSchemes(); }, []);
+  useEffect(() => { fetchSuppliers(); }, [page, debouncedSearch, includeInactive]);
+  useEffect(() => { setPage(1); }, [debouncedSearch]);
 
   // Check scheme for a PO item
   const checkPOScheme = async (index, itemName, qty) => {
@@ -89,22 +119,26 @@ export default function Suppliers() {
   const total = subtotal + gstAmount;
 
   const handleSaveSupplier = async () => {
-    if (!supForm.name) return 
+    if (!supForm.name?.trim()) { toast.error("Supplier name is required"); return; }
     try {
       if (editSupId) {
         await axios.put(`/suppliers/${editSupId}`, supForm);
+        toast.success("Supplier updated successfully");
       } else {
         await axios.post("/suppliers", supForm);
+        toast.success("Supplier added successfully");
       }
       setShowSupModal(false); setSupForm(emptySupplier); setEditSupId(null);
       fetchSuppliers();
-    } catch(err) {  }
+    } catch(err) {
+      toast.error(err.response?.data?.message || "Failed to save supplier");
+    }
   };
 
   const handleSavePO = async () => {
-    if (!poSupplier) return 
+    if (!poSupplier) { toast.error("Please select a supplier"); return; }
     const validItems = poItems.filter(i => i.name);
-    if (validItems.length === 0) return 
+    if (validItems.length === 0) { toast.error("Please add at least one item"); return; }
     const sup = suppliers.find(s => s.name.toLowerCase() === poSupplier.toLowerCase());
     try {
       await axios.post("/suppliers/orders", {
@@ -120,54 +154,76 @@ export default function Suppliers() {
         notes: poNotes,
         status: "pending",
       });
+      toast.success("Purchase order created successfully");
       setShowPOModal(false);
       setPoItems([{ ...emptyItem }]);
       setPoSupplier(""); setPoNotes(""); setPoExpected("");
       setPoItemSchemes({});
       fetchOrders();
-    } catch(err) {  }
+    } catch(err) {
+      toast.error(err.response?.data?.message || "Failed to create PO");
+    }
   };
 
   const handleReceive = async () => {
     try {
-      await axios.put(`/suppliers/orders/${activeOrder.id}/receive`,
-        { amountPaid: parseFloat(receiveAmount) },
-        {  }
-      );
+      await axios.put(`/suppliers/orders/${activeOrder.id}/receive`, { amountPaid: parseFloat(receiveAmount) });
+      toast.success("Order marked as received");
       setShowReceiveModal(false); setActiveOrder(null); setReceiveAmount(0);
       fetchOrders();
-    } catch(err) {  }
+    } catch(err) {
+      toast.error(err.response?.data?.message || "Failed to receive order");
+    }
   };
 
-  const handleDeleteSupplier = async (id) => {
-    if (!window.confirm("Delete supplier?")) return;
+  const handleDeleteSupplier = async (supplier) => {
+    const isConfirmed = await confirm({
+      title: `Delete ${supplier.name}?`,
+      message: "This action cannot be undone. If this supplier has existing orders, you may need to deactivate them instead."
+    });
+    
+    if (!isConfirmed) return;
+    
     try {
-      await axios.delete(`/suppliers/${id}`);
+      await axios.delete(`/suppliers/${supplier.id}`);
+      toast.success("Supplier deleted successfully");
       fetchSuppliers();
     } catch (err) {
       console.error('Failed to delete supplier:', err);
-      
+      toast.error(err.response?.data?.suggestion || err.response?.data?.message || "Failed to delete supplier");
+    }
+  };
+
+  const handleToggleActive = async (supplier) => {
+    const action = supplier.isActive ? 'deactivate' : 'activate';
+    try {
+      await axios.patch(`/suppliers/${supplier.id}/${action}`);
+      toast.success(`Supplier ${action}d successfully`);
+      fetchSuppliers();
+    } catch (err) {
+      toast.error(`Failed to ${action} supplier`);
     }
   };
 
   const handleDeleteOrder = async (id) => {
-    if (!window.confirm("Delete this purchase order?")) return;
+    const isConfirmed = await confirm({
+      title: `Delete Purchase Order?`,
+      message: "This action cannot be undone."
+    });
+    
+    if (!isConfirmed) return;
     try {
       await axios.delete(`/suppliers/orders/${id}`);
+      toast.success("Purchase order deleted");
       fetchOrders();
     } catch (err) {
       console.error('Failed to delete order:', err);
-      
+      toast.error("Failed to delete order");
     }
   };
 
-  const filteredSuppliers = suppliers.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.phone?.includes(search)
-  );
-
   const summaryCards = [
-    { label: "Total Suppliers", value: suppliers.length, icon: Factory, color: "bg-teal-50 text-teal-600", borderColor: "border-teal-500" },
+    { label: "Total Suppliers", value: totalSuppliers, icon: Factory, color: "bg-teal-50 text-teal-600", borderColor: "border-teal-500" },
     { label: "Total Orders", value: orders.length, icon: ClipboardList, color: "bg-indigo-50 text-indigo-600", borderColor: "border-indigo-500" },
     { label: "Pending Orders", value: orders.filter(o=>o.status==="pending").length, icon: Clock, color: "bg-yellow-50 text-yellow-600", borderColor: "border-yellow-500" },
     { label: "Amount Due", value: `₹${orders.reduce((s,o)=>s+(o.balanceDue||0),0).toFixed(2)}`, icon: IndianRupee, color: "bg-rose-50 text-rose-600", borderColor: "border-rose-500" },
@@ -241,55 +297,102 @@ export default function Suppliers() {
         {tab === "suppliers" && (
           <div className="space-y-4">
             {/* Search Bar */}
-            <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm flex items-center gap-3">
-              <Search className="w-5 h-5 text-slate-400" />
-              <input type="text" placeholder="Search suppliers..."
-                value={search} onChange={e => setSearch(e.target.value)}
-                className="flex-1 bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none" />
+            <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-3 flex-1 min-w-48">
+                <Search className="w-5 h-5 text-slate-400" />
+                <input type="text" placeholder="Search suppliers..."
+                  value={search} onChange={e => setSearch(e.target.value)}
+                  className="flex-1 bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none" />
+              </div>
+              <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                <input type="checkbox" checked={includeInactive} onChange={e => setIncludeInactive(e.target.checked)} className="rounded text-teal-600 focus:ring-teal-500" />
+                Show Inactive
+              </label>
+              <span className="text-sm text-slate-400 ml-auto">{totalSuppliers} suppliers</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredSuppliers.map(sup => (
-                <div key={sup.id} className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-150">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 bg-teal-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
-                        {sup.name[0].toUpperCase()}
+            
+            {isLoading ? (
+              <div className="flex justify-center items-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div></div>
+            ) : suppliers.length === 0 ? (
+              <EmptyState 
+                icon="Factory" 
+                title="No suppliers found" 
+                description="Add your first supplier to start creating purchase orders." 
+                actionLabel="Add Supplier" 
+                onAction={() => { setSupForm(emptySupplier); setEditSupId(null); setShowSupModal(true); }} 
+              />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {suppliers.map(sup => (
+                  <div key={sup.id} className={`bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-150 ${!sup.isActive ? 'opacity-60' : ''}`}>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 bg-teal-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                          {sup.name[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-bold text-slate-900">{sup.name}</p>
+                            {!sup.isActive && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-600 uppercase">Inactive</span>}
+                          </div>
+                          <p className="text-slate-400 text-xs">{sup.contactPerson || "—"}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-bold text-slate-900">{sup.name}</p>
-                        <p className="text-slate-400 text-xs">{sup.contactPerson || "—"}</p>
-                      </div>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase ${
+                        sup.status === "active" ? "bg-green-100 text-green-600 border-green-200" : "bg-red-100 text-red-500 border-red-200"
+                      }`}>{sup.status}</span>
                     </div>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase ${
-                      sup.status === "active" ? "bg-green-100 text-green-600 border-green-200" : "bg-red-100 text-red-500 border-red-200"
-                    }`}>{sup.status}</span>
+                    <div className="space-y-1.5 text-sm text-slate-500 mb-4">
+                      {sup.phone && <p className="flex items-center gap-2"><Phone className="w-3.5 h-3.5" /> {sup.phone}</p>}
+                      {sup.email && <p className="flex items-center gap-2"><Mail className="w-3.5 h-3.5" /> {sup.email}</p>}
+                      {sup.gstNumber && <p className="flex items-center gap-2"><Landmark className="w-3.5 h-3.5" /> {sup.gstNumber}</p>}
+                      <p className="flex items-center gap-2"><CreditCard className="w-3.5 h-3.5" /> Credit: ₹{sup.creditLimit} / {sup.creditDays} days</p>
+                      {sup.balance > 0 && <p className="text-red-500 font-semibold flex items-center gap-2"><IndianRupee className="w-3.5 h-3.5" /> Due: ₹{sup.balance}</p>}
+                    </div>
+                    <div className="flex gap-2 pt-3 border-t border-slate-200">
+                      <button onClick={() => { setSupForm(sup); setEditSupId(sup.id); setShowSupModal(true); }}
+                        className="flex items-center justify-center bg-teal-50 hover:bg-teal-100 text-teal-600 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => handleDeleteSupplier(sup)}
+                        className="flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-500 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => handleToggleActive(sup)}
+                        className="flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-500 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer"
+                        title={sup.isActive ? "Deactivate" : "Reactivate"}>
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="space-y-1.5 text-sm text-slate-500 mb-4">
-                    {sup.phone && <p className="flex items-center gap-2"><Phone className="w-3.5 h-3.5" /> {sup.phone}</p>}
-                    {sup.email && <p className="flex items-center gap-2"><Mail className="w-3.5 h-3.5" /> {sup.email}</p>}
-                    {sup.gstNumber && <p className="flex items-center gap-2"><Landmark className="w-3.5 h-3.5" /> {sup.gstNumber}</p>}
-                    <p className="flex items-center gap-2"><CreditCard className="w-3.5 h-3.5" /> Credit: ₹{sup.creditLimit} / {sup.creditDays} days</p>
-                    {sup.balance > 0 && <p className="text-red-500 font-semibold flex items-center gap-2"><IndianRupee className="w-3.5 h-3.5" /> Due: ₹{sup.balance}</p>}
-                  </div>
-                  <div className="flex gap-2 pt-3 border-t border-slate-200">
-                    <button onClick={() => { setSupForm(sup); setEditSupId(sup.id); setShowSupModal(true); }}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-teal-50 hover:bg-teal-100 text-teal-600 py-2 rounded-lg text-xs font-semibold cursor-pointer">
-                      <Pencil className="w-3.5 h-3.5" /> Edit
-                    </button>
-                    <button onClick={() => handleDeleteSupplier(sup.id)}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-500 py-2 rounded-lg text-xs font-semibold cursor-pointer">
-                      <Trash2 className="w-3.5 h-3.5" /> Delete
-                    </button>
-                  </div>
+                ))}
+              </div>
+            )}
+            
+            {totalSuppliers > 0 && !isLoading && (
+              <div className="mt-8 flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <p className="text-sm text-slate-500">
+                  Showing <span className="font-semibold text-slate-900">{(page - 1) * 50 + 1}</span> to <span className="font-semibold text-slate-900">{Math.min(page * 50, totalSuppliers)}</span> of <span className="font-semibold text-slate-900">{totalSuppliers}</span> records
+                </p>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setPage(p => p - 1)} 
+                    disabled={page === 1}
+                    className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <span className="px-4 py-2 text-sm font-semibold text-slate-700">Page {page} of {totalPages}</span>
+                  <button 
+                    onClick={() => setPage(p => p + 1)} 
+                    disabled={page === totalPages}
+                    className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
                 </div>
-              ))}
-              {filteredSuppliers.length === 0 && (
-                <div className="col-span-3 text-center py-16 text-slate-400">
-                  <Factory className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                  <p>No suppliers yet. Add your first supplier!</p>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -643,6 +746,7 @@ export default function Suppliers() {
           </div>
         )}
       </main>
+      <ConfirmModalComponent />
     </div>
   );
 }

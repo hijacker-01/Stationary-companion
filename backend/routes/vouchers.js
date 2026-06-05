@@ -5,6 +5,10 @@ const Customer = require("../models/Customer");
 const Supplier = require("../models/Supplier");
 const sequelize = require("../config/db");
 const { Op } = require("sequelize");
+const validatePositiveValues = require("../middleware/validatePositiveValues");
+
+// Apply to all voucher routes
+router.use(validatePositiveValues);
 
 // Helper to generate voucher numbers
 const generateVoucherNo = async (type, direction, t) => {

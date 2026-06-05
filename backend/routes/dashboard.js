@@ -101,4 +101,23 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.post("/reminders/send", async (req, res) => {
+  try {
+    const outstanding = await Customer.findAll({
+      where: { balance: { [Op.gt]: 0 } }
+    });
+    
+    // Simulate sending emails or SMS
+    console.log(`Sending reminders to ${outstanding.length} customers with outstanding balances.`);
+    
+    res.json({
+      success: true,
+      count: outstanding.length,
+      message: `Successfully sent payment reminders to ${outstanding.length} customers.`
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

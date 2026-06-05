@@ -3,6 +3,59 @@ const router = express.Router();
 const Bill = require("../models/Bill");
 const Item = require("../models/Item");
 const { Op } = require("sequelize");
+const sequelize = require("../config/db");
+
+// Paginated Invoices Report
+router.get("/invoices", async (req, res) => {
+  try {
+    const { page = 1, limit = 100, from, to } = req.query;
+    const offset = (page - 1) * limit;
+
+    const where = {};
+    if (from && to) {
+      where.createdAt = {
+        [Op.between]: [new Date(from), new Date(new Date(to).setHours(23, 59, 59))],
+      };
+    }
+
+    const { count, rows } = await Bill.findAndCountAll({
+      where,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [["createdAt", "DESC"]]
+    });
+
+    // Calculate server-side totals
+    // Using raw SQL aggregation for performance over the whole filtered set
+    const totalResult = await Bill.findOne({
+      where,
+      attributes: [
+        [sequelize.fn("SUM", sequelize.col("total")), "totalRevenue"],
+        [sequelize.fn("SUM", sequelize.col("amountDue")), "totalDue"],
+      ],
+      raw: true
+    });
+
+    const totalRevenue = parseFloat(totalResult.totalRevenue || 0);
+    const totalDue = parseFloat(totalResult.totalDue || 0);
+    const totalPaid = totalRevenue - totalDue;
+
+    res.json({
+      data: rows,
+      total: count,
+      page: parseInt(page),
+      totalPages: Math.ceil(count / limit),
+      summary: {
+        totalInvoices: count,
+        totalRevenue,
+        totalPaid,
+        totalDue
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Sales Summary
 router.get("/sales", async (req, res) => {

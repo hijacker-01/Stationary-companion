@@ -9,8 +9,26 @@ const { Op } = require("sequelize");
 // ── CUSTOMERS ──
 router.get("/", protect, async (req, res) => {
   try {
-    const customers = await Customer.findAll({ order: [["createdAt","DESC"]] });
-    res.json(customers);
+    const { page = 1, limit = 50, search = '', includeInactive = 'false' } = req.query;
+    const offset = (page - 1) * limit;
+    
+    const where = {};
+    if (search) where.name = { [Op.like]: `%${search}%` };
+    if (includeInactive !== 'true') where.isActive = true;
+
+    const customers = await Customer.findAndCountAll({
+      where,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [["createdAt", "DESC"]]
+    });
+    
+    res.json({
+      data: customers.rows,
+      total: customers.count,
+      page: parseInt(page),
+      totalPages: Math.ceil(customers.count / limit)
+    });
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -30,8 +48,41 @@ router.put("/:id", protect, async (req, res) => {
 
 router.delete("/:id", protect, async (req, res) => {
   try {
+    // Check if customer has any bills before allowing hard delete
+    const customer = await Customer.findByPk(req.params.id);
+    if (!customer) return res.status(404).json({ error: "Customer not found" });
+
+    const billCount = await Bill.count({ where: { customerName: customer.name } });
+    if (billCount > 0) {
+      return res.status(400).json({
+        error: "Cannot delete customer",
+        message: `This customer has ${billCount} invoice(s) on record. Deleting them would corrupt your financial history.`,
+        suggestion: "Deactivate the customer instead to hide them from dropdowns while preserving all records."
+      });
+    }
+
     await Customer.destroy({ where: { id: req.params.id } });
     res.json({ message: "Customer deleted" });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+router.patch("/:id/deactivate", protect, async (req, res) => {
+  try {
+    const customer = await Customer.findByPk(req.params.id);
+    if (!customer) return res.status(404).json({ error: "Customer not found" });
+    
+    await customer.update({ isActive: false });
+    res.json({ message: "Customer deactivated" });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+router.patch("/:id/activate", protect, async (req, res) => {
+  try {
+    const customer = await Customer.findByPk(req.params.id);
+    if (!customer) return res.status(404).json({ error: "Customer not found" });
+    
+    await customer.update({ isActive: true });
+    res.json({ message: "Customer reactivated" });
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 

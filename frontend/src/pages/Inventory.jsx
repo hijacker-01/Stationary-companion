@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
+import { useDebounce } from "use-debounce";
+import { toast } from "react-hot-toast";
+import EmptyState from "../components/EmptyState";
+import { useConfirm } from "../hooks/useConfirm";
 import { 
   Search, Package, DollarSign, AlertTriangle, AlertCircle, 
   Trash2, Edit3, Settings, Plus, Play, Info, ArrowUpRight, ArrowDownLeft 
@@ -15,27 +19,50 @@ const emptyAdj = { itemId: "", itemName: "", batch: "", type: "increase", quanti
 
 export default function Inventory() {
   const [items, setItems] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  
   const [form, setForm] = useState(empty);
   const [editId, setEditId] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  
   const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebounce(search, 300);
+  
   const [allSchemes, setAllSchemes] = useState([]);
   const [adjForm, setAdjForm] = useState(emptyAdj);
   const [showAdjModal, setShowAdjModal] = useState(false);
 
+  const { confirm, ConfirmModalComponent } = useConfirm();
+
   const fetchItems = () => {
-    axios.get("/items")
-      .then(res => setItems(res.data));
+    setIsLoading(true);
+    axios.get(`/items?page=${page}&limit=50&search=${debouncedSearch}`)
+      .then(res => {
+        setItems(res.data.data);
+        setTotalItems(res.data.total);
+        setPage(res.data.page);
+        setTotalPages(res.data.totalPages);
+      })
+      .catch(() => toast.error("Failed to load inventory"))
+      .finally(() => setIsLoading(false));
   };
 
   const fetchSchemes = () =>
     axios.get("/schemes")
       .then(res => setAllSchemes(res.data)).catch(() => {});
 
-  useEffect(() => { fetchItems(); fetchSchemes(); }, []);
+  useEffect(() => { fetchSchemes(); }, []);
+  useEffect(() => { fetchItems(); }, [page, debouncedSearch]);
+  useEffect(() => { setPage(1); }, [debouncedSearch]);
 
   const handleSubmit = async () => {
-    if (!form.name || !form.expiry) return 
+    if (!form.name || !form.expiry) {
+      toast.error("Name and Expiry date are required");
+      return;
+    }
     const payload = {
       ...form,
       stock_qty: parseInt(form.stock_qty) || 0,
@@ -48,15 +75,17 @@ export default function Inventory() {
     try {
       if (editId) {
         await axios.put(`/items/${editId}`, payload);
+        toast.success("Item updated successfully");
       } else {
         await axios.post("/items", payload);
+        toast.success("Item added successfully");
       }
       setShowModal(false);
       setForm({ ...empty });
       setEditId(null);
       fetchItems();
     } catch (err) {
-      
+      toast.error(err.response?.data?.message || "Failed to save item");
     }
   };
 
@@ -74,13 +103,20 @@ export default function Inventory() {
     setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this item?")) return;
+  const handleDelete = async (item) => {
+    const isConfirmed = await confirm({
+      title: `Delete ${item.name}?`,
+      message: "This action cannot be undone."
+    });
+    
+    if (!isConfirmed) return;
+    
     try {
-      await axios.delete(`/items/${id}`);
+      await axios.delete(`/items/${item.id}`);
+      toast.success("Item deleted successfully");
       fetchItems();
     } catch (err) {
-      
+      toast.error("Failed to delete item");
     }
   };
 
@@ -99,26 +135,33 @@ export default function Inventory() {
 
   const handleAdjustmentSubmit = async () => {
     if (!adjForm.quantity || parseInt(adjForm.quantity) <= 0) {
-      return 
+      toast.error("Quantity must be greater than 0");
+      return;
     }
     try {
       await axios.post("/stock-adjust", adjForm);
+      toast.success("Stock adjusted successfully");
       setShowAdjModal(false);
       setAdjForm(emptyAdj);
       fetchItems();
     } catch (err) {
-      
+      toast.error("Failed to adjust stock");
     }
   };
 
-  const filtered = items.filter(i =>
-    i.name.toLowerCase().includes(search.toLowerCase()) ||
-    i.batch?.toLowerCase().includes(search.toLowerCase())
-  );
-
+  // NOTE: These are calculated over the *fetched page* array only, 
+  // since server-side aggregation for low stock requires new endpoints.
+  // For now, it reflects the current page.
   const lowStockItems = items.filter(i => i.stock_qty > 0 && i.stock_qty <= (i.reorderPoint ?? 10));
   const outOfStockItems = items.filter(i => i.stock_qty === 0);
-  const totalStockValue = items.reduce((sum, i) => sum + (Math.max(0, i.stock_qty) * (i.selling_price || i.mrp || 0)), 0);
+  const totalValue = items.reduce((sum, i) => sum + ((i.stock_qty || 0) * (i.cost_price || 0)), 0);
+
+  const summaryCards = [
+    { title: "Total Items", value: totalItems, icon: Package, color: "bg-teal-50 text-teal-600 border-teal-200" },
+    { title: "Inventory Value", value: `₹${totalValue.toLocaleString()}`, icon: DollarSign, color: "bg-indigo-50 text-indigo-600 border-indigo-200" },
+    { title: "Low Stock", value: lowStockItems.length, icon: AlertTriangle, color: "bg-amber-50 text-amber-600 border-amber-200" },
+    { title: "Out of Stock", value: outOfStockItems.length, icon: AlertCircle, color: "bg-rose-50 text-rose-600 border-rose-200" },
+  ];
 
   return (
     <div className="flex h-screen bg-[#e5e5e5] font-sans">
@@ -126,165 +169,148 @@ export default function Inventory() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
 
-        <main className="flex-1 flex flex-col overflow-hidden bg-gray-50">
+        <main className="flex-1 flex flex-col overflow-hidden bg-gray-50 p-6">
           
-          {/* Page Title Bar */}
-          <div className="bg-[#1b4985] text-white px-6 py-3 flex items-center justify-between shadow-md flex-shrink-0">
+          <div className="flex justify-between items-end mb-6">
             <div>
-              <h1 className="text-lg font-bold tracking-wide">CURRENT STOCK (INVENTORY)</h1>
-              <p className="text-xs text-blue-200 opacity-80">Manage products, stock counts, and schedules</p>
+              <h1 className="text-2xl font-bold text-slate-800">Inventory</h1>
+              <p className="text-sm text-slate-500">Manage products, stock counts, and supply levels.</p>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs bg-white/10 px-3 py-1 rounded">Total Items: {items.length}</span>
-              <button 
-                onClick={() => { setForm(empty); setEditId(null); setShowModal(true); }}
-                className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded transition-colors font-semibold flex items-center gap-1"
-              >
-                <Plus className="w-3.5 h-3.5" /> F2 Add Item
-              </button>
+            <button 
+              onClick={() => { setForm(empty); setEditId(null); setShowModal(true); }}
+              className="flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-teal-700 transition"
+            >
+              <Plus className="w-4 h-4" /> Add Item
+            </button>
+          </div>
+
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            {summaryCards.map((card, i) => (
+              <div key={i} className={`p-4 rounded-xl border ${card.color}`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase opacity-80">{card.title}</span>
+                  <card.icon className="w-5 h-5" />
+                </div>
+                <p className="text-2xl font-bold mt-2">{card.value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-white border border-slate-200 p-4 rounded-xl mb-6 shadow-sm flex items-center justify-between">
+            <div className="relative">
+              <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input 
+                type="text" 
+                placeholder="Search inventory by name, batch..." 
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 w-64 bg-white"
+              />
             </div>
           </div>
 
-          {/* Tabular Stats Strip */}
-          <div className="bg-white border-b border-gray-200 flex text-xs shadow-sm flex-shrink-0 divide-x divide-gray-200">
-            <div className="flex-1 px-6 py-2.5 flex justify-between items-center bg-gray-50/50 hover:bg-white">
-              <span className="text-gray-500 font-bold uppercase tracking-wider">Total Items</span>
-              <span className="text-gray-900 font-black text-sm">{items.length}</span>
+          {isLoading ? (
+            <div className="flex justify-center items-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div></div>
+          ) : items.length === 0 ? (
+            <EmptyState 
+              icon="Package" 
+              title="No inventory items found" 
+              description="Add your first item to start tracking stock, pricing, and expiry dates." 
+              actionLabel="Add Item" 
+              onAction={() => { setForm(empty); setEditId(null); setShowModal(true); }} 
+            />
+          ) : (
+            <div className="flex-1 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr className="text-left text-slate-500 uppercase text-[10px] tracking-wider">
+                    <th className="py-3 px-4">Item Details</th>
+                    <th className="py-3 px-4">Batch / Expiry</th>
+                    <th className="py-3 px-4">Stock</th>
+                    <th className="py-3 px-4">Price / MRP</th>
+                    <th className="py-3 px-4">Location</th>
+                    <th className="py-3 px-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {items.map(item => (
+                    <tr key={item.id} className="hover:bg-slate-50">
+                      <td className="py-3 px-4">
+                        <p className="font-bold text-slate-900">{item.name}</p>
+                        <p className="text-xs text-slate-500">{item.category} • {item.company}</p>
+                      </td>
+                      <td className="py-3 px-4 text-slate-600">
+                        {item.batch || "—"}<br/>
+                        <span className="text-[10px] bg-slate-100 px-1 rounded text-slate-500">
+                          {item.expiry ? new Date(item.expiry).toLocaleDateString("en-IN") : "—"}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`font-bold ${item.stock_qty <= (item.reorderPoint || 0) ? 'text-amber-600' : 'text-slate-900'}`}>
+                          {item.stock_qty} {item.unit}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <p className="text-slate-900 font-semibold">₹{item.selling_price || item.mrp || 0}</p>
+                        <p className="text-[10px] text-slate-400">MRP: ₹{item.mrp}</p>
+                      </td>
+                      <td className="py-3 px-4 text-slate-600 text-xs">{item.location || "—"}</td>
+                      <td className="w-24">
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => openAdjustment(item)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Adjust Stock">
+                            <Settings className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleEdit(item)} className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition">
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleDelete(item)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <div className="flex-1 px-6 py-2.5 flex justify-between items-center bg-emerald-50/20 hover:bg-emerald-50/50">
-              <span className="text-emerald-700 font-bold uppercase tracking-wider">Stock Value</span>
-              <span className="text-emerald-900 font-black text-sm">₹{totalStockValue.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
-            <div className="flex-1 px-6 py-2.5 flex justify-between items-center bg-amber-50/20 hover:bg-amber-50/50">
-              <span className="text-amber-700 font-bold uppercase tracking-wider">Low Stock</span>
-              <span className="text-amber-900 font-black text-sm">{lowStockItems.length}</span>
-            </div>
-            <div className="flex-1 px-6 py-2.5 flex justify-between items-center bg-rose-50/20 hover:bg-rose-50/50">
-              <span className="text-rose-700 font-bold uppercase tracking-wider">Out of Stock</span>
-              <span className="text-rose-900 font-black text-sm">{outOfStockItems.length}</span>
-            </div>
-          </div>
+          )}
 
-          {/* Filter Strip */}
-          <div className="bg-white border-b border-gray-200 px-6 py-2 flex items-center gap-4 text-xs flex-shrink-0 shadow-sm">
-            <div className="flex items-center gap-2 flex-1">
-              <label className="text-gray-500 font-bold uppercase tracking-wider text-[10px]">Search</label>
-              <div className="flex items-center border border-gray-300 rounded px-2 py-1 bg-white max-w-md w-full">
-                <Search className="w-3.5 h-3.5 text-gray-400 mr-2" />
-                <input
-                  type="text"
-                  placeholder="Search by name, batch..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="flex-1 text-xs focus:outline-none"
-                />
+          {totalItems > 0 && !isLoading && (
+            <div className="mt-4 flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <p className="text-sm text-slate-500">
+                Showing <span className="font-semibold text-slate-900">{(page - 1) * 50 + 1}</span> to <span className="font-semibold text-slate-900">{Math.min(page * 50, totalItems)}</span> of <span className="font-semibold text-slate-900">{totalItems}</span> records
+              </p>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setPage(p => p - 1)} 
+                  disabled={page === 1}
+                  className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <span className="px-4 py-2 text-sm font-semibold text-slate-700">Page {page} of {totalPages}</span>
+                <button 
+                  onClick={() => setPage(p => p + 1)} 
+                  disabled={page === totalPages}
+                  className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
               </div>
             </div>
-          </div>
-
-          {/* Data Table */}
-          <div className="flex-1 overflow-auto">
-            <table className="w-full text-xs border-collapse">
-              <thead className="bg-gray-100 border-b-2 border-gray-300 sticky top-0 z-10 shadow-sm">
-                <tr>
-                  <th className="py-2 px-3 text-left font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200 w-12">#</th>
-                  <th className="py-2 px-3 text-left font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Name</th>
-                  <th className="py-2 px-3 text-left font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Batch</th>
-                  <th className="py-2 px-3 text-left font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">HSN</th>
-                  <th className="py-2 px-3 text-left font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Pack</th>
-                  <th className="py-2 px-3 text-left font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Category</th>
-                  <th className="py-2 px-3 text-left font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Company</th>
-                  <th className="py-2 px-3 text-right font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Stock Qty</th>
-                  <th className="py-2 px-3 text-right font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Scheme Qty</th>
-                  <th className="py-2 px-3 text-right font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Total Qty</th>
-                  <th className="py-2 px-3 text-right font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">MRP</th>
-                  <th className="py-2 px-3 text-left font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">Expiry</th>
-                  <th className="py-2 px-3 text-center font-bold text-gray-700 uppercase tracking-wider w-36">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((item, i) => (
-                  <tr key={item.id} className={`border-b border-gray-200 hover:bg-blue-50 transition-colors ${item.stock_qty <= 0 ? "bg-red-50/30" : "bg-white"}`}>
-                    <td className="py-1.5 px-3 border-r border-gray-200 text-gray-500 font-medium">{i + 1}</td>
-                    <td className="py-1.5 px-3 border-r border-gray-200">
-                      <span className="font-bold text-gray-900">{item.name}</span>
-                      {item.schedule && item.schedule !== "None" && (
-                        <span className="ml-2 text-[9px] font-black bg-red-100 text-red-700 px-1 py-0.5 rounded uppercase border border-red-200">
-                          Sch {item.schedule}
-                        </span>
-                      )}
-                      {item.purchaseScheme && (
-                        <span className="ml-2 text-[9px] font-black bg-green-100 text-green-700 px-1 py-0.5 rounded border border-green-200">
-                          {item.purchaseScheme}
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-1.5 px-3 border-r border-gray-200 text-gray-700">{item.batch || "—"}</td>
-                    <td className="py-1.5 px-3 border-r border-gray-200 text-gray-700">{item.hsn || "—"}</td>
-                    <td className="py-1.5 px-3 border-r border-gray-200 text-gray-700">{item.pack || "—"}</td>
-                    <td className="py-1.5 px-3 border-r border-gray-200 text-gray-700">{item.category || "—"}</td>
-                    <td className="py-1.5 px-3 border-r border-gray-200 font-medium text-gray-800">{item.company || "—"}</td>
-                    <td className="py-1.5 px-3 border-r border-gray-200 text-right">
-                      <span className={`font-black ${
-                        item.stock_qty <= 0 ? "text-red-600" : item.stock_qty <= (item.reorderPoint ?? 10) ? "text-amber-600" : "text-green-700"
-                      }`}>
-                        {item.stock_qty}
-                      </span>
-                    </td>
-                    <td className="py-1.5 px-3 border-r border-gray-200 text-right font-bold text-blue-700">
-                      {item.scheme_qty || 0}
-                    </td>
-                    <td className="py-1.5 px-3 border-r border-gray-200 text-right font-black text-gray-900">
-                      {(item.stock_qty || 0) + (item.scheme_qty || 0)} <span className="text-[10px] text-gray-500 font-normal">{item.unit}</span>
-                    </td>
-                    <td className="py-1.5 px-3 border-r border-gray-200 text-right font-bold text-gray-900">
-                      ₹{(item.mrp || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="py-1.5 px-3 border-r border-gray-200 text-gray-700">
-                      {item.expiry ? new Date(item.expiry).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
-                    </td>
-                    <td className="py-1.5 px-3 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button onClick={() => handleEdit(item)} className="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 border border-blue-200">Edit</button>
-                        <button onClick={() => openAdjustment(item)} className="text-[10px] font-bold px-2 py-0.5 bg-green-50 text-green-700 rounded hover:bg-green-100 border border-green-200">Adj</button>
-                        <button onClick={() => handleDelete(item.id)} className="text-[10px] font-bold px-2 py-0.5 bg-red-50 text-red-700 rounded hover:bg-red-100 border border-red-200">Del</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={13} className="text-center py-8 text-gray-500 font-medium bg-white">
-                      No products matching filter. Add your first item.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Bottom Shortcut Bar */}
-          <div className="bg-gray-100 border-t border-gray-200 px-6 py-2.5 flex items-center gap-6 text-xs text-gray-600 font-bold flex-shrink-0 shadow-inner">
-            <span><span className="text-[#1b4985] font-black mr-1">F2</span> Add Item</span>
-            <span><span className="text-[#1b4985] font-black mr-1">F3</span> Edit Item</span>
-            <span><span className="text-red-600 font-black mr-1">Del</span> Delete</span>
-            <span><span className="text-[#1b4985] font-black mr-1">Alt+A</span> Adjust Stock</span>
-          </div>
+          )}
 
         </main>
 
-        {/* Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white shadow-xl w-full max-w-2xl border-t-4 border-[#1b4985] flex flex-col max-h-[90vh]">
-              
               <div className="bg-gray-100 px-4 py-2 border-b border-gray-300 flex justify-between items-center flex-shrink-0">
                 <h2 className="text-sm font-black text-[#1b4985] uppercase tracking-wider">
                   {editId ? "Edit Item Record" : "New Item Master"}
                 </h2>
                 <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-red-600 font-black text-lg leading-none">&times;</button>
               </div>
-
               <div className="p-4 overflow-y-auto bg-gray-50 grid grid-cols-2 gap-4 text-xs">
                 {[
                   { key: "name", label: "Item Name *", type: "text" },
@@ -312,12 +338,8 @@ export default function Inventory() {
                     />
                   </div>
                 ))}
-
-                {/* Purchase Scheme Field */}
                 <div className="col-span-2 p-3 bg-blue-50/50 border border-blue-100 mt-2">
-                  <label className="block font-bold text-[#1b4985] uppercase tracking-wider mb-1 text-[10px]">
-                    Purchase Scheme Note (Dropdown)
-                  </label>
+                  <label className="block font-bold text-[#1b4985] uppercase tracking-wider mb-1 text-[10px]">Purchase Scheme Note (Dropdown)</label>
                   <input
                     type="text"
                     list="scheme-suggestions"
@@ -328,37 +350,10 @@ export default function Inventory() {
                   />
                   <datalist id="scheme-suggestions">
                     {allSchemes.filter(s => s.isActive).map(s => (
-                      <option key={s.id} value={
-                        s.type === "buy_get_free"
-                          ? `${s.name} - Buy ${s.buyQty} Get ${s.freeQty} Free (${s.company})`
-                          : `${s.name} - ${s.discountPercent}% Off (${s.company})`
-                      } />
+                      <option key={s.id} value={s.type === "buy_get_free" ? `${s.name} - Buy ${s.buyQty} Get ${s.freeQty} Free (${s.company})` : `${s.name} - ${s.discountPercent}% Off (${s.company})`} />
                     ))}
                   </datalist>
-                  {form.company && allSchemes.filter(s => s.isActive && s.company.toLowerCase() === (form.company || "").toLowerCase()).length > 0 && (
-                    <div className="mt-2 bg-white border border-gray-200 px-3 py-2">
-                      <p className="text-[10px] font-bold text-[#1b4985] uppercase mb-1.5">Available Schemes from {form.company}:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {allSchemes.filter(s => s.isActive && s.company.toLowerCase() === (form.company || "").toLowerCase()).map(s => (
-                          <button
-                            key={s.id}
-                            type="button"
-                            onClick={() => setForm({ ...form, purchaseScheme:
-                              s.type === "buy_get_free"
-                                ? `Buy ${s.buyQty} Get ${s.freeQty} Free`
-                                : `${s.discountPercent}% Off`
-                            })}
-                            className="px-2 py-1 text-[10px] font-black bg-green-100 text-green-800 border border-green-300 uppercase hover:bg-green-200 transition-colors"
-                          >
-                            {s.type === "buy_get_free" ? `Buy ${s.buyQty}+${s.freeQty} Free` : `${s.discountPercent}% Off`}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
-
-                {/* Drug Schedule Input */}
                 <div className="mt-2">
                   <label className="block font-bold text-[#1b4985] uppercase tracking-wider mb-1 text-[10px]">Drug Schedule</label>
                   <select
@@ -372,8 +367,6 @@ export default function Inventory() {
                     <option value="X">Schedule X</option>
                   </select>
                 </div>
-
-                {/* Reorder Point Input */}
                 <div className="mt-2">
                   <label className="block font-bold text-[#1b4985] uppercase tracking-wider mb-1 text-[10px]">Reorder Level (Min Qty)</label>
                   <input
@@ -386,20 +379,14 @@ export default function Inventory() {
                   />
                 </div>
               </div>
-
               <div className="bg-gray-100 px-4 py-3 border-t border-gray-300 flex justify-end gap-3 flex-shrink-0">
-                <button onClick={() => setShowModal(false)} className="px-4 py-1.5 border border-gray-400 bg-white text-gray-700 font-bold text-xs hover:bg-gray-50">
-                  Cancel (Esc)
-                </button>
-                <button onClick={handleSubmit} className="px-6 py-1.5 bg-[#1b4985] text-white font-bold text-xs hover:bg-blue-900">
-                  {editId ? "Update Item" : "Save Item"} (F10)
-                </button>
+                <button onClick={() => setShowModal(false)} className="px-4 py-1.5 border border-gray-400 bg-white text-gray-700 font-bold text-xs hover:bg-gray-50">Cancel (Esc)</button>
+                <button onClick={handleSubmit} className="px-6 py-1.5 bg-[#1b4985] text-white font-bold text-xs hover:bg-blue-900">{editId ? "Update Item" : "Save Item"} (F10)</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Stock Adjustment Modal */}
         {showAdjModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white shadow-xl w-full max-w-md border-t-4 border-amber-600 flex flex-col">
@@ -407,52 +394,26 @@ export default function Inventory() {
                 <h2 className="text-sm font-black text-amber-700 uppercase tracking-wider">Stock Level Adjustment</h2>
                 <button onClick={() => setShowAdjModal(false)} className="text-gray-500 hover:text-red-600 font-black text-lg leading-none">&times;</button>
               </div>
-              
               <div className="p-4 bg-gray-50 text-xs">
                 <div className="bg-white border border-gray-300 p-3 mb-4">
                   <p className="font-bold text-gray-900 text-sm">{adjForm.itemName}</p>
                   {adjForm.batch && <p className="text-gray-600 mt-0.5 font-semibold">Batch: {adjForm.batch}</p>}
                 </div>
-
                 <div className="space-y-4">
                   <div>
                     <label className="block font-bold text-[#1b4985] uppercase tracking-wider mb-1 text-[10px]">Adjustment Direction</label>
                     <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setAdjForm({ ...adjForm, type: "increase" })}
-                        className={`py-2 text-xs font-black uppercase tracking-wider border transition-colors ${adjForm.type === "increase" ? "bg-green-100 border-green-600 text-green-800" : "bg-white border-gray-300 text-gray-500 hover:bg-gray-100"}`}
-                      >
-                        Add Stock
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAdjForm({ ...adjForm, type: "decrease" })}
-                        className={`py-2 text-xs font-black uppercase tracking-wider border transition-colors ${adjForm.type === "decrease" ? "bg-red-100 border-red-600 text-red-800" : "bg-white border-gray-300 text-gray-500 hover:bg-gray-100"}`}
-                      >
-                        Deduct Stock
-                      </button>
+                      <button type="button" onClick={() => setAdjForm({ ...adjForm, type: "increase" })} className={`py-2 text-xs font-black uppercase tracking-wider border transition-colors ${adjForm.type === "increase" ? "bg-green-100 border-green-600 text-green-800" : "bg-white border-gray-300 text-gray-500 hover:bg-gray-100"}`}>Add Stock</button>
+                      <button type="button" onClick={() => setAdjForm({ ...adjForm, type: "decrease" })} className={`py-2 text-xs font-black uppercase tracking-wider border transition-colors ${adjForm.type === "decrease" ? "bg-red-100 border-red-600 text-red-800" : "bg-white border-gray-300 text-gray-500 hover:bg-gray-100"}`}>Deduct Stock</button>
                     </div>
                   </div>
-
                   <div>
                     <label className="block font-bold text-[#1b4985] uppercase tracking-wider mb-1 text-[10px]">Adjustment Quantity</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={adjForm.quantity}
-                      onChange={(e) => setAdjForm({ ...adjForm, quantity: Math.max(1, parseInt(e.target.value) || 1) })}
-                      className="w-full border border-gray-300 px-2 py-1.5 focus:outline-none focus:border-[#1b4985] bg-white font-semibold text-gray-900"
-                    />
+                    <input type="number" min="1" value={adjForm.quantity} onChange={(e) => setAdjForm({ ...adjForm, quantity: Math.max(1, parseInt(e.target.value) || 1) })} className="w-full border border-gray-300 px-2 py-1.5 focus:outline-none focus:border-[#1b4985] bg-white font-semibold text-gray-900" />
                   </div>
-
                   <div>
                     <label className="block font-bold text-[#1b4985] uppercase tracking-wider mb-1 text-[10px]">Audit Reason</label>
-                    <select
-                      value={adjForm.reason}
-                      onChange={(e) => setAdjForm({ ...adjForm, reason: e.target.value })}
-                      className="w-full border border-gray-300 px-2 py-1.5 focus:outline-none focus:border-[#1b4985] bg-white font-semibold text-gray-900"
-                    >
+                    <select value={adjForm.reason} onChange={(e) => setAdjForm({ ...adjForm, reason: e.target.value })} className="w-full border border-gray-300 px-2 py-1.5 focus:outline-none focus:border-[#1b4985] bg-white font-semibold text-gray-900">
                       <option value="audit">Physical Verification Audit</option>
                       <option value="damage">Damaged Goods</option>
                       <option value="theft">Theft / Missing</option>
@@ -460,39 +421,21 @@ export default function Inventory() {
                       <option value="other">Other / Correction</option>
                     </select>
                   </div>
-
                   <div>
                     <label className="block font-bold text-[#1b4985] uppercase tracking-wider mb-1 text-[10px]">Detailed Remarks</label>
-                    <textarea
-                      rows="3"
-                      value={adjForm.note}
-                      placeholder="Provide compliance or audit comments..."
-                      onChange={(e) => setAdjForm({ ...adjForm, note: e.target.value })}
-                      className="w-full border border-gray-300 px-2 py-1.5 focus:outline-none focus:border-[#1b4985] bg-white font-semibold text-gray-900"
-                    />
+                    <textarea rows="3" value={adjForm.note} placeholder="Provide compliance or audit comments..." onChange={(e) => setAdjForm({ ...adjForm, note: e.target.value })} className="w-full border border-gray-300 px-2 py-1.5 focus:outline-none focus:border-[#1b4985] bg-white font-semibold text-gray-900" />
                   </div>
                 </div>
               </div>
-
               <div className="bg-gray-100 px-4 py-3 border-t border-gray-300 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAdjModal(false)}
-                  className="px-4 py-1.5 border border-gray-400 bg-white text-gray-700 font-bold text-xs hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAdjustmentSubmit}
-                  className={`px-6 py-1.5 font-bold text-xs text-white ${adjForm.type === "increase" ? "bg-green-700 hover:bg-green-800" : "bg-red-700 hover:bg-red-800"}`}
-                >
-                  Confirm Adjustment
-                </button>
+                <button type="button" onClick={() => setShowAdjModal(false)} className="px-4 py-1.5 border border-gray-400 bg-white text-gray-700 font-bold text-xs hover:bg-gray-50">Cancel</button>
+                <button onClick={handleAdjustmentSubmit} className={`px-6 py-1.5 font-bold text-xs text-white ${adjForm.type === "increase" ? "bg-green-700 hover:bg-green-800" : "bg-red-700 hover:bg-red-800"}`}>Confirm Adjustment</button>
               </div>
             </div>
           </div>
         )}
       </div>
+      <ConfirmModalComponent />
     </div>
   );
 }

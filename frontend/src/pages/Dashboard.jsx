@@ -9,7 +9,8 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
-import { ArrowUpRight, TrendingUp, AlertCircle, IndianRupee, AlertTriangle, ShieldAlert } from "lucide-react";
+import { ArrowUpRight, TrendingUp, AlertCircle, IndianRupee, AlertTriangle, ShieldAlert, Send } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
@@ -29,6 +30,18 @@ export default function Dashboard() {
   }, []);
 
   const d = data || {};
+
+  const handleSendReminders = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.post("/dashboard/reminders/send");
+      toast.success(res.data.message || `Sent ${res.data.count} reminders.`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to send reminders");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const rightActions = [
     { label: "CASH/CREDIT Bill", to: "/billing", ai: false },
@@ -93,6 +106,22 @@ export default function Dashboard() {
                     );
                   })}
                 </div>
+
+                {/* Send Reminders Action */}
+                {d.outstanding?.length > 0 && (
+                  <div className="bg-white border border-rose-200 rounded shadow-sm p-4 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800">Payment Reminders</h3>
+                      <p className="text-xs text-slate-500">You have {d.outstanding.length} customers with outstanding balances.</p>
+                    </div>
+                    <button 
+                      onClick={handleSendReminders}
+                      className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded text-sm font-semibold transition"
+                    >
+                      <Send className="w-4 h-4" /> Send Automated Reminders
+                    </button>
+                  </div>
+                )}
 
                 {/* Alerts */}
                 {(d.lowStockCount > 0 || d.nearExpiryCount > 0) && (

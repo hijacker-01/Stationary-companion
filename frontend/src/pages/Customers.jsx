@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
+import { useDebounce } from "use-debounce";
+import { toast } from "react-hot-toast";
+import EmptyState from "../components/EmptyState";
+import { useConfirm } from "../hooks/useConfirm";
 import {
   Users, IndianRupee, AlertTriangle, CheckCircle2, Search,
   BookOpen, Wallet, Pencil, Trash2, Mail, Landmark, CreditCard,
@@ -15,6 +19,12 @@ const emptyPayment = { amount:"", mode:"cash", reference:"", note:"" };
 
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [includeInactive, setIncludeInactive] = useState(false);
+  
   const [showModal, setShowModal] = useState(false);
   const [showLedger, setShowLedger] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
@@ -23,15 +33,37 @@ export default function Customers() {
   const [activeCustomer, setActiveCustomer] = useState(null);
   const [ledger, setLedger] = useState(null);
   const [payForm, setPayForm] = useState(emptyPayment);
+  
   const [search, setSearch] = useState("");
+  const [debouncedSearch] = useDebounce(search, 300);
   const [filterBalance, setFilterBalance] = useState("all");
 
-  const fetchCustomers = () =>
-    axios.get("/customers")
-      .then(r => setCustomers(r.data))
-      .catch(err => console.error("Failed to fetch customers:", err));
+  const { confirm, ConfirmModalComponent } = useConfirm();
 
-  useEffect(() => { fetchCustomers(); }, []);
+  const fetchCustomers = () => {
+    setIsLoading(true);
+    axios.get(`/customers?page=${page}&limit=50&search=${debouncedSearch}&includeInactive=${includeInactive}`)
+      .then(r => {
+        setCustomers(r.data.data);
+        setTotal(r.data.total);
+        setPage(r.data.page);
+        setTotalPages(r.data.totalPages);
+      })
+      .catch(err => {
+        console.error("Failed to fetch customers:", err);
+        toast.error("Failed to load customers");
+      })
+      .finally(() => setIsLoading(false));
+  };
+
+  useEffect(() => { 
+    fetchCustomers(); 
+  }, [page, debouncedSearch, includeInactive]);
+
+  // Reset page when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
   const fetchLedger = async (customer) => {
     try {
@@ -46,54 +78,73 @@ export default function Customers() {
   };
 
   const handleSave = async () => {
-    if (!form.name) return 
+    if (!form.name?.trim()) { toast.error("Customer name is required"); return; }
+    
     try {
       if (editId) {
         await axios.put(`/customers/${editId}`, form);
+        toast.success("Customer updated successfully");
       } else {
         await axios.post("/customers", form);
+        toast.success("Customer added successfully");
       }
       setShowModal(false); setForm(emptyCustomer); setEditId(null);
       fetchCustomers();
-    } catch(err) {  }
+    } catch(err) {
+      toast.error(err.response?.data?.message || "Failed to save customer");
+    }
   };
 
   const handlePayment = async () => {
     const amt = parseFloat(payForm.amount);
-    if (isNaN(amt) || amt <= 0) return 
+    if (isNaN(amt) || amt <= 0) {
+      toast.error("Valid positive amount is required");
+      return;
+    }
     try {
-      await axios.post(`/customers/${payForm.customerId}/payment`,
-        payForm);
+      await axios.post(`/customers/${payForm.customerId}/payment`, payForm);
+      toast.success("Payment recorded successfully");
       setShowPayment(false); setPayForm(emptyPayment);
       fetchCustomers();
       if (showLedger && activeCustomer) fetchLedger(activeCustomer);
-    } catch(err) {  }
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this customer?")) return;
-    try {
-      await axios.delete(`/customers/${id}`);
-      fetchCustomers();
-    } catch (err) {
-      console.error('Failed to delete customer:', err);
-      
+    } catch(err) {
+      toast.error(err.response?.data?.message || "Failed to process payment");
     }
   };
 
-  const filtered = customers.filter(c => {
-    const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.phone?.includes(search);
-    const matchBalance = filterBalance === "all" ||
-      (filterBalance === "due" && c.balance > 0) ||
-      (filterBalance === "clear" && c.balance <= 0);
-    return matchSearch && matchBalance;
-  });
+  const handleDelete = async (customer) => {
+    const isConfirmed = await confirm({
+      title: `Delete ${customer.name}?`,
+      message: "This action cannot be undone. If this customer has existing invoices, you may need to deactivate them instead."
+    });
+    
+    if (!isConfirmed) return;
+    
+    try {
+      await axios.delete(`/customers/${customer.id}`);
+      toast.success("Customer deleted successfully");
+      fetchCustomers();
+    } catch (err) {
+      console.error('Failed to delete customer:', err);
+      toast.error(err.response?.data?.suggestion || err.response?.data?.message || "Failed to delete customer");
+    }
+  };
+
+  const handleToggleActive = async (customer) => {
+    const action = customer.isActive ? 'deactivate' : 'activate';
+    try {
+      await axios.patch(`/customers/${customer.id}/${action}`);
+      toast.success(`Customer ${action}d successfully`);
+      fetchCustomers();
+    } catch (err) {
+      toast.error(`Failed to ${action} customer`);
+    }
+  };
 
   const totalDue = customers.reduce((s, c) => s + (c.balance || 0), 0);
 
   const summaryCards = [
-    { label:"Total Customers", value: customers.length, icon: Users, borderColor:"border-l-teal-500", color:"bg-teal-50 text-teal-600" },
+    { label:"Total Customers", value: total, icon: Users, borderColor:"border-l-teal-500", color:"bg-teal-50 text-teal-600" },
     { label:"Total Due", value:`₹${totalDue.toFixed(2)}`, icon: IndianRupee, borderColor:"border-l-red-500", color:"bg-red-50 text-red-600" },
     { label:"With Balance", value: customers.filter(c=>c.balance>0).length, icon: AlertTriangle, borderColor:"border-l-amber-500", color:"bg-amber-50 text-amber-600" },
     { label:"Clear Accounts", value: customers.filter(c=>c.balance<=0).length, icon: CheckCircle2, borderColor:"border-l-emerald-500", color:"bg-emerald-50 text-emerald-600" },
@@ -145,7 +196,11 @@ export default function Customers() {
               value={search} onChange={e => setSearch(e.target.value)}
               className="flex-1 bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none" />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <label className="flex items-center gap-2 text-sm text-slate-600 mr-4 cursor-pointer">
+              <input type="checkbox" checked={includeInactive} onChange={e => setIncludeInactive(e.target.checked)} className="rounded text-teal-600 focus:ring-teal-500" />
+              Show Inactive
+            </label>
             {filterTabs.map(f => {
               const FIcon = f.icon;
               return (
@@ -159,30 +214,44 @@ export default function Customers() {
               );
             })}
           </div>
-          <span className="text-sm text-slate-400 ml-auto">{filtered.length} customers</span>
+          <span className="text-sm text-slate-400 ml-auto">{total} customers</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(c => (
-            <div key={c.id} className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-150">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-lg ${
-                    c.balance > 0 ? "bg-red-500" : "bg-green-500"
+        {isLoading ? (
+          <div className="flex justify-center items-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div></div>
+        ) : customers.length === 0 ? (
+          <EmptyState 
+            icon="Users" 
+            title="No customers found" 
+            description="Add your first customer to start tracking balances and creating invoices." 
+            actionLabel="Add Customer" 
+            onAction={() => { setForm(emptyCustomer); setEditId(null); setShowModal(true); }} 
+          />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {customers.map(c => (
+              <div key={c.id} className={`bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-150 ${!c.isActive ? 'opacity-60' : ''}`}>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-lg ${
+                      c.balance > 0 ? "bg-red-500" : "bg-green-500"
+                    }`}>
+                      {c.name[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-slate-900">{c.name}</p>
+                        {!c.isActive && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-600 uppercase">Inactive</span>}
+                      </div>
+                      <p className="text-slate-400 text-xs">{c.phone || "No phone"}</p>
+                    </div>
+                  </div>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase ${
+                    c.balance > 0 ? "bg-red-50 text-red-600 border-red-200" : "bg-green-50 text-green-600 border-green-200"
                   }`}>
-                    {c.name[0].toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="font-bold text-slate-900">{c.name}</p>
-                    <p className="text-slate-400 text-xs">{c.phone || "No phone"}</p>
-                  </div>
+                    {c.balance > 0 ? `Due ₹${c.balance.toFixed(2)}` : "Clear"}
+                  </span>
                 </div>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase ${
-                  c.balance > 0 ? "bg-red-50 text-red-600 border-red-200" : "bg-green-50 text-green-600 border-green-200"
-                }`}>
-                  {c.balance > 0 ? `Due ₹${c.balance.toFixed(2)}` : "Clear"}
-                </span>
-              </div>
 
               <div className="space-y-1.5 text-sm text-slate-500 mb-4">
                 {c.email && <p className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-slate-400" /> {c.email}</p>}
@@ -205,20 +274,45 @@ export default function Customers() {
                   className="flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-500 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition">
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
-                <button onClick={() => handleDelete(c.id)}
+                <button onClick={() => handleDelete(c)}
                   className="flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-500 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition">
                   <Trash2 className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => handleToggleActive(c)}
+                  className="flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-slate-500 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition"
+                  title={c.isActive ? "Deactivate" : "Reactivate"}>
+                  <AlertTriangle className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
           ))}
-          {filtered.length === 0 && (
-            <div className="col-span-3 text-center py-16 text-slate-400">
-              <Users className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-              <p>No customers found. Add your first customer!</p>
-            </div>
-          )}
         </div>
+        )}
+
+        {total > 0 && !isLoading && (
+          <div className="mt-8 flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <p className="text-sm text-slate-500">
+              Showing <span className="font-semibold text-slate-900">{(page - 1) * 50 + 1}</span> to <span className="font-semibold text-slate-900">{Math.min(page * 50, total)}</span> of <span className="font-semibold text-slate-900">{total}</span> records
+            </p>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setPage(p => p - 1)} 
+                disabled={page === 1}
+                className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <span className="px-4 py-2 text-sm font-semibold text-slate-700">Page {page} of {totalPages}</span>
+              <button 
+                onClick={() => setPage(p => p + 1)} 
+                disabled={page === totalPages}
+                className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
 
         {showModal && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -434,6 +528,7 @@ export default function Customers() {
           </div>
         )}
       </main>
+      <ConfirmModalComponent />
     </div>
   );
 }

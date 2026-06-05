@@ -11,6 +11,10 @@ const stockMovement = require("../services/stockMovement");
 const idempotency = require("../middleware/idempotency");
 const { protect, requirePermission } = require("../middleware/auth");
 const ComplianceEngine = require("../services/ComplianceEngine");
+const validatePositiveValues = require("../middleware/validatePositiveValues");
+
+// Middleware applied to all billing routes
+router.use(validatePositiveValues);
 
 // Generate sequential bill number per financial year (e.g. INV-2526-0001)
 const generateBillNo = async (transaction) => {
@@ -41,8 +45,30 @@ const generateBillNo = async (transaction) => {
 // Get all bills
 router.get("/", protect, async (req, res) => {
   try {
-    const bills = await Bill.findAll({ order: [["createdAt", "DESC"]] });
-    res.json(bills);
+    const { page = 1, limit = 50, search = '' } = req.query;
+    const offset = (page - 1) * limit;
+    
+    const where = {};
+    if (search) {
+      where[Op.or] = [
+        { billNo: { [Op.like]: `%${search}%` } },
+        { customerName: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    const bills = await Bill.findAndCountAll({
+      where,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [["createdAt", "DESC"]]
+    });
+    
+    res.json({
+      data: bills.rows,
+      total: bills.count,
+      page: parseInt(page),
+      totalPages: Math.ceil(bills.count / limit)
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

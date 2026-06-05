@@ -21,6 +21,7 @@ import {
   ChevronUp,
   Package,
 } from "lucide-react";
+import { useConfirm } from "../hooks/useConfirm";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
@@ -83,6 +84,7 @@ export default function Billing() {
     division: ""
   });
   const [showScanner, setShowScanner] = useState(false);
+  const { confirm, ConfirmModalComponent } = useConfirm();
   const handleSaveBillRef = useRef(null);
 
   // Keep handleSaveBillRef always pointing at the latest handleSaveBill
@@ -377,7 +379,14 @@ export default function Billing() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this bill?")) return;
+    const isConfirmed = await confirm({
+      title: "Delete Bill",
+      message: "Are you sure you want to delete this bill? Stock quantities will be restored.",
+      confirmText: "Delete",
+      confirmStyle: "bg-red-600 hover:bg-red-700"
+    });
+    if (!isConfirmed) return;
+    
     try {
       await axios.delete(`/billing/${id}`, {
         
@@ -650,6 +659,7 @@ export default function Billing() {
 
           </main>
         </div>
+        <ConfirmModalComponent />
       </div>
     );
   }

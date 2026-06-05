@@ -20,6 +20,7 @@ const Customer = sequelize.define("Customer", {
   stateCode:     { type: DataTypes.STRING(2) },
   registrationType: { type: DataTypes.ENUM("regular", "composition", "unregistered", "consumer"), defaultValue: "regular" },
   isComposition: { type: DataTypes.BOOLEAN, defaultValue: false },
+  isActive:      { type: DataTypes.BOOLEAN, defaultValue: true },
 }, {
   paranoid: true
 });

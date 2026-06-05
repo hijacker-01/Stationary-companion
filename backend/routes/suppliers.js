@@ -35,10 +35,26 @@ const genPO = () => {
 // ── SUPPLIERS ──
 router.get("/", protect, async (req, res) => {
   try {
-    const suppliers = await Supplier.findAll({
-      order: [["createdAt", "DESC"]],
+    const { page = 1, limit = 50, search = '', includeInactive = 'false' } = req.query;
+    const offset = (page - 1) * limit;
+    
+    const where = {};
+    if (search) where.name = { [Op.like]: `%${search}%` };
+    if (includeInactive !== 'true') where.isActive = true;
+
+    const suppliers = await Supplier.findAndCountAll({
+      where,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [["createdAt", "DESC"]]
     });
-    res.json(suppliers);
+    
+    res.json({
+      data: suppliers.rows,
+      total: suppliers.count,
+      page: parseInt(page),
+      totalPages: Math.ceil(suppliers.count / limit)
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -64,11 +80,46 @@ router.put("/:id", protect, async (req, res) => {
 
 router.delete("/:id", protect, async (req, res) => {
   try {
+    const supplier = await Supplier.findByPk(req.params.id);
+    if (!supplier) return res.status(404).json({ error: "Supplier not found" });
+
+    // Assuming we check PurchaseChallan or PurchaseOrder count
+    const PurchaseChallan = require("../models/PurchaseChallan");
+    const challanCount = await PurchaseChallan.count({ where: { supplierId: req.params.id } });
+    
+    if (challanCount > 0) {
+      return res.status(400).json({
+        error: "Cannot delete supplier",
+        message: `This supplier has ${challanCount} purchase invoice(s) on record. Deleting them would corrupt your financial history.`,
+        suggestion: "Deactivate the supplier instead to hide them from dropdowns while preserving all records."
+      });
+    }
+
     await Supplier.destroy({ where: { id: req.params.id } });
     res.json({ message: "Supplier deleted" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+router.patch("/:id/deactivate", protect, async (req, res) => {
+  try {
+    const supplier = await Supplier.findByPk(req.params.id);
+    if (!supplier) return res.status(404).json({ error: "Supplier not found" });
+    
+    await supplier.update({ isActive: false });
+    res.json({ message: "Supplier deactivated" });
+  } catch(err) { res.status(500).json({ error: err.message }); }
+});
+
+router.patch("/:id/activate", protect, async (req, res) => {
+  try {
+    const supplier = await Supplier.findByPk(req.params.id);
+    if (!supplier) return res.status(404).json({ error: "Supplier not found" });
+    
+    await supplier.update({ isActive: true });
+    res.json({ message: "Supplier reactivated" });
+  } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
 // ── PURCHASE ORDERS ──
