@@ -9,7 +9,7 @@ import {
   TrendingUp, Package, AlertTriangle, AlertCircle, Users, 
   BarChart3, Receipt, Landmark, DollarSign, Wallet, 
   Percent, Calendar, Filter, X, ArrowDownLeft, ArrowUpRight, 
-  CheckCircle2, Activity, Gift
+  CheckCircle2, Activity, Gift, Download
 } from "lucide-react";
 
 const token = () => localStorage.getItem("token");
@@ -101,6 +101,31 @@ export default function Reports() {
     ]).finally(() => setLoading(false));
   }, []);
 
+  const exportSalesToCSV = () => {
+    if (!sales || !sales.bills || sales.bills.length === 0) return;
+    const headers = ["Bill No", "Customer Name", "Date", "Subtotal", "GST", "Discount", "Total", "Mode"];
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + headers.join(",") + "\n"
+      + sales.bills.map(b => [
+          b.billNo,
+          `"${b.customerName}"`,
+          new Date(b.createdAt).toLocaleDateString("en-IN"),
+          b.subtotal,
+          b.gstAmount,
+          b.discount,
+          b.total,
+          b.paymentMode
+        ].join(",")).join("\n");
+        
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `sales_report_${dateFrom || 'all'}_to_${dateTo || 'all'}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const tabs = [
     { key: "sales", label: "Sales Analytics", icon: TrendingUp },
     { key: "stock", label: "Stock Valuation", icon: Package },
@@ -181,6 +206,12 @@ export default function Reports() {
                 className="text-sm font-bold text-slate-400 hover:text-slate-600 cursor-pointer py-2.5 transition">
                 Reset
               </button>
+              <div className="ml-auto">
+                <button onClick={exportSalesToCSV}
+                  className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 cursor-pointer transition">
+                  <Download className="w-4 h-4" /> Export CSV
+                </button>
+              </div>
             </div>
 
             {/* Summary Cards */}

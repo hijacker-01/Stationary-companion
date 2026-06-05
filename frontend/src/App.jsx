@@ -84,11 +84,23 @@ const ClosingStock = React.lazy(() => import("./pages/ClosingStock"));
 import CommandPalette from "./components/CommandPalette";
 import { useHotkeys } from "./hooks/useHotkeys";
 import { useKeyboardNav } from "./hooks/useKeyboardNav";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import ShortcutModal from "./components/ShortcutModal";
+import { useState } from "react";
 
 function GlobalHooks() {
+  const [showShortcutModal, setShowShortcutModal] = useState(false);
+  
   useHotkeys();
   useKeyboardNav();
-  return <CommandPalette />;
+  useKeyboardShortcuts(() => setShowShortcutModal(prev => !prev));
+  
+  return (
+    <>
+      <CommandPalette />
+      <ShortcutModal isOpen={showShortcutModal} onClose={() => setShowShortcutModal(false)} />
+    </>
+  );
 }
 
 function App() {

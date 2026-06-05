@@ -1,11 +1,17 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-export function useKeyboardShortcuts() {
+export function useKeyboardShortcuts(onToggleModal) {
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleKeyDown = (e) => {
+      if (e.ctrlKey && e.key === '/') {
+        e.preventDefault();
+        if (onToggleModal) onToggleModal();
+        return;
+      }
+
       // Prevent running shortcuts when typing in inputs/textareas
       if (
         document.activeElement.tagName === "INPUT" ||

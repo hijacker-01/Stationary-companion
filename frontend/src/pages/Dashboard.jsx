@@ -9,7 +9,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
-import { ArrowUpRight, TrendingUp, AlertCircle, IndianRupee, AlertTriangle, ShieldAlert, Send } from "lucide-react";
+import { ArrowUpRight, TrendingUp, AlertCircle, IndianRupee, AlertTriangle, ShieldAlert, Send, CheckCircle2, Circle } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 const token = () => localStorage.getItem("token");
@@ -107,6 +107,29 @@ export default function Dashboard() {
                   })}
                 </div>
 
+                {/* Getting Started Checklist */}
+                {bills.length < 5 && (
+                  <div className="bg-white border border-[#1b4985]/20 rounded-xl shadow-sm overflow-hidden">
+                    <div className="bg-[#1b4985]/5 px-4 py-3 border-b border-[#1b4985]/10">
+                      <h3 className="font-bold text-[#1b4985] text-sm">Getting Started Checklist</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">Complete these steps to fully configure your ERP.</p>
+                    </div>
+                    <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[
+                        { label: "Create your first Supplier", path: "/suppliers", done: data?.totalRevenue > 0 || bills.length > 0 },
+                        { label: "Add Inventory Items", path: "/inventory", done: data?.totalRevenue > 0 || bills.length > 0 },
+                        { label: "Create a Customer", path: "/customers", done: bills.length > 0 },
+                        { label: "Generate your first Invoice", path: "/billing", done: bills.length > 0 }
+                      ].map((task, idx) => (
+                        <Link key={idx} to={task.path} className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-slate-300 hover:bg-slate-50 transition-colors group cursor-pointer">
+                          {task.done ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5 text-slate-300 group-hover:text-[#1b4985]" />}
+                          <span className={`text-sm font-semibold ${task.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{task.label}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Send Reminders Action */}
                 {d.outstanding?.length > 0 && (
                   <div className="bg-white border border-rose-200 rounded shadow-sm p-4 flex items-center justify-between">
@@ -180,6 +203,63 @@ export default function Dashboard() {
                     ) : (
                       <div className="h-[220px] flex items-center justify-center text-xs text-gray-400">No data available</div>
                     )}
+                  </div>
+                </div>
+
+                {/* Data Tables */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-10">
+                  <div className="bg-white border border-gray-300 rounded shadow-sm overflow-hidden flex flex-col">
+                    <h3 className="text-[13px] font-bold text-[#1b4985] p-3 border-b border-gray-200 bg-slate-50">Top Customers (Outstanding)</h3>
+                    <div className="overflow-auto flex-1">
+                      <table className="w-full text-xs text-left">
+                        <thead className="bg-slate-100 text-slate-600 border-b border-gray-200">
+                          <tr>
+                            <th className="p-2 font-semibold">Customer</th>
+                            <th className="p-2 font-semibold">Contact</th>
+                            <th className="p-2 text-right font-semibold">Balance</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {d.outstanding?.slice(0, 5).map(c => (
+                            <tr key={c.id} className="border-b border-gray-100 hover:bg-slate-50">
+                              <td className="p-2 font-bold text-slate-800">{c.name}</td>
+                              <td className="p-2 text-slate-500">{c.phone || '-'}</td>
+                              <td className="p-2 text-right font-bold text-rose-600">₹{c.balance.toLocaleString("en-IN")}</td>
+                            </tr>
+                          ))}
+                          {!d.outstanding?.length && <tr><td colSpan="3" className="p-4 text-center text-slate-400">No outstanding dues</td></tr>}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="bg-white border border-gray-300 rounded shadow-sm overflow-hidden flex flex-col">
+                    <h3 className="text-[13px] font-bold text-[#1b4985] p-3 border-b border-gray-200 bg-slate-50">Critical Low Stock</h3>
+                    <div className="overflow-auto flex-1">
+                      <table className="w-full text-xs text-left">
+                        <thead className="bg-slate-100 text-slate-600 border-b border-gray-200">
+                          <tr>
+                            <th className="p-2 font-semibold">Item Name</th>
+                            <th className="p-2 text-center font-semibold">Qty</th>
+                            <th className="p-2 text-right font-semibold">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {d.lowStock?.slice(0, 5).map(item => (
+                            <tr key={item.id} className="border-b border-gray-100 hover:bg-slate-50">
+                              <td className="p-2 font-bold text-slate-800">{item.name}</td>
+                              <td className="p-2 text-center font-bold text-amber-600">{item.stock_qty}</td>
+                              <td className="p-2 text-right">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${item.stock_qty === 0 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                                  {item.stock_qty === 0 ? 'Out of Stock' : 'Low Stock'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                          {!d.lowStock?.length && <tr><td colSpan="3" className="p-4 text-center text-slate-400">All items sufficiently stocked</td></tr>}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </>

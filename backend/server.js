@@ -143,6 +143,11 @@ sequelize.authenticate()
     // In production, migrations should be run via CLI (e.g. sequelize-cli) 
     // rather than auto-syncing.
     await seedStateMaster();
+    
+    // Initialize cron jobs
+    const initCronJobs = require("./cronJobs");
+    initCronJobs();
+
     app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
   })
   .catch(err => console.error("❌ DB connection failed:", err));
