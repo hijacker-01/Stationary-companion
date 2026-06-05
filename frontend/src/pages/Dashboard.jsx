@@ -108,7 +108,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Getting Started Checklist */}
-                {bills.length < 5 && (
+                {(!d.totalRevenue || d.totalRevenue === 0) && (
                   <div className="bg-white border border-[#1b4985]/20 rounded-xl shadow-sm overflow-hidden">
                     <div className="bg-[#1b4985]/5 px-4 py-3 border-b border-[#1b4985]/10">
                       <h3 className="font-bold text-[#1b4985] text-sm">Getting Started Checklist</h3>
@@ -116,10 +116,10 @@ export default function Dashboard() {
                     </div>
                     <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                       {[
-                        { label: "Create your first Supplier", path: "/suppliers", done: data?.totalRevenue > 0 || bills.length > 0 },
-                        { label: "Add Inventory Items", path: "/inventory", done: data?.totalRevenue > 0 || bills.length > 0 },
-                        { label: "Create a Customer", path: "/customers", done: bills.length > 0 },
-                        { label: "Generate your first Invoice", path: "/billing", done: bills.length > 0 }
+                        { label: "Create your first Supplier", path: "/suppliers", done: d.totalRevenue > 0 },
+                        { label: "Add Inventory Items", path: "/inventory", done: d.totalRevenue > 0 },
+                        { label: "Create a Customer", path: "/customers", done: d.totalRevenue > 0 },
+                        { label: "Generate your first Invoice", path: "/billing", done: d.totalRevenue > 0 }
                       ].map((task, idx) => (
                         <Link key={idx} to={task.path} className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-slate-300 hover:bg-slate-50 transition-colors group cursor-pointer">
                           {task.done ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5 text-slate-300 group-hover:text-[#1b4985]" />}
