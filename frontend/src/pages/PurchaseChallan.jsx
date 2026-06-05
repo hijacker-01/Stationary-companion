@@ -105,7 +105,7 @@ export default function PurchaseChallan() {
     setExpandedRows(newSet);
   };
 
-  const fetchBills = () => axios.get("/purchase-challan").then((res) => setBills(res.data)).catch((err) => console.error("Failed to fetch bills:", err));
+  const fetchBills = () => axios.get("/purchase-challan").then((res) => setBills(res.data.rows || res.data || [])).catch((err) => console.error("Failed to fetch bills:", err));
   const fetchItems = () => axios.get("/items").then((res) => setItems(res.data)).catch((err) => console.error("Failed to fetch items:", err));
   const fetchSchemes = () => axios.get("/schemes").then((res) => setAllSchemes(res.data)).catch((err) => console.error("Failed to fetch schemes:", err));
   const fetchSuppliers = () => axios.get("/suppliers").then((res) => setSuppliers(res.data || [])).catch((err) => console.error("Failed to fetch suppliers:", err));

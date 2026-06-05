@@ -132,11 +132,25 @@ router.post("/:id/convert", protect, async (req, res) => {
     const invoiceNo = req.body.invoiceNo || challan.challanNo;
     const items = challan.items || [];
 
+    // Auto-add/update supplier
+    let supplierId = challan.supplierId;
+    if (challan.supplierName) {
+      const Supplier = require('../models/Supplier');
+      let supplier = await Supplier.findOne({ where: { name: challan.supplierName }, transaction: t, lock: t.LOCK.UPDATE });
+      if (!supplier) {
+        supplier = await Supplier.create({
+          name: challan.supplierName, phone: challan.supplierPhone || "",
+          gstNumber: challan.supplierGst || "", dlNumber: challan.supplierDl || "",
+        }, { transaction: t, lock: t.LOCK.UPDATE });
+      }
+      supplierId = supplier.id;
+    }
+
     // Create PurchaseOrder (bill)
     const po = await PurchaseOrder.create({
+      poNumber: invoiceNo || `PO-CONV-${Date.now()}`,
       supplierName: challan.supplierName,
-      supplierId: challan.supplierId,
-      invoiceNo,
+      supplierId: supplierId || 1, // Fallback if still null
       items,
       subtotal: challan.subtotal,
       gstAmount: challan.gstAmount,

@@ -1,4 +1,4 @@
-import { useEffect, useState, Fragment } from "react";
+import { useEffect, useState, Fragment, useRef } from "react";
 import axios from "../api/axios";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
@@ -71,6 +71,9 @@ export default function SalesChallan() {
     partyCategory: 'All', remark: '', moreOptions: 'No',
   });
   const { confirm, ConfirmModalComponent } = useConfirm();
+  const handleSaveBillRef = useRef(null);
+  
+  useEffect(() => { handleSaveBillRef.current = handleSaveBill; });
 
   const [filters, setFilters] = useState({
     dateFrom: new Date().toISOString().slice(0, 10),
@@ -86,7 +89,7 @@ export default function SalesChallan() {
       if (e.key === "F2") { e.preventDefault(); document.getElementById('search-product-0')?.focus(); }
       if (e.key === "F3") { e.preventDefault(); document.getElementById('search-customer')?.focus(); }
       if (e.key === "F8") { e.preventDefault(); setShowDebtorsModal(true); }
-      if (e.key === "F10") { e.preventDefault(); handleSaveBill(); }
+      if (e.key === "F10") { e.preventDefault(); handleSaveBillRef.current?.(); }
       if (e.key === "Escape") {
         e.preventDefault();
         if (showDebtorsModal) setShowDebtorsModal(false);
@@ -103,7 +106,7 @@ export default function SalesChallan() {
     setExpandedRows(newSet);
   };
 
-  const fetchBills = () => axios.get("/sales-challan").then((res) => setBills(res.data));
+  const fetchBills = () => axios.get("/sales-challan").then((res) => setBills(res.data.rows || res.data || []));
   const fetchItems = () => axios.get("/items").then((res) => setItems(res.data));
   const fetchSchemes = () => axios.get("/schemes").then((res) => setAllSchemes(res.data));
   const fetchCustomers = () => axios.get("/customers").then((res) => setCustomers(res.data || []));

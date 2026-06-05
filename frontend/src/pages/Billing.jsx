@@ -120,7 +120,7 @@ export default function Billing() {
   const fetchBills = () => {
     axios
       .get("/billing")
-      .then((res) => setBills(res.data))
+      .then((res) => setBills(res.data.rows || res.data || []))
       .catch((err) => console.error(err));
   };
 
