@@ -84,8 +84,12 @@ export default function PurchaseChallan() {
   // F-key listener for create view
   useEffect(() => {
     const handleKeyDown = (e) => {
+      if (e.key === 'F2') {
+        e.preventDefault();
+        if (view === 'list') setView('create');
+        else if (view === 'create') document.getElementById('search-product-0')?.focus();
+      }
       if (view !== "create") return;
-      if (e.key === "F2") { e.preventDefault(); document.getElementById('search-product-0')?.focus(); }
       if (e.key === "F3") { e.preventDefault(); document.getElementById('search-supplier')?.focus(); }
       if (e.key === "F8") { e.preventDefault(); setShowDebtorsModal(true); }
       if (e.key === "F10") { e.preventDefault(); handleSaveBillRef.current?.(); }

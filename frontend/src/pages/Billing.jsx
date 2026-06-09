@@ -84,6 +84,8 @@ export default function Billing() {
     division: ""
   });
   const [showScanner, setShowScanner] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState(null);
+  const [dropdownIndex, setDropdownIndex] = useState(0);
   const { confirm, ConfirmModalComponent } = useConfirm();
   const handleSaveBillRef = useRef(null);
 
@@ -101,8 +103,12 @@ export default function Billing() {
         setShowScanner(false);
         if (view === 'create') resetForm();
       }
+      if (e.key === 'F2') {
+        e.preventDefault();
+        if (view === 'list') setView('create');
+        else if (view === 'create') document.getElementById('search-product-0')?.focus();
+      }
       if (view !== "create") return;
-      if (e.key === "F2") { e.preventDefault(); document.getElementById('search-product-0')?.focus(); }
       if (e.key === "F3") { e.preventDefault(); document.getElementById('search-customer')?.focus(); }
       if (e.key === "F10") { e.preventDefault(); handleSaveBillRef.current?.(); }
     };
@@ -723,9 +729,52 @@ export default function Billing() {
               <div className="grid grid-cols-[100px_1fr] gap-y-1 items-center">
                 <label className="text-[10px]">Customer Name</label>
                 <div className="relative w-full">
-                  <input list="customer-list" value={customer.name} onChange={e => handleCustomerSelect(e.target.value)} className="bg-white text-black px-1 py-0.5 outline-none w-full font-bold" placeholder="Search Customer..." />
-                  <datalist id="customer-list">{customers.map(c => <option key={c.id} value={c.name} />)}</datalist>
-                </div>
+                    <input 
+                      value={customer.name} 
+                      onChange={e => handleCustomerSelect(e.target.value)} 
+                      onFocus={() => { setActiveDropdown('customer'); setDropdownIndex(0); }}
+                      onBlur={() => setTimeout(() => setActiveDropdown(null), 200)}
+                      aria-expanded={activeDropdown === 'customer' ? 'true' : 'false'}
+                      onKeyDown={(e) => {
+                        if (activeDropdown === 'customer') {
+                          const filtered = customers.filter(c => !customer.name || c.name.toLowerCase().includes(customer.name.toLowerCase()));
+                          if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            setDropdownIndex(prev => Math.min(prev + 1, filtered.length - 1));
+                          } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            setDropdownIndex(prev => Math.max(prev - 1, 0));
+                          } else if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (filtered[dropdownIndex]) {
+                              handleCustomerSelect(filtered[dropdownIndex].name);
+                              setActiveDropdown(null);
+                              setTimeout(() => {
+                                const inputs = Array.from(document.activeElement.closest('.grid').querySelectorAll('input, select'));
+                                const idx = inputs.indexOf(document.activeElement);
+                                if (idx > -1 && inputs[idx + 1]) inputs[idx + 1].focus();
+                              }, 0);
+                            }
+                          } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            setActiveDropdown(null);
+                          }
+                        }
+                      }}
+                      className="bg-white text-black px-1 py-0.5 outline-none w-full font-bold" 
+                      placeholder="Search Customer..." 
+                    />
+                    {activeDropdown === 'customer' && (
+                      <ul className="absolute left-0 top-full mt-0.5 w-[300px] bg-white border border-gray-400 shadow-xl z-50 max-h-48 overflow-y-auto">
+                        {customers.filter(c => !customer.name || c.name.toLowerCase().includes(customer.name.toLowerCase())).map((c, idx) => (
+                          <li key={c.id || c.name} className={`px-2 py-1 cursor-pointer text-xs text-black border-b border-gray-100 last:border-0 ${dropdownIndex === idx ? 'bg-blue-200' : 'hover:bg-blue-50'}`} onMouseDown={() => handleCustomerSelect(c.name)}>
+                            <div className="font-bold">{c.name}</div>
+                            <div className="text-[10px] text-gray-500">{c.phone || c.address || 'No details'}</div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 
                 <label className="text-[10px]">Customer ID</label>
                 <input value={activeCustomerData.id || ""} readOnly className="bg-[#e6f0fa] text-black px-1 py-0.5 outline-none w-full" />
@@ -843,9 +892,56 @@ export default function Billing() {
                    return (
                    <tr key={i} className={`border-b border-slate-300 text-black ${i%2===0?'bg-[#e6f0fa]':'bg-white'}`}>
                      <td className="px-1 border-r border-slate-300 text-center font-bold text-slate-500">{i+1}</td>
-                     <td className="px-1 border-r border-slate-300 flex items-center justify-between group">
-                       <input list={`item-list-${i}`} value={row.searchStr !== undefined ? row.searchStr : row.name} onChange={(e) => handleItemSelect(i, e.target.value)} className="bg-transparent outline-none w-full text-black font-bold" placeholder={i === rows.length-1 ? "Type to add item..." : ""} title="Press F2 to focus and search for products quickly" />
-                       <datalist id={`item-list-${i}`}>{items.map(it => <option key={it.id} value={`${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`} />)}</datalist>
+                     <td className="px-1 border-r border-slate-300 flex items-center justify-between group relative">
+                       <input 
+                          id={`search-product-${i}`}
+                          value={row.searchStr !== undefined ? row.searchStr : row.name} 
+                          onChange={(e) => handleItemSelect(i, e.target.value)} 
+                          onFocus={() => { setActiveDropdown(`item-${i}`); setDropdownIndex(0); }}
+                          onBlur={() => setTimeout(() => setActiveDropdown(null), 200)}
+                          aria-expanded={activeDropdown === `item-${i}` ? 'true' : 'false'}
+                          onKeyDown={(e) => {
+                            if (activeDropdown === `item-${i}`) {
+                              const s = row.searchStr !== undefined ? row.searchStr : row.name;
+                              const filtered = items.filter(it => !s || it.name.toLowerCase().includes(s.toLowerCase()));
+                              if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                setDropdownIndex(prev => Math.min(prev + 1, filtered.length - 1));
+                              } else if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                setDropdownIndex(prev => Math.max(prev - 1, 0));
+                              } else if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (filtered[dropdownIndex]) {
+                                  const it = filtered[dropdownIndex];
+                                  handleItemSelect(i, `${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`);
+                                  setActiveDropdown(null);
+                                  setTimeout(() => {
+                                    const rowInputs = Array.from(document.activeElement.closest('tr').querySelectorAll('input'));
+                                    const idx = rowInputs.indexOf(document.activeElement);
+                                    if (idx > -1 && rowInputs[idx + 1]) rowInputs[idx + 1].focus();
+                                  }, 0);
+                                }
+                              } else if (e.key === 'Escape') {
+                                e.preventDefault();
+                                setActiveDropdown(null);
+                              }
+                            }
+                          }}
+                          className="bg-transparent outline-none w-full text-black font-bold" 
+                          placeholder={i === rows.length-1 ? "Type to add item..." : ""} 
+                          title="Press F2 to focus and search for products quickly" 
+                        />
+                        {activeDropdown === `item-${i}` && (
+                          <ul className="absolute left-0 top-full mt-0.5 w-[400px] bg-white border border-gray-400 shadow-xl z-50 max-h-48 overflow-y-auto">
+                            {items.filter(it => !(row.searchStr !== undefined ? row.searchStr : row.name) || it.name.toLowerCase().includes((row.searchStr !== undefined ? row.searchStr : row.name).toLowerCase())).map((it, idx) => (
+                              <li key={it.id || idx} className={`px-2 py-1 cursor-pointer text-xs text-black border-b border-gray-100 last:border-0 ${dropdownIndex === idx ? 'bg-blue-200' : 'hover:bg-blue-50'}`} onMouseDown={() => handleItemSelect(i, `${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`)}>
+                                <div className="flex justify-between font-bold"><span>{it.name}</span><span className="text-green-700">₹{it.selling_price || it.mrp || 0}</span></div>
+                                <div className="flex justify-between text-[10px] text-gray-500"><span>Batch: {it.batch || '-'}</span><span>Stock: {it.stock_qty || 0}</span></div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                        {isNearExpiry && !isLowStock && <span className="bg-[#ff9900] text-black font-bold px-1 py-0.5 ml-1 text-[9px] shrink-0 border border-slate-500">Near Expiry</span>}
                        {isLowStock && <span className="bg-[#cc0000] text-white font-bold px-1 py-0.5 ml-1 text-[9px] shrink-0 border border-slate-500">Low Stock</span>}
                        {row.name && <button onClick={() => removeRow(i)} className="text-red-500 opacity-0 group-hover:opacity-100 ml-1 px-1 hover:bg-red-200">✕</button>}

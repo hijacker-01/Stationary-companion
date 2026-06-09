@@ -1,19 +1,34 @@
 import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useHistoryStack } from "./useHistoryStack";
+import { useTableNav } from "./useTableNav";
+import { useFormNav } from "./useFormNav";
+import { useFocusMemory } from "./useFocusMemory";
+import { useModalFocus } from "./useModalFocus";
 
 export function useKeyboardNav() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Initialize sub-hooks
+  useHistoryStack();
+  useTableNav();
+  useFormNav();
+  useFocusMemory();
+  useModalFocus();
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       const active = document.activeElement;
       const isInput = active && (active.tagName === "INPUT" || active.tagName === "SELECT" || active.tagName === "TEXTAREA");
 
-      // 1. ESCAPE LOGIC
+      // 1. ESCAPE LOGIC (Close modals or navigate back)
       if (e.key === "Escape") {
+        if (e.defaultPrevented) return; // Allow other hooks like useTableNav to intercept
+        
         window.dispatchEvent(new Event("close-modals"));
         const modal = document.querySelector('.fixed.inset-0, [role="dialog"]');
+        
         if (modal) {
           const closeBtn = Array.from(modal.querySelectorAll('button')).find(b => 
             b.textContent.toLowerCase().includes('cancel') || 
@@ -21,64 +36,72 @@ export function useKeyboardNav() {
             b.innerHTML.includes('lucide-x')
           );
           if (closeBtn) closeBtn.click();
-        } else if (location.pathname !== "/dashboard") {
+        } else if (location.pathname !== "/dashboard" && location.pathname !== "/") {
+          // Classic Marg ERP: ESC goes back to main menu
           navigate("/dashboard");
         }
         return;
       }
 
-      // 2. SIDEBAR ARROW LOGIC (Only if not typing in an input)
-      if (!isInput && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
-        // Prevent scrolling when using arrows to navigate sidebar
-        e.preventDefault(); 
-        
-        const sidebarLinks = Array.from(document.querySelectorAll('.w-52 a[href]'));
-        if (sidebarLinks.length === 0) return;
-        
-        const currentIndex = sidebarLinks.findIndex(link => link.getAttribute('href') === location.pathname);
-        let nextIndex = 0;
-        
-        if (e.key === "ArrowDown") {
-          nextIndex = currentIndex < sidebarLinks.length - 1 ? currentIndex + 1 : 0;
-        } else if (e.key === "ArrowUp") {
-          nextIndex = currentIndex > 0 ? currentIndex - 1 : sidebarLinks.length - 1;
-        }
-        
-        const nextHref = sidebarLinks[nextIndex].getAttribute('href');
-        if (nextHref) navigate(nextHref);
-        return;
-      }
-
-      // 3. ENTER LOGIC
-      if (e.key === "Enter") {
-        if (e.defaultPrevented) return;
-
-        // If focused on a standard button or link, let the browser handle the click
-        if (active && (active.tagName === "BUTTON" || active.tagName === "A")) {
-          return;
-        }
-
-        // If focused on a non-input clickable element (like a custom row), click it
-        if (!isInput && active && (active.tagName === "TR" || active.tagName === "LI" || active.getAttribute("role") === "button" || active.classList.contains("cursor-pointer"))) {
-          e.preventDefault();
-          active.click();
-          return;
-        }
-
-        // If in an input, act like TAB (move to next input)
-        // BUT don't break autocompletes that might be using Enter to select
-        // A simple heuristic: if it's an input with role="combobox", let it handle Enter
-        if (isInput && active.getAttribute("role") !== "combobox") {
-          const focusableSelectors = 'input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
-          const scope = active.closest('form, [role="dialog"], body');
-          const elements = Array.from(scope.querySelectorAll(focusableSelectors));
-          const currentIndex = elements.indexOf(active);
-
-          if (currentIndex > -1 && currentIndex < elements.length - 1) {
+      // 2. MACRO TABBING (Section Navigation)
+      if (e.key === "Tab") {
+        // If we are not in an input, we can override Tab to jump between main layout sections
+        if (!isInput) {
+          const sections = Array.from(document.querySelectorAll('nav[role="tree"], main, aside, [role="region"], [data-section]'));
+          if (sections.length > 0) {
             e.preventDefault();
-            elements[currentIndex + 1].focus();
+            let currentIndex = sections.indexOf(active) !== -1 ? sections.indexOf(active) : sections.indexOf(active?.closest('nav[role="tree"], main, aside, [role="region"], [data-section]'));
+            
+            if (e.shiftKey) {
+              // Previous section
+              let prevIndex = currentIndex > 0 ? currentIndex - 1 : sections.length - 1;
+              sections[prevIndex].focus();
+            } else {
+              // Next section
+              let nextIndex = currentIndex < sections.length - 1 ? currentIndex + 1 : 0;
+              sections[nextIndex].focus();
+            }
           }
         }
+      }
+
+      // 3. MACRO SPATIAL NAVIGATION (Left/Right Arrows outside inputs)
+      if (!isInput && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        // Wait a tick to see if another hook (like useFormNav for buttons) prevented default
+        setTimeout(() => {
+          if (e.defaultPrevented) return;
+          
+          const leftNav = document.querySelector('nav[data-section="sidebar"]');
+          const rightNav = document.querySelector('aside[data-section="right-sidebar"]');
+          const main = document.querySelector('main');
+          
+          const activeAfter = document.activeElement;
+          const isInLeft = activeAfter === leftNav || leftNav?.contains(activeAfter);
+          const isInRight = activeAfter === rightNav || rightNav?.contains(activeAfter);
+          const isInMain = activeAfter === main || main?.contains(activeAfter) || activeAfter.tagName === 'BODY';
+
+          if (e.key === "ArrowRight") {
+            // From main to right nav
+            if (isInMain && rightNav) {
+              const firstBtn = rightNav.querySelector('button');
+              if (firstBtn) firstBtn.focus();
+              else rightNav.focus();
+            } else if (isInLeft && main) {
+              // From left nav to main
+              main.setAttribute('tabindex', '-1');
+              main.focus();
+            }
+          } else if (e.key === "ArrowLeft") {
+            if (isInRight && main) {
+              // From right nav to main
+              main.setAttribute('tabindex', '-1');
+              main.focus();
+            } else if (isInMain && leftNav) {
+              // From main to left nav
+              leftNav.focus();
+            }
+          }
+        }, 0);
       }
     };
 

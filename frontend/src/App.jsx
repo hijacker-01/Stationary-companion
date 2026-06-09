@@ -86,19 +86,28 @@ import { useHotkeys } from "./hooks/useHotkeys";
 import { useKeyboardNav } from "./hooks/useKeyboardNav";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import ShortcutModal from "./components/ShortcutModal";
-import { useState } from "react";
+import QuickCreateModal from "./components/QuickCreateModal";
+import { useState, useEffect } from "react";
 
 function GlobalHooks() {
   const [showShortcutModal, setShowShortcutModal] = useState(false);
+  const [showQuickCreate, setShowQuickCreate] = useState(false);
   
   useHotkeys();
   useKeyboardNav();
   useKeyboardShortcuts(() => setShowShortcutModal(prev => !prev));
   
+  useEffect(() => {
+    const handleOpenQuickCreate = () => setShowQuickCreate(true);
+    window.addEventListener("open-quick-create", handleOpenQuickCreate);
+    return () => window.removeEventListener("open-quick-create", handleOpenQuickCreate);
+  }, []);
+
   return (
     <>
       <CommandPalette />
       <ShortcutModal isOpen={showShortcutModal} onClose={() => setShowShortcutModal(false)} />
+      <QuickCreateModal isOpen={showQuickCreate} onClose={() => setShowQuickCreate(false)} />
     </>
   );
 }

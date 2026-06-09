@@ -6,25 +6,35 @@ export function useHotkeys() {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Don't trigger if user is typing in an input or textarea
-      const activeTag = document.activeElement.tagName;
-      const isInput = activeTag === "INPUT" || activeTag === "TEXTAREA" || activeTag === "SELECT";
-      
-      // Unless they specifically press Ctrl
-      if (e.ctrlKey) {
+      // In Marg ERP, Alt combinations work globally even if typing in an input
+      if (e.altKey) {
+        let path = null;
         switch (e.key.toLowerCase()) {
-          case "b":
+          case "n": 
             e.preventDefault();
-            navigate("/sales-challan");
+            window.dispatchEvent(new Event("open-quick-create"));
             break;
-          case "p":
-            e.preventDefault();
-            navigate("/purchase-challan");
-            break;
-          case "r":
-            e.preventDefault();
-            navigate("/receipt-voucher");
-            break;
+          case "s": path = "/billing"; break;           // Alt+S -> Sales Bill
+          case "p": path = "/purchase-bills"; break;    // Alt+P -> Purchase Bill
+          case "c": path = "/sales-challan"; break;     // Alt+C -> Sales Challan
+          case "r": path = "/receipt-voucher"; break;   // Alt+R -> Receipt Voucher
+          case "v": path = "/payment-voucher"; break;   // Alt+V -> Payment Voucher
+          case "i": path = "/inventory"; break;         // Alt+I -> Inventory
+          case "d": path = "/dashboard"; break;         // Alt+D -> Dashboard
+          case "a": path = "/ledger"; break;            // Alt+A -> Accounts/Ledger
+          case "m": path = "/items"; break;             // Alt+M -> Masters/Items
+          default: break;
+        }
+
+        if (path) {
+          e.preventDefault();
+          navigate(path);
+        }
+      }
+
+      // Legacy Ctrl shortcuts if still needed
+      if (e.ctrlKey && !e.altKey) {
+        switch (e.key.toLowerCase()) {
           case "d":
             e.preventDefault();
             navigate("/dashboard");

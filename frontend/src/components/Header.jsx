@@ -54,9 +54,11 @@ export default function Header() {
       { label: "Stock Adjustment", path: "/stock-adjust" },
     ]},
     { label: "AI Tools", items: [
+      { label: "AI Cockpit", path: "/ai-cockpit" },
       { label: "Smart Ledger / OCR", path: "/ai-ledger" },
       { label: "Re-Order Agent", path: "/reorder-center" },
       { label: "Expiry Guard", path: "/expiry-guard" },
+      { label: "Pricing Engine", path: "/pricing-engine" },
       { label: "AI Copilot", path: "/copilot" },
     ]},
     { label: "Enterprise", items: [
@@ -67,6 +69,17 @@ export default function Header() {
       { label: "Schemes", path: "/schemes" },
       { label: "Documents", path: "/dms" },
       { label: "Drug Recall", path: "/drug-recall" },
+    ]},
+    { label: "12.0 Enterprise", items: [
+      { label: "Auto Procurement", path: "/autonomous-procurement" },
+      { label: "Distribution Tower", path: "/control-tower" },
+      { label: "CEO AI Dashboard", path: "/ceo-dashboard" },
+      { label: "Hospital/Institutional", path: "/institutional-sales" },
+      { label: "Cash Flow Engine", path: "/cashflow-engine" },
+      { label: "Warehouse Twin 2D", path: "/warehouse-twin" },
+      { label: "Compliance Center", path: "/compliance" },
+      { label: "Hyper Automation", path: "/automation" },
+      { label: "Platform Admin", path: "/platform-admin" },
     ]},
     { label: "Portals", items: [
       { label: "Customer Portal", path: "/customer-portal" },
@@ -163,7 +176,7 @@ export default function Header() {
   }, []);
 
   return (
-    <div className="w-full bg-[#f0f0f0] border-b border-gray-300 shadow-sm z-50">
+    <div className="w-full bg-[#f0f0f0] border-b border-gray-300 shadow-sm z-50" data-section="header">
       {/* System Info Bar */}
       <div className="bg-[#e4e4e4] border-b border-gray-300 px-2 py-0.5 text-[10px] font-mono text-gray-700 flex items-center justify-between">
         <div className="flex items-center gap-1">
@@ -180,22 +193,59 @@ export default function Header() {
         {menus.map((menu, idx) => (
           <div key={idx} className="relative">
             <button
-              onClick={(e) => { e.stopPropagation(); setOpenMenu(openMenu === idx ? null : idx); }}
-              className={`px-3 py-1 text-xs font-semibold border-r border-transparent transition-colors
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                const isOpening = openMenu !== idx;
+                setOpenMenu(isOpening ? idx : null); 
+                // If opening via keyboard, try to focus first item after render
+                if (isOpening) {
+                  setTimeout(() => {
+                    const dropdown = document.getElementById(`dropdown-${idx}`);
+                    if (dropdown) dropdown.querySelector('button')?.focus();
+                  }, 0);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown' && openMenu !== idx) {
+                  e.preventDefault();
+                  setOpenMenu(idx);
+                  setTimeout(() => {
+                    const dropdown = document.getElementById(`dropdown-${idx}`);
+                    if (dropdown) dropdown.querySelector('button')?.focus();
+                  }, 0);
+                }
+              }}
+              className={`px-3 py-1 text-xs font-semibold border-r border-transparent transition-colors focus:outline-none focus:bg-[#1b4985] focus:text-white
                 ${openMenu === idx ? "bg-[#1b4985] text-white" : "text-gray-800 hover:bg-gray-200 hover:text-black"}
-                ${menu.label === "AI Tools" ? "text-purple-700" : ""}
+                ${menu.label === "AI Tools" && openMenu !== idx ? "text-purple-700 focus:text-white" : ""}
               `}
             >
               {menu.label}
             </button>
             {openMenu === idx && (
-              <div className="absolute top-full left-0 bg-white border border-gray-300 shadow-lg z-50 min-w-[180px] py-1">
+              <div id={`dropdown-${idx}`} className="absolute top-full left-0 bg-white border border-gray-300 shadow-lg z-50 min-w-[180px] py-1 flex flex-col"
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    setOpenMenu(null);
+                    // Focus back the parent button
+                    e.currentTarget.previousElementSibling?.focus();
+                  } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                     e.preventDefault();
+                     const buttons = Array.from(e.currentTarget.querySelectorAll('button'));
+                     let curIdx = buttons.indexOf(document.activeElement);
+                     if (e.key === 'ArrowDown') curIdx = curIdx < buttons.length - 1 ? curIdx + 1 : 0;
+                     if (e.key === 'ArrowUp') curIdx = curIdx > 0 ? curIdx - 1 : buttons.length - 1;
+                     buttons[curIdx]?.focus();
+                  }
+                }}
+              >
                 {menu.items.map((item, i) => (
                   <button
                     key={i}
                     onClick={() => { navigate(item.path); setOpenMenu(null); }}
-                    className={`w-full text-left px-4 py-1.5 text-[11px] font-medium hover:bg-[#dbeafe] hover:text-[#1e3a8a] transition-colors
-                      ${location.pathname === item.path ? "bg-[#dbeafe] text-[#1e3a8a] font-bold" : "text-gray-800"}
+                    className={`w-full text-left px-4 py-1.5 text-[11px] font-medium transition-colors focus:outline-none focus:bg-[#1b4985] focus:text-white
+                      ${location.pathname === item.path ? "bg-[#dbeafe] text-[#1e3a8a] font-bold" : "text-gray-800 hover:bg-[#dbeafe] hover:text-[#1e3a8a]"}
                     `}
                   >
                     {item.label}

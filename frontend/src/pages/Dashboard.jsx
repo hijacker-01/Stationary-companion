@@ -65,7 +65,6 @@ export default function Dashboard() {
     { label: "Todays Gross Profit", to: "/reports", ai: false },
     { label: "Exit", to: "/", action: () => { localStorage.clear(); navigate("/"); } },
   ];
-
   return (
     <div className="flex flex-col h-screen bg-[#e5e5e5] overflow-hidden font-sans">
       <Header />
@@ -268,7 +267,32 @@ export default function Dashboard() {
         </main>
 
         {/* Right Action Panel */}
-        <aside className="w-56 h-full bg-[#e4e4e4] border-l border-gray-300 flex flex-col shrink-0 overflow-y-auto shadow-[-2px_0_4px_rgba(0,0,0,0.02)]">
+        <aside 
+          className="w-56 h-full bg-[#e4e4e4] border-l border-gray-300 flex flex-col shrink-0 overflow-y-auto shadow-[-2px_0_4px_rgba(0,0,0,0.02)] focus:outline-none focus:ring-inset focus:ring-2 focus:ring-[#1b4985]"
+          tabIndex={0}
+          data-section="right-sidebar"
+          onKeyDown={(e) => {
+            const buttons = Array.from(e.currentTarget.querySelectorAll('button'));
+            if (buttons.length === 0) return;
+            
+            const activeBtn = document.activeElement;
+            let idx = buttons.indexOf(activeBtn);
+            
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              idx = (idx < buttons.length - 1) ? idx + 1 : 0;
+              buttons[idx].focus();
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              idx = (idx > 0) ? idx - 1 : buttons.length - 1;
+              buttons[idx].focus();
+            } else if (e.key === 'ArrowLeft') {
+              // Usually left arrow goes back to main content
+              e.preventDefault();
+              document.querySelector('main')?.focus();
+            }
+          }}
+        >
           <div className="text-center py-1 bg-[#d6d6d6] border-b border-gray-300 font-bold text-[11px] text-gray-700">
             D.M.
           </div>
@@ -277,7 +301,7 @@ export default function Dashboard() {
               <button
                 key={i}
                 onClick={action.action ? action.action : () => navigate(action.to)}
-                className={`w-full py-2 px-3 text-center border-b border-gray-300 transition-colors shadow-sm
+                className={`w-full py-2 px-3 text-center border-b border-gray-300 transition-colors shadow-sm focus:outline-none focus:bg-[#1b4985] focus:text-white
                   ${action.ai ? 'bg-[#f3e5f5] text-[#4a148c] font-extrabold hover:bg-[#e1bee7]' : 'bg-[#f4f4f4] text-gray-800 font-medium hover:bg-white'}
                   text-[12px]
                 `}
