@@ -20,6 +20,23 @@ export function useKeyboardShortcuts(onToggleModal) {
         return;
       }
 
+      if (e.key === "Shift") {
+        e.preventDefault();
+        const header = document.querySelector('[data-section="header"]');
+        const main = document.querySelector("main");
+        
+        if (header && main) {
+          main.tabIndex = 0; // Make sure main is focusable
+          if (header.contains(document.activeElement)) {
+            main.focus();
+          } else {
+            const firstBtn = header.querySelector("button");
+            if (firstBtn) firstBtn.focus();
+          }
+        }
+        return;
+      }
+
       if (e.altKey) {
         switch (e.key.toLowerCase()) {
           case "s":

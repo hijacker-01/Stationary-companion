@@ -62,7 +62,11 @@ router.get("/profit", protect, adminOnly, async (req, res) => {
     bills.forEach(bill => {
       let billCost = 0, billRevenue = 0;
 
-      (bill.items || []).forEach(row => {
+      let billItems = bill.items || [];
+      if (typeof billItems === "string") {
+        try { billItems = JSON.parse(billItems); } catch(e) { billItems = []; }
+      }
+      billItems.forEach(row => {
         const qty = parseInt(row.qty) || 0;
         const rate = parseFloat(row.selling_price || row.rate || row.mrp || 0);
         const discount = parseFloat(row.discount || 0);
