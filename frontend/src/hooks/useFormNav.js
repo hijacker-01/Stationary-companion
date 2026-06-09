@@ -27,13 +27,10 @@ export function useFormNav() {
         return;
       }
 
-      const isTextArea = active.tagName === 'TEXTAREA';
-      const isSelect = active.tagName === 'SELECT';
-
-      // Navigation triggers: Enter, Shift+Enter, ArrowUp, ArrowDown
-      // But avoid ArrowUp/Down inside Textareas or Selects (which use them natively)
-      const isNextTrigger = (e.key === 'Enter' && !e.shiftKey) || (e.key === 'ArrowDown' && !isTextArea && !isSelect);
-      const isPrevTrigger = (e.key === 'Enter' && e.shiftKey) || (e.key === 'ArrowUp' && !isTextArea && !isSelect);
+      // Navigation triggers: Enter, Shift+Enter
+      // Use Enter to move forward, Shift+Enter to move backward
+      const isNextTrigger = (e.key === 'Enter' && !e.shiftKey && !isButton);
+      const isPrevTrigger = (e.key === 'Enter' && e.shiftKey && !isButton);
 
       // If the input has a custom dropdown open, let it handle its own navigation
       if (active.getAttribute('aria-expanded') === 'true' && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter')) return;
@@ -46,7 +43,7 @@ export function useFormNav() {
 
         e.preventDefault();
         
-        const focusableSelectors = 'input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+        const focusableSelectors = 'input:not([disabled]):not([type="hidden"]):not([readonly]), select:not([disabled]), textarea:not([disabled]):not([readonly]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
         // Scope to closest form, or whole body if not in form
         const scope = active.closest('form') || document.body;
         const elements = Array.from(scope.querySelectorAll(focusableSelectors));

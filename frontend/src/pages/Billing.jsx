@@ -748,13 +748,17 @@ export default function Billing() {
                             e.preventDefault();
                             if (filtered[dropdownIndex]) {
                               handleCustomerSelect(filtered[dropdownIndex].name);
-                              setActiveDropdown(null);
-                              setTimeout(() => {
-                                const inputs = Array.from(document.activeElement.closest('.grid').querySelectorAll('input, select'));
-                                const idx = inputs.indexOf(document.activeElement);
-                                if (idx > -1 && inputs[idx + 1]) inputs[idx + 1].focus();
-                              }, 0);
+                            } else {
+                              handleCustomerSelect(e.target.value);
                             }
+                            setActiveDropdown(null);
+                            setTimeout(() => {
+                              const scope = document.activeElement.closest('form') || document.body;
+                              const focusableSelectors = 'input:not([disabled]):not([type="hidden"]):not([readonly]), select:not([disabled]), textarea:not([disabled]):not([readonly]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+                              const inputs = Array.from(scope.querySelectorAll(focusableSelectors));
+                              const idx = inputs.indexOf(document.activeElement);
+                              if (idx > -1 && inputs[idx + 1]) inputs[idx + 1].focus();
+                            }, 0);
                           } else if (e.key === 'Escape') {
                             e.preventDefault();
                             setActiveDropdown(null);
@@ -915,13 +919,17 @@ export default function Billing() {
                                 if (filtered[dropdownIndex]) {
                                   const it = filtered[dropdownIndex];
                                   handleItemSelect(i, `${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`);
-                                  setActiveDropdown(null);
-                                  setTimeout(() => {
-                                    const rowInputs = Array.from(document.activeElement.closest('tr').querySelectorAll('input'));
-                                    const idx = rowInputs.indexOf(document.activeElement);
-                                    if (idx > -1 && rowInputs[idx + 1]) rowInputs[idx + 1].focus();
-                                  }, 0);
+                                } else {
+                                  handleItemSelect(i, e.target.value);
                                 }
+                                setActiveDropdown(null);
+                                setTimeout(() => {
+                                  const scope = document.activeElement.closest('form') || document.body;
+                                  const focusableSelectors = 'input:not([disabled]):not([type="hidden"]):not([readonly]), select:not([disabled]), textarea:not([disabled]):not([readonly]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+                                  const inputs = Array.from(scope.querySelectorAll(focusableSelectors));
+                                  const idx = inputs.indexOf(document.activeElement);
+                                  if (idx > -1 && inputs[idx + 1]) inputs[idx + 1].focus();
+                                }, 0);
                               } else if (e.key === 'Escape') {
                                 e.preventDefault();
                                 setActiveDropdown(null);
