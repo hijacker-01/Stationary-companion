@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, Fragment } from "react";
 import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import BarcodeScannerModal from "../components/BarcodeScannerModal";
+import SmartSelect from "../components/SmartSelect";
 import {
   Plus,
   Printer,
@@ -802,13 +803,18 @@ export default function Billing() {
               <h3 className="font-bold border-b border-slate-500 pb-1 mb-1">Transaction Details</h3>
               <div className="grid grid-cols-[90px_1fr] gap-y-1">
                 <label className="text-[10px] mt-0.5">Salesman</label>
-                <select value={selectedSalesman.name} onChange={e => {
-                  const found = salesmen.find(s => s.name === e.target.value);
-                  setSelectedSalesman(found ? { id: found.id, name: found.name } : { id: '', name: '' });
-                }} className="bg-white text-black px-1 py-0.5 outline-none w-full">
-                  <option value="">Direct/None</option>
-                  {salesmen.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
-                </select>
+                <SmartSelect 
+                  value={selectedSalesman.name} 
+                  onChange={e => {
+                    const found = salesmen.find(s => s.name === e.target.value);
+                    setSelectedSalesman(found ? { id: found.id, name: found.name } : { id: '', name: '' });
+                  }} 
+                  className="bg-white text-black px-1 py-0.5 outline-none w-full font-bold"
+                  options={[
+                    { value: '', label: 'Direct/None' },
+                    ...salesmen.map(s => ({ value: s.name, label: s.name }))
+                  ]}
+                />
                 
                 <label className="text-[10px] mt-0.5">Available Schemes</label>
                 <select size="4" className="bg-[#e6f0fa] text-black px-1 py-0.5 outline-none w-full text-[10px]">
@@ -816,12 +822,17 @@ export default function Billing() {
                 </select>
                 
                 <label className="text-[10px] mt-1">Payment Mode</label>
-                <select value={paymentMode} onChange={e => setPaymentMode(e.target.value)} className="bg-white text-black px-1 py-0.5 outline-none w-full mt-1">
-                  <option value="cash">Cash</option>
-                  <option value="upi">UPI</option>
-                  <option value="card">Card</option>
-                  <option value="credit">Credit</option>
-                </select>
+                <SmartSelect 
+                  value={paymentMode} 
+                  onChange={e => setPaymentMode(e.target.value)} 
+                  className="bg-white text-black px-1 py-0.5 outline-none w-full mt-1 font-bold"
+                  options={[
+                    { value: 'cash', label: 'Cash' },
+                    { value: 'upi', label: 'UPI' },
+                    { value: 'card', label: 'Card' },
+                    { value: 'credit', label: 'Credit' }
+                  ]}
+                />
                 
                 <label className="text-[10px] mt-0.5">Transport</label>
                 <input value={customer.transportDetails} onChange={e => setCustomer({...customer, transportDetails: e.target.value})} className="bg-white text-black px-1 py-0.5 outline-none w-full mt-0.5" />

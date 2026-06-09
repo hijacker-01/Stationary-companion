@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { useConfirm } from "../hooks/useConfirm";
+import SmartSelect from "../components/SmartSelect";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
@@ -507,10 +508,12 @@ export default function SalesChallan() {
                         className="w-full text-right bg-transparent outline-none font-bold text-gray-800" />
                     </td>
                     <td className="py-1.5 px-2 border-r border-gray-100 text-center">
-                      <select value={row.gst} onChange={e => handleRowChange(i, "gst", e.target.value)}
-                        className="bg-transparent outline-none font-bold text-gray-700 w-full text-center cursor-pointer">
-                        {GST_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
-                      </select>
+                      <SmartSelect 
+                        value={row.gst} 
+                        onChange={e => handleRowChange(i, "gst", e.target.value)}
+                        className="bg-transparent outline-none font-bold text-gray-700 w-full text-center cursor-pointer"
+                        options={GST_RATES.map(r => ({ value: r, label: `${r}%` }))}
+                      />
                     </td>
                     <td className="py-1.5 px-2 text-right font-bold text-gray-900 bg-gray-50/50">₹{fmt(row.amount)}</td>
                     <td className="py-1.5 px-2 text-center">
