@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
+import SmartSelect from "../components/SmartSelect";
+import { focusFirstField } from "../utils/focusHelpers";
 import { Upload, FileText, CheckCircle2, AlertCircle, Plus, Trash2, Wand2 } from "lucide-react";
 
 const token = () => localStorage.getItem("token");
@@ -23,6 +25,11 @@ export default function PurchaseBills() {
     axios.get("/suppliers")
       .then(res => { setSuppliers(res.data?.rows || res.data?.items || res.data?.data || res.data || []); setLoadingSuppliers(false); })
       .catch(err => console.error(err));
+  }, []);
+
+  // Auto-focus supplier field on mount
+  useEffect(() => {
+    focusFirstField('form');
   }, []);
 
   const handleSupplierSelect = (e) => {
@@ -148,12 +155,20 @@ export default function PurchaseBills() {
               <div className="grid grid-cols-4 gap-6">
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-slate-700 mb-1">Supplier</label>
-                  <select required value={form.supplierId} onChange={handleSupplierSelect} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-400 bg-white">
-                    <option value="">-- Select Supplier --</option>
-                    {!loadingSuppliers && suppliers.map(s => (
-                      <option key={s.id} value={s.id}>{s.name} {form.supplierName && form.supplierName.includes(s.name) ? "(Matched)" : ""}</option>
-                    ))}
-                  </select>
+                  <SmartSelect
+                    value={form.supplierId}
+                    onChange={handleSupplierSelect}
+                    className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-400 bg-white"
+                    placeholder="-- Select Supplier --"
+                    autoFocus
+                    options={[
+                      { value: '', label: '-- Select Supplier --' },
+                      ...(!loadingSuppliers ? suppliers.map(s => ({
+                        value: s.id.toString(),
+                        label: `${s.name}${form.supplierName && form.supplierName.includes(s.name) ? ' (Matched)' : ''}`
+                      })) : [])
+                    ]}
+                  />
                   {form.supplierName && !form.supplierId && (
                     <p className="text-xs text-orange-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> AI Extracted: {form.supplierName}. Please map to existing.</p>
                   )}
@@ -216,9 +231,17 @@ export default function PurchaseBills() {
                           <input type="number" step="0.01" required value={item.mrp} onChange={e=>updateItem(idx, "mrp", e.target.value)} className="w-full border rounded px-2 py-1 text-sm outline-none text-right focus:ring-1 focus:ring-teal-400" />
                         </td>
                         <td className="px-4 py-2">
-                          <select value={item.taxPercent} onChange={e=>updateItem(idx, "taxPercent", e.target.value)} className="w-full border rounded px-1 py-1 text-sm outline-none text-right focus:ring-1 focus:ring-teal-400 bg-white">
-                            <option value="0">0%</option><option value="5">5%</option><option value="12">12%</option><option value="18">18%</option>
-                          </select>
+                          <SmartSelect
+                            value={item.taxPercent}
+                            onChange={e => updateItem(idx, "taxPercent", e.target.value)}
+                            className="w-full border rounded px-1 py-1 text-sm outline-none text-right focus:ring-1 focus:ring-teal-400 bg-white"
+                            options={[
+                              { value: '0', label: '0%' },
+                              { value: '5', label: '5%' },
+                              { value: '12', label: '12%' },
+                              { value: '18', label: '18%' }
+                            ]}
+                          />
                         </td>
                         <td className="px-4 py-2 text-right font-bold text-slate-700">
                           {lineTotal.toFixed(2)}

@@ -3,6 +3,7 @@ import axios from "../api/axios";
 import { Gift, Percent, Plus, Save, X, Search, CheckSquare, Square } from "lucide-react";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
+import SmartSelect from "../components/SmartSelect";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
@@ -142,14 +143,15 @@ export default function Schemes() {
 
                 <div className="flex flex-col gap-1">
                   <label className="font-semibold text-gray-700">Scheme Type</label>
-                  <select 
+                  <SmartSelect 
                     value={type} onChange={e => setType(e.target.value)}
                     className="border border-gray-400 p-1 focus:outline-none focus:border-blue-500 focus:bg-yellow-50"
                     tabIndex={4}
-                  >
-                    <option value="buy_get">Buy X Get Y Free</option>
-                    <option value="discount">Flat Discount %</option>
-                  </select>
+                    options={[
+                      { value: 'buy_get', label: 'Buy X Get Y Free' },
+                      { value: 'discount', label: 'Flat Discount %' }
+                    ]}
+                  />
                 </div>
 
                 {type === 'buy_get' ? (

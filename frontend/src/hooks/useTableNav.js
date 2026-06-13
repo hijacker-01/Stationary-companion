@@ -1,13 +1,20 @@
 import { useEffect } from "react";
 
+/**
+ * useTableNav — Keyboard navigation inside HTML tables.
+ * ArrowUp/Down: move between rows in same column
+ * Enter: if on a cell, enter edit mode; if in an input, move to next cell in row, then wrap to next row
+ * Escape: exit edit mode
+ * Defers to custom dropdowns when aria-expanded="true"
+ */
 export function useTableNav() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       const active = document.activeElement;
       if (!active) return;
 
-      const isCellOrInputInTable = active.closest('table');
-      if (!isCellOrInputInTable) return;
+      const table = active.closest('table');
+      if (!table) return;
       
       const tbody = active.closest('tbody');
       if (!tbody) return;
@@ -22,21 +29,46 @@ export function useTableNav() {
       const rows = Array.from(tbody.children);
       const rowIndex = rows.indexOf(currentRow);
 
+      // Find the next cell with a focusable element, skipping empty cells
+      const focusCellSmart = (r, startCol, direction) => {
+        if (r < 0 || r >= rows.length) return false;
+        const row = rows[r];
+        const rowCells = Array.from(row.children);
+        
+        let c = startCol;
+        while (c >= 0 && c < rowCells.length) {
+          const targetCell = rowCells[c];
+          if (targetCell) {
+            const focusable = targetCell.querySelector('input:not([disabled]):not([readonly]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), textarea:not([disabled]):not([tabindex="-1"]), button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])');
+            if (focusable) {
+              focusable.focus();
+              if (focusable.tagName === 'INPUT' && focusable.type !== 'checkbox') {
+                setTimeout(() => focusable.select(), 0);
+              }
+              return true;
+            }
+          }
+          c += direction;
+        }
+        return false;
+      };
+
       const focusCell = (r, c) => {
         if (r >= 0 && r < rows.length) {
           const row = rows[r];
           const targetCell = row.children[c];
           if (targetCell) {
-            const focusable = targetCell.querySelector('input, select, textarea, button, [tabindex]:not([tabindex="-1"])');
+            const focusable = targetCell.querySelector('input:not([disabled]):not([readonly]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), textarea:not([disabled]):not([tabindex="-1"]), button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])');
             if (focusable) {
               focusable.focus();
-              if (focusable.tagName === 'INPUT') setTimeout(() => focusable.select(), 0);
-            } else {
-              if(!targetCell.hasAttribute('tabindex')) targetCell.setAttribute('tabindex', '-1');
-              targetCell.focus();
+              if (focusable.tagName === 'INPUT' && focusable.type !== 'checkbox') {
+                setTimeout(() => focusable.select(), 0);
+              }
+              return true;
             }
           }
         }
+        return false;
       };
 
       const isTextInput = active.tagName === 'INPUT' && (active.type === 'text' || active.type === 'number' || active.type === 'password' || active.type === 'email');
@@ -45,7 +77,6 @@ export function useTableNav() {
       if (active.getAttribute('aria-expanded') === 'true' && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter')) return;
 
       if (e.key === 'ArrowUp') {
-        // Only prevent default if we're not inside a multiline textarea
         if (active.tagName !== 'TEXTAREA') {
           e.preventDefault();
           focusCell(rowIndex - 1, colIndex);
@@ -56,16 +87,23 @@ export function useTableNav() {
           focusCell(rowIndex + 1, colIndex);
         }
       } else if (e.key === 'ArrowLeft') {
-        // If it's a text input, only move cell if cursor is at the beginning or Ctrl is pressed
         if (!isTextInput || e.ctrlKey || active.selectionStart === 0) {
           if (!isTextInput || e.ctrlKey) e.preventDefault();
-          focusCell(rowIndex, Math.max(0, colIndex - 1));
+          // Move left, skipping cells with no focusable element
+          let c = colIndex - 1;
+          while (c >= 0) {
+            if (focusCell(rowIndex, c)) break;
+            c--;
+          }
         }
       } else if (e.key === 'ArrowRight') {
-        // If it's a text input, only move cell if cursor is at the end or Ctrl is pressed
         if (!isTextInput || e.ctrlKey || active.selectionStart === active.value.length) {
           if (!isTextInput || e.ctrlKey) e.preventDefault();
-          focusCell(rowIndex, Math.min(cells.length - 1, colIndex + 1));
+          let c = colIndex + 1;
+          while (c < cells.length) {
+            if (focusCell(rowIndex, c)) break;
+            c++;
+          }
         }
       } else if (e.key === 'PageUp') {
         e.preventDefault();
@@ -86,8 +124,8 @@ export function useTableNav() {
           if(!currentCell.hasAttribute('tabindex')) currentCell.setAttribute('tabindex', '-1');
           currentCell.focus();
         }
-      } else if (e.key === 'F2' || e.key === 'Enter') {
-        // If focused on the cell (not an input), try to focus input inside to "edit"
+      } else if (e.key === 'Enter') {
+        // If focused on the cell itself (not an input), try to focus input inside to "edit"
         if (active === currentCell) {
           const input = currentCell.querySelector('input, select, textarea');
           if (input) {
@@ -95,24 +133,29 @@ export function useTableNav() {
             input.focus();
             if (input.tagName === 'INPUT') setTimeout(() => input.select(), 0);
           }
-        } else if (e.key === 'Enter' && (isTextInput || active.tagName === 'SELECT')) {
-           // Inside input, move to next cell
-           e.preventDefault();
-           if (colIndex < cells.length - 1) {
-              focusCell(rowIndex, colIndex + 1);
-           } else {
-              focusCell(rowIndex + 1, 0);
-           }
+        } else if (isTextInput || active.tagName === 'SELECT') {
+          // Inside an input/select — move to next focusable cell in row, then wrap to next row
+          e.preventDefault();
+          e.stopPropagation();
+          
+          // Try to find next focusable cell in same row
+          let found = false;
+          for (let c = colIndex + 1; c < cells.length; c++) {
+            if (focusCell(rowIndex, c)) { found = true; break; }
+          }
+          
+          // If not found, move to first focusable cell of next row
+          if (!found && rowIndex + 1 < rows.length) {
+            focusCellSmart(rowIndex + 1, 0, 1);
+          }
         }
       } else if (e.key === ' ' && active === currentCell) {
-        // Space to select row
         e.preventDefault();
         const checkbox = currentRow.querySelector('input[type="checkbox"]');
         if (checkbox) checkbox.click();
       } else if (e.key === 'a' && e.ctrlKey) {
-        // Ctrl+A to select all rows
         e.preventDefault();
-        const thead = active.closest('table').querySelector('thead');
+        const thead = table.querySelector('thead');
         if (thead) {
           const selectAllCheckbox = thead.querySelector('input[type="checkbox"]');
           if (selectAllCheckbox) selectAllCheckbox.click();
@@ -120,7 +163,6 @@ export function useTableNav() {
       }
     };
 
-    // Use capture phase so we can intercept before inputs handle it, if necessary
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, []);

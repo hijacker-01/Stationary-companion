@@ -20,13 +20,14 @@ export function useKeyboardShortcuts(onToggleModal) {
         return;
       }
 
-      if (e.key === "Shift") {
+      // Ctrl+Shift+H: Toggle focus between header and main content
+      if (e.ctrlKey && e.shiftKey && e.key === "H") {
         e.preventDefault();
         const header = document.querySelector('[data-section="header"]');
         const main = document.querySelector("main");
         
         if (header && main) {
-          main.tabIndex = 0; // Make sure main is focusable
+          main.tabIndex = 0;
           if (header.contains(document.activeElement)) {
             main.focus();
           } else {

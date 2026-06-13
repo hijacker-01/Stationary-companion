@@ -23,6 +23,7 @@ import {
   Package,
 } from "lucide-react";
 import { useConfirm } from "../hooks/useConfirm";
+import { advanceFocusFrom, focusFirstField } from "../utils/focusHelpers";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
@@ -115,6 +116,13 @@ export default function Billing() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [view]);
+
+  // Auto-focus customer name when entering create view
+  useEffect(() => {
+    if (view === 'create') {
+      focusFirstField('#search-customer, [placeholder="Search Customer..."]');
+    }
   }, [view]);
 
   const toggleRow = (id) => {
@@ -731,6 +739,7 @@ export default function Billing() {
                 <label className="text-[10px]">Customer Name</label>
                 <div className="relative w-full">
                     <input 
+                      id="search-customer"
                       value={customer.name} 
                       onChange={e => handleCustomerSelect(e.target.value)} 
                       onFocus={() => { setActiveDropdown('customer'); setDropdownIndex(0); }}
@@ -741,25 +750,22 @@ export default function Billing() {
                           const filtered = customers.filter(c => !customer.name || c.name.toLowerCase().includes(customer.name.toLowerCase()));
                           if (e.key === 'ArrowDown') {
                             e.preventDefault();
+                            e.stopPropagation();
                             setDropdownIndex(prev => Math.min(prev + 1, filtered.length - 1));
                           } else if (e.key === 'ArrowUp') {
                             e.preventDefault();
+                            e.stopPropagation();
                             setDropdownIndex(prev => Math.max(prev - 1, 0));
                           } else if (e.key === 'Enter') {
                             e.preventDefault();
+                            e.stopPropagation();
                             if (filtered[dropdownIndex]) {
                               handleCustomerSelect(filtered[dropdownIndex].name);
                             } else {
                               handleCustomerSelect(e.target.value);
                             }
                             setActiveDropdown(null);
-                            setTimeout(() => {
-                              const scope = document.activeElement.closest('form') || document.body;
-                              const focusableSelectors = 'input:not([disabled]):not([type="hidden"]):not([readonly]), select:not([disabled]), textarea:not([disabled]):not([readonly]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
-                              const inputs = Array.from(scope.querySelectorAll(focusableSelectors));
-                              const idx = inputs.indexOf(document.activeElement);
-                              if (idx > -1 && inputs[idx + 1]) inputs[idx + 1].focus();
-                            }, 0);
+                            advanceFocusFrom(e.target);
                           } else if (e.key === 'Escape') {
                             e.preventDefault();
                             setActiveDropdown(null);
@@ -772,7 +778,7 @@ export default function Billing() {
                     {activeDropdown === 'customer' && (
                       <ul className="absolute left-0 top-full mt-0.5 w-[300px] bg-white border border-gray-400 shadow-xl z-50 max-h-48 overflow-y-auto">
                         {customers.filter(c => !customer.name || c.name.toLowerCase().includes(customer.name.toLowerCase())).map((c, idx) => (
-                          <li key={c.id || c.name} className={`px-2 py-1 cursor-pointer text-xs text-black border-b border-gray-100 last:border-0 ${dropdownIndex === idx ? 'bg-blue-200' : 'hover:bg-blue-50'}`} onMouseDown={() => handleCustomerSelect(c.name)}>
+                          <li key={c.id || c.name} className={`px-2 py-1 cursor-pointer text-xs text-black border-b border-gray-100 last:border-0 ${dropdownIndex === idx ? 'bg-blue-200' : 'hover:bg-blue-50'}`} onMouseDown={(e) => { e.preventDefault(); handleCustomerSelect(c.name); setActiveDropdown(null); advanceFocusFrom(document.querySelector('[placeholder="Search Customer..."]')); }}>
                             <div className="font-bold">{c.name}</div>
                             <div className="text-[10px] text-gray-500">{c.phone || c.address || 'No details'}</div>
                           </li>
@@ -921,12 +927,15 @@ export default function Billing() {
                               const filtered = items.filter(it => !s || it.name.toLowerCase().includes(s.toLowerCase()));
                               if (e.key === 'ArrowDown') {
                                 e.preventDefault();
+                                e.stopPropagation();
                                 setDropdownIndex(prev => Math.min(prev + 1, filtered.length - 1));
                               } else if (e.key === 'ArrowUp') {
                                 e.preventDefault();
+                                e.stopPropagation();
                                 setDropdownIndex(prev => Math.max(prev - 1, 0));
                               } else if (e.key === 'Enter') {
                                 e.preventDefault();
+                                e.stopPropagation();
                                 if (filtered[dropdownIndex]) {
                                   const it = filtered[dropdownIndex];
                                   handleItemSelect(i, `${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`);
@@ -935,12 +944,12 @@ export default function Billing() {
                                 }
                                 setActiveDropdown(null);
                                 setTimeout(() => {
-                                  const scope = document.activeElement.closest('form') || document.body;
-                                  const focusableSelectors = 'input:not([disabled]):not([type="hidden"]):not([readonly]), select:not([disabled]), textarea:not([disabled]):not([readonly]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
-                                  const inputs = Array.from(scope.querySelectorAll(focusableSelectors));
-                                  const idx = inputs.indexOf(document.activeElement);
-                                  if (idx > -1 && inputs[idx + 1]) inputs[idx + 1].focus();
-                                }, 0);
+                                  const row = e.target.closest('tr');
+                                  if (row) {
+                                    const qtyInput = row.querySelector('input[type="number"]');
+                                    if (qtyInput) { qtyInput.focus(); qtyInput.select(); }
+                                  }
+                                }, 50);
                               } else if (e.key === 'Escape') {
                                 e.preventDefault();
                                 setActiveDropdown(null);
@@ -954,7 +963,7 @@ export default function Billing() {
                         {activeDropdown === `item-${i}` && (
                           <ul className="absolute left-0 top-full mt-0.5 w-[400px] bg-white border border-gray-400 shadow-xl z-50 max-h-48 overflow-y-auto">
                             {items.filter(it => !(row.searchStr !== undefined ? row.searchStr : row.name) || it.name.toLowerCase().includes((row.searchStr !== undefined ? row.searchStr : row.name).toLowerCase())).map((it, idx) => (
-                              <li key={it.id || idx} className={`px-2 py-1 cursor-pointer text-xs text-black border-b border-gray-100 last:border-0 ${dropdownIndex === idx ? 'bg-blue-200' : 'hover:bg-blue-50'}`} onMouseDown={() => handleItemSelect(i, `${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`)}>
+                              <li key={it.id || idx} className={`px-2 py-1 cursor-pointer text-xs text-black border-b border-gray-100 last:border-0 ${dropdownIndex === idx ? 'bg-blue-200' : 'hover:bg-blue-50'}`} onMouseDown={(e) => { e.preventDefault(); handleItemSelect(i, `${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`); setActiveDropdown(null); setTimeout(() => { const qtyInput = document.querySelector(`tr:nth-child(${i+1}) input[type="number"]`); if (qtyInput) qtyInput.focus(); }, 50); }}>
                                 <div className="flex justify-between font-bold"><span>{it.name}</span><span className="text-green-700">₹{it.selling_price || it.mrp || 0}</span></div>
                                 <div className="flex justify-between text-[10px] text-gray-500"><span>Batch: {it.batch || '-'}</span><span>Stock: {it.stock_qty || 0}</span></div>
                               </li>

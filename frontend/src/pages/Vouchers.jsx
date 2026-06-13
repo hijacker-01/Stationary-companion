@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
+import SmartSelect from "../components/SmartSelect";
+import { focusFirstField } from "../utils/focusHelpers";
 import { 
   Plus, Search, Trash2, ArrowUpRight, ArrowDownLeft, 
   FileText, Landmark, Wallet, CreditCard, ClipboardList, User 
@@ -100,7 +102,7 @@ export default function Vouchers() {
             <p className="text-sm text-slate-500 mt-1">Manage receipt vouchers, supplier payment payouts, and ledger balance adjustments.</p>
           </div>
           <button
-            onClick={() => { setForm(emptyForm); setShowModal(true); }}
+            onClick={() => { setForm(emptyForm); setShowModal(true); focusFirstField('.fixed.inset-0.z-50'); }}
             className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
           >
             <Plus className="w-4.5 h-4.5" />
@@ -196,47 +198,46 @@ export default function Vouchers() {
                 {/* Direction */}
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Direction</label>
-                  <select
+                  <SmartSelect
                     value={form.direction}
                     onChange={e => setForm({ ...form, direction: e.target.value })}
                     className="form-input bg-white"
-                  >
-                    <option value="in">Receipt (Cash Inward)</option>
-                    <option value="out">Payment (Cash Outward)</option>
-                  </select>
+                    options={[
+                      { value: 'in', label: 'Receipt (Cash Inward)' },
+                      { value: 'out', label: 'Payment (Cash Outward)' }
+                    ]}
+                  />
                 </div>
 
                 {/* Party Type */}
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Party Type</label>
-                  <select
+                  <SmartSelect
                     value={form.type}
                     onChange={e => setForm({ ...form, type: e.target.value, partyId: "" })}
                     className="form-input bg-white"
-                  >
-                    <option value="customer">Customer Ledger</option>
-                    <option value="supplier">Supplier Ledger</option>
-                  </select>
+                    options={[
+                      { value: 'customer', label: 'Customer Ledger' },
+                      { value: 'supplier', label: 'Supplier Ledger' }
+                    ]}
+                  />
                 </div>
 
                 {/* Selected Party */}
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Select Party Account</label>
-                  <select
+                  <SmartSelect
                     value={form.partyId}
                     onChange={e => setForm({ ...form, partyId: e.target.value })}
                     className="form-input bg-white"
-                  >
-                    <option value="">-- Choose Party Ledger Account --</option>
-                    {form.type === "customer"
-                      ? customers.map(c => (
-                          <option key={c.id} value={c.id}>{c.name} (Balance: ₹{c.balance?.toFixed(2)})</option>
-                        ))
-                      : suppliers.map(s => (
-                          <option key={s.id} value={s.id}>{s.name} (Balance: ₹{s.outstanding?.toFixed(2)})</option>
-                        ))
-                    }
-                  </select>
+                    options={[
+                      { value: "", label: "-- Choose Party Ledger Account --" },
+                      ...(form.type === "customer"
+                        ? customers.map(c => ({ value: c.id, label: `${c.name} (Balance: ₹${c.balance?.toFixed(2)})` }))
+                        : suppliers.map(s => ({ value: s.id, label: `${s.name} (Balance: ₹${s.outstanding?.toFixed(2)})` }))
+                      )
+                    ]}
+                  />
                 </div>
 
                 {/* Amount */}
@@ -255,16 +256,17 @@ export default function Vouchers() {
                 {/* Mode */}
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Payment Mode</label>
-                  <select
+                  <SmartSelect
                     value={form.mode}
                     onChange={e => setForm({ ...form, mode: e.target.value })}
                     className="form-input bg-white"
-                  >
-                    <option value="cash">Cash</option>
-                    <option value="upi">UPI / QR Transfer</option>
-                    <option value="card">POS Terminal Card</option>
-                    <option value="bank">Direct Bank NetBanking</option>
-                  </select>
+                    options={[
+                      { value: 'cash', label: 'Cash' },
+                      { value: 'upi', label: 'UPI / QR Transfer' },
+                      { value: 'card', label: 'POS Terminal Card' },
+                      { value: 'bank', label: 'Direct Bank NetBanking' }
+                    ]}
+                  />
                 </div>
 
                 {/* Reference No */}

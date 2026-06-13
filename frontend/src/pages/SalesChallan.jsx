@@ -1,4 +1,5 @@
 import { useEffect, useState, Fragment, useRef } from "react";
+import { advanceFocusFrom, focusFirstField } from "../utils/focusHelpers";
 import axios from "../api/axios";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
@@ -64,6 +65,8 @@ export default function SalesChallan() {
   const [selectedSalesman, setSelectedSalesman] = useState({ id: "", name: "" });
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [activeRowIndex, setActiveRowIndex] = useState(0);
+  const [activeDropdown, setActiveDropdown] = useState(null);
+  const [dropdownIndex, setDropdownIndex] = useState(0);
   const [listFilter, setListFilter] = useState("All");
   const [showDebtorsModal, setShowDebtorsModal] = useState(false);
   const [debtorsConfig, setDebtorsConfig] = useState({
@@ -104,6 +107,12 @@ export default function SalesChallan() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [view, showDebtorsModal]);
+
+  useEffect(() => {
+    if (view === 'create') {
+      focusFirstField('#search-customer, [placeholder="Search..."]');
+    }
+  }, [view]);
 
   const toggleRow = (id) => {
     const newSet = new Set(expandedRows);
@@ -440,27 +449,48 @@ export default function SalesChallan() {
             <div className="h-4 w-px bg-gray-300" />
             <div className="flex items-center gap-2">
               <label className="text-gray-500 font-medium">Godown</label>
-              <select className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1b4985]">
-                <option>MAIN GODOWN</option><option>WAREHOUSE 2</option>
-              </select>
+              <SmartSelect
+                value={filters.godown || 'MAIN GODOWN'}
+                onChange={e => setFilters(p => ({...p, godown: e.target.value}))}
+                className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1b4985]"
+                options={[
+                  { value: 'MAIN GODOWN', label: 'MAIN GODOWN' },
+                  { value: 'WAREHOUSE 2', label: 'WAREHOUSE 2' }
+                ]}
+              />
             </div>
             <div className="flex items-center gap-2">
               <label className="text-gray-500 font-medium">Group</label>
-              <select className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1b4985]">
-                <option>ALL GROUP</option>
-              </select>
+              <SmartSelect
+                value={filters.group || 'ALL GROUP'}
+                onChange={e => setFilters(p => ({...p, group: e.target.value}))}
+                className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1b4985]"
+                options={[
+                  { value: 'ALL GROUP', label: 'ALL GROUP' }
+                ]}
+              />
             </div>
             <div className="flex items-center gap-2">
               <label className="text-gray-500 font-medium">Category</label>
-              <select className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1b4985]">
-                <option>ALL CATEGORY</option>
-              </select>
+              <SmartSelect
+                value={filters.category || 'ALL CATEGORY'}
+                onChange={e => setFilters(p => ({...p, category: e.target.value}))}
+                className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1b4985]"
+                options={[
+                  { value: 'ALL CATEGORY', label: 'ALL CATEGORY' }
+                ]}
+              />
             </div>
             <div className="flex items-center gap-2">
               <label className="text-gray-500 font-medium">Item</label>
-              <select className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1b4985]">
-                <option>ALL ITEMS</option>
-              </select>
+              <SmartSelect
+                value={filters.item || 'ALL ITEMS'}
+                onChange={e => setFilters(p => ({...p, item: e.target.value}))}
+                className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1b4985]"
+                options={[
+                  { value: 'ALL ITEMS', label: 'ALL ITEMS' }
+                ]}
+              />
             </div>
           </div>
 
@@ -485,13 +515,64 @@ export default function SalesChallan() {
                 {rows.map((row, i) => (
                   <tr key={i} onFocusCapture={() => setActiveRowIndex(i)} onClick={() => setActiveRowIndex(i)} className="border-b border-gray-200 hover:bg-blue-50/30 transition-colors">
                     <td className="py-1.5 px-2 text-center text-gray-400 font-medium">{i+1}</td>
-                    <td className="py-1.5 px-2 border-r border-gray-100">
-                      <input id={`search-product-${i}`} list={`item-list-${i}`}
+                    <td className="py-1.5 px-2 border-r border-gray-100 relative">
+                      <input id={`search-product-${i}`}
                         value={row.searchStr !== undefined ? row.searchStr : row.name}
                         onChange={(e) => handleItemSelect(i, e.target.value)}
+                        onFocus={() => { setActiveDropdown(`item-${i}`); setDropdownIndex(0); }}
+                        onBlur={() => setTimeout(() => setActiveDropdown(null), 200)}
+                        aria-expanded={activeDropdown === `item-${i}` ? 'true' : 'false'}
+                        onKeyDown={(e) => {
+                          if (activeDropdown === `item-${i}`) {
+                            const s = row.searchStr !== undefined ? row.searchStr : row.name;
+                            const filtered = items.filter(it => !s || it.name.toLowerCase().includes(s.toLowerCase()));
+                            if (e.key === 'ArrowDown') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setDropdownIndex(prev => Math.min(prev + 1, filtered.length - 1));
+                            } else if (e.key === 'ArrowUp') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setDropdownIndex(prev => Math.max(prev - 1, 0));
+                            } else if (e.key === 'Enter') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (filtered[dropdownIndex]) {
+                                const it = filtered[dropdownIndex];
+                                handleItemSelect(i, `${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`);
+                              } else {
+                                handleItemSelect(i, e.target.value);
+                              }
+                              setActiveDropdown(null);
+                              setTimeout(() => {
+                                const el = document.getElementById(`search-product-${i}`);
+                                if (el) advanceFocusFrom(el);
+                              }, 0);
+                            } else if (e.key === 'Escape') {
+                              e.preventDefault();
+                              setActiveDropdown(null);
+                            }
+                          }
+                        }}
                         className="w-full bg-transparent outline-none font-bold text-gray-800 uppercase placeholder:text-gray-300"
                         placeholder="Search product..." />
-                      <datalist id={`item-list-${i}`}>{items.map(it => <option key={it.id} value={`${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`} />)}</datalist>
+                      {activeDropdown === `item-${i}` && (
+                        <ul className="absolute left-0 top-full mt-0.5 w-[400px] bg-white border border-gray-400 shadow-xl z-50 max-h-48 overflow-y-auto">
+                          {items.filter(it => !(row.searchStr !== undefined ? row.searchStr : row.name) || it.name.toLowerCase().includes((row.searchStr !== undefined ? row.searchStr : row.name).toLowerCase())).map((it, idx) => (
+                            <li key={it.id || idx} className={`px-2 py-1 cursor-pointer text-xs text-black border-b border-gray-100 last:border-0 ${dropdownIndex === idx ? 'bg-blue-200' : 'hover:bg-blue-50'}`}
+                              onMouseDown={() => {
+                                handleItemSelect(i, `${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`);
+                                setTimeout(() => {
+                                  const el = document.getElementById(`search-product-${i}`);
+                                  if (el) advanceFocusFrom(el);
+                                }, 0);
+                              }}>
+                              <div className="flex justify-between font-bold"><span>{it.name}</span><span className="text-green-700">₹{it.selling_price || it.mrp || 0}</span></div>
+                              <div className="flex justify-between text-[10px] text-gray-500"><span>Batch: {it.batch || '-'}</span><span>Stock: {it.stock_qty || 0}</span></div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </td>
                     <td className="py-1.5 px-2 text-center text-gray-500 border-r border-gray-100">{row.unit || 'STRIP'}</td>
                     <td className="py-1.5 px-2 text-center font-mono font-bold text-gray-700 border-r border-gray-100">{row.batch}</td>
@@ -641,10 +722,10 @@ export default function SalesChallan() {
                     <div key={field.key} className="flex items-center justify-between">
                       <label className="text-gray-600 font-medium w-36">{field.label}</label>
                       {field.type === 'select' ? (
-                        <select value={debtorsConfig[field.key]} onChange={e => setDebtorsConfig(p => ({...p, [field.key]: e.target.value}))}
-                          className="border border-gray-300 rounded px-2 py-1 text-xs flex-1 ml-2 focus:outline-none focus:border-[#1b4985]">
-                          {field.options.map(o => <option key={o}>{o}</option>)}
-                        </select>
+                        <SmartSelect value={debtorsConfig[field.key]} onChange={e => setDebtorsConfig(p => ({...p, [field.key]: e.target.value}))}
+                          className="border border-gray-300 rounded px-2 py-1 text-xs flex-1 ml-2 focus:outline-none focus:border-[#1b4985]"
+                          options={field.options.map(o => ({ value: o, label: o }))}
+                        />
                       ) : (
                         <input type={field.type} value={debtorsConfig[field.key]} onChange={e => setDebtorsConfig(p => ({...p, [field.key]: e.target.value}))}
                           className="border border-gray-300 rounded px-2 py-1 text-xs flex-1 ml-2 focus:outline-none focus:border-[#1b4985]" />

@@ -6,6 +6,8 @@ import { useDebounce } from "use-debounce";
 import { toast } from "react-hot-toast";
 import EmptyState from "../components/EmptyState";
 import { useConfirm } from "../hooks/useConfirm";
+import SmartSelect from "../components/SmartSelect";
+import { focusFirstField } from "../utils/focusHelpers";
 import { 
   Search, Package, DollarSign, AlertTriangle, AlertCircle, 
   Trash2, Edit3, Settings, Plus, Play, Info, ArrowUpRight, ArrowDownLeft 
@@ -101,6 +103,7 @@ export default function Inventory() {
     });
     setEditId(item.id);
     setShowModal(true);
+    focusFirstField('.fixed.inset-0.z-50');
   };
 
   const handleDelete = async (item) => {
@@ -131,6 +134,7 @@ export default function Inventory() {
       note: ""
     });
     setShowAdjModal(true);
+    focusFirstField('.fixed.inset-0.z-50');
   };
 
   const handleAdjustmentSubmit = async () => {
@@ -177,7 +181,7 @@ export default function Inventory() {
               <p className="text-sm text-slate-500">Manage products, stock counts, and supply levels.</p>
             </div>
             <button 
-              onClick={() => { setForm(empty); setEditId(null); setShowModal(true); }}
+              onClick={() => { setForm(empty); setEditId(null); setShowModal(true); focusFirstField('.fixed.inset-0.z-50'); }}
               className="flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-teal-700 transition"
             >
               <Plus className="w-4 h-4" /> Add Item
@@ -217,7 +221,7 @@ export default function Inventory() {
               title="No inventory items found" 
               description="Add your first item to start tracking stock, pricing, and expiry dates." 
               actionLabel="Add Item" 
-              onAction={() => { setForm(empty); setEditId(null); setShowModal(true); }} 
+              onAction={() => { setForm(empty); setEditId(null); setShowModal(true); focusFirstField('.fixed.inset-0.z-50'); }} 
             />
           ) : (
             <div className="flex-1 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
@@ -356,16 +360,17 @@ export default function Inventory() {
                 </div>
                 <div className="mt-2">
                   <label className="block font-bold text-[#1b4985] uppercase tracking-wider mb-1 text-[10px]">Drug Schedule</label>
-                  <select
+                  <SmartSelect
                     value={form.schedule || "None"}
                     onChange={(e) => setForm({ ...form, schedule: e.target.value })}
                     className="w-full border border-gray-300 px-2 py-1.5 focus:outline-none focus:border-[#1b4985] bg-white font-semibold text-gray-900"
-                  >
-                    <option value="None">None (General)</option>
-                    <option value="H">Schedule H</option>
-                    <option value="H1">Schedule H1</option>
-                    <option value="X">Schedule X</option>
-                  </select>
+                    options={[
+                      { value: 'None', label: 'None (General)' },
+                      { value: 'H', label: 'Schedule H' },
+                      { value: 'H1', label: 'Schedule H1' },
+                      { value: 'X', label: 'Schedule X' }
+                    ]}
+                  />
                 </div>
                 <div className="mt-2">
                   <label className="block font-bold text-[#1b4985] uppercase tracking-wider mb-1 text-[10px]">Reorder Level (Min Qty)</label>
@@ -413,13 +418,18 @@ export default function Inventory() {
                   </div>
                   <div>
                     <label className="block font-bold text-[#1b4985] uppercase tracking-wider mb-1 text-[10px]">Audit Reason</label>
-                    <select value={adjForm.reason} onChange={(e) => setAdjForm({ ...adjForm, reason: e.target.value })} className="w-full border border-gray-300 px-2 py-1.5 focus:outline-none focus:border-[#1b4985] bg-white font-semibold text-gray-900">
-                      <option value="audit">Physical Verification Audit</option>
-                      <option value="damage">Damaged Goods</option>
-                      <option value="theft">Theft / Missing</option>
-                      <option value="expiry">Expired Stock Disposal</option>
-                      <option value="other">Other / Correction</option>
-                    </select>
+                    <SmartSelect 
+                      value={adjForm.reason} 
+                      onChange={(e) => setAdjForm({ ...adjForm, reason: e.target.value })} 
+                      className="w-full border border-gray-300 px-2 py-1.5 focus:outline-none focus:border-[#1b4985] bg-white font-semibold text-gray-900"
+                      options={[
+                        { value: 'audit', label: 'Physical Verification Audit' },
+                        { value: 'damage', label: 'Damaged Goods' },
+                        { value: 'theft', label: 'Theft / Missing' },
+                        { value: 'expiry', label: 'Expired Stock Disposal' },
+                        { value: 'other', label: 'Other / Correction' }
+                      ]}
+                    />
                   </div>
                   <div>
                     <label className="block font-bold text-[#1b4985] uppercase tracking-wider mb-1 text-[10px]">Detailed Remarks</label>

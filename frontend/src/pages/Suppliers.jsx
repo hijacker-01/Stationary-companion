@@ -5,6 +5,8 @@ import { useDebounce } from "use-debounce";
 import { toast } from "react-hot-toast";
 import EmptyState from "../components/EmptyState";
 import { useConfirm } from "../hooks/useConfirm";
+import SmartSelect from "../components/SmartSelect";
+import { focusFirstField } from "../utils/focusHelpers";
 import {
   Factory,
   ClipboardList,
@@ -246,11 +248,11 @@ export default function Suppliers() {
             <p className="text-sm text-slate-500 mt-1">Manage suppliers and incoming stock orders</p>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => { setSupForm(emptySupplier); setEditSupId(null); setShowSupModal(true); }}
+            <button onClick={() => { setSupForm(emptySupplier); setEditSupId(null); setShowSupModal(true); focusFirstField('.fixed.inset-0.z-50'); }}
               className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
               <Plus className="w-4.5 h-4.5" /> Add Supplier
             </button>
-            <button onClick={() => setShowPOModal(true)}
+            <button onClick={() => { setShowPOModal(true); focusFirstField('.fixed.inset-0.z-50'); }}
               className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
               <Plus className="w-4.5 h-4.5" /> New Purchase Order
             </button>
@@ -319,7 +321,7 @@ export default function Suppliers() {
                 title="No suppliers found" 
                 description="Add your first supplier to start creating purchase orders." 
                 actionLabel="Add Supplier" 
-                onAction={() => { setSupForm(emptySupplier); setEditSupId(null); setShowSupModal(true); }} 
+                onAction={() => { setSupForm(emptySupplier); setEditSupId(null); setShowSupModal(true); focusFirstField('.fixed.inset-0.z-50'); }} 
               />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -350,7 +352,7 @@ export default function Suppliers() {
                       {sup.balance > 0 && <p className="text-red-500 font-semibold flex items-center gap-2"><IndianRupee className="w-3.5 h-3.5" /> Due: ₹{sup.balance}</p>}
                     </div>
                     <div className="flex gap-2 pt-3 border-t border-slate-200">
-                      <button onClick={() => { setSupForm(sup); setEditSupId(sup.id); setShowSupModal(true); }}
+                      <button onClick={() => { setSupForm(sup); setEditSupId(sup.id); setShowSupModal(true); focusFirstField('.fixed.inset-0.z-50'); }}
                         className="flex items-center justify-center bg-teal-50 hover:bg-teal-100 text-teal-600 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer">
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
@@ -430,7 +432,7 @@ export default function Suppliers() {
                     </td>
                     <td className="flex gap-2">
                       {o.status === "pending" && (
-                        <button onClick={() => { setActiveOrder(o); setReceiveAmount(o.total); setShowReceiveModal(true); }}
+                        <button onClick={() => { setActiveOrder(o); setReceiveAmount(o.total); setShowReceiveModal(true); focusFirstField('.fixed.inset-0.z-50'); }}
                           className="flex items-center gap-1 text-green-600 hover:text-green-800 text-xs font-semibold cursor-pointer">
                           <CheckCircle2 className="w-3.5 h-3.5" /> Receive
                         </button>
@@ -526,10 +528,15 @@ export default function Suppliers() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Payment Mode</label>
-                  <select value={poPayMode} onChange={e => setPoPayMode(e.target.value)}
-                    className="form-input bg-white">
-                    {["cash","upi","card","credit"].map(m => <option key={m} value={m}>{m}</option>)}
-                  </select>
+                  <SmartSelect value={poPayMode} onChange={e => setPoPayMode(e.target.value)}
+                    className="form-input bg-white"
+                    options={[
+                      { value: 'cash', label: 'cash' },
+                      { value: 'upi', label: 'upi' },
+                      { value: 'card', label: 'card' },
+                      { value: 'credit', label: 'credit' }
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -607,11 +614,11 @@ export default function Suppliers() {
                               </td>
                             ))}
                             <td className="px-1 py-1">
-                              <select value={item.gst}
+                              <SmartSelect value={item.gst}
                                 onChange={e => { const u=[...poItems]; u[i]={...u[i],gst:parseFloat(e.target.value)}; setPoItems(u); }}
-                                className="border border-slate-200 rounded px-2 py-1.5 text-xs focus:outline-none bg-white">
-                                {GST_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
-                              </select>
+                                className="border border-slate-200 rounded px-2 py-1.5 text-xs focus:outline-none bg-white"
+                                options={GST_RATES.map(r => ({ value: r, label: `${r}%` }))}
+                              />
                             </td>
                             <td className="px-1 py-1">
                               <input type="date" value={item.expiry}
