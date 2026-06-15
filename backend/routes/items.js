@@ -43,6 +43,70 @@ router.post("/", async (req, res) => {
   }
 });
 
+// Bulk import items (from CSV upload on frontend)
+const NUMERIC_FIELDS = ["stock_qty", "scheme_qty", "mrp", "selling_price", "cost_price", "reorderPoint"];
+const VALID_SCHEDULES = ["None", "H", "H1", "X"];
+
+router.post("/bulk-import", async (req, res) => {
+  try {
+    const { items } = req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: "No items provided" });
+    }
+
+    const results = { created: 0, updated: 0, errors: [] };
+
+    for (let i = 0; i < items.length; i++) {
+      const raw = items[i] || {};
+      try {
+        const data = pick(raw, ALLOWED);
+
+        // Drop empty values so model defaults apply
+        Object.keys(data).forEach((k) => {
+          if (data[k] === "" || data[k] === null || data[k] === undefined) delete data[k];
+        });
+
+        if (!data.name || !String(data.name).trim()) {
+          results.errors.push({ row: i + 2, error: "Missing item name" });
+          continue;
+        }
+
+        NUMERIC_FIELDS.forEach((f) => {
+          if (data[f] !== undefined) {
+            const n = Number(data[f]);
+            if (Number.isNaN(n)) {
+              throw new Error(`Invalid number for "${f}": ${data[f]}`);
+            }
+            data[f] = n;
+          }
+        });
+
+        if (data.schedule && !VALID_SCHEDULES.includes(data.schedule)) {
+          throw new Error(`Invalid schedule "${data.schedule}" (must be one of ${VALID_SCHEDULES.join(", ")})`);
+        }
+
+        const [item, created] = await Item.findOrCreate({
+          where: { name: data.name, batch: data.batch || null },
+          defaults: data,
+        });
+
+        if (created) {
+          results.created++;
+        } else {
+          await item.update(data);
+          results.updated++;
+        }
+      } catch (err) {
+        results.errors.push({ row: i + 2, error: err.message });
+      }
+    }
+
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Update item
 router.put("/:id", async (req, res) => {
   try {

@@ -80,6 +80,8 @@ const EInvoiceCenter = React.lazy(() => import("./pages/EInvoiceCenter"));
 const ComplianceAudit = React.lazy(() => import("./pages/ComplianceAudit"));
 const DispatchSummary = React.lazy(() => import("./pages/DispatchSummary"));
 const ClosingStock = React.lazy(() => import("./pages/ClosingStock"));
+const BulkImport = React.lazy(() => import("./pages/BulkImport"));
+const BarcodeGenerator = React.lazy(() => import("./pages/BarcodeGenerator"));
 
 import CommandPalette from "./components/CommandPalette";
 import { useHotkeys } from "./hooks/useHotkeys";
@@ -203,6 +205,8 @@ function App() {
         <Route path="/einvoice" element={<EInvoiceCenter />} />
         <Route path="/dispatch-summary" element={<DispatchSummary />} />
         <Route path="/closing-stock" element={<ClosingStock />} />
+        <Route path="/bulk-import" element={<BulkImport />} />
+        <Route path="/barcode-gen" element={<BarcodeGenerator />} />
         <Route path="/compliance-audit" element={<ComplianceAudit />} />
         </Route>
 

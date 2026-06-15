@@ -14,6 +14,7 @@
     "@tanstack/react-virtual": "^3.14.2",
     "axios": "^1.16.1",
     "html5-qrcode": "^2.3.8",
+    "jsbarcode": "^3.12.3",
     "lucide-react": "^1.16.0",
     "puppeteer": "^25.1.0",
     "react": "^19.2.6",
