@@ -3,6 +3,7 @@ import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import BusinessFooter from "../components/BusinessFooter";
+import DataState from "../components/DataState";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -81,9 +82,7 @@ export default function Dashboard() {
           </div>
 
           <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col gap-6">
-            {loading ? (
-              <p className="text-center text-gray-500 mt-20">Loading dashboard...</p>
-            ) : (
+            <DataState loading={loading} loadingLabel="Loading dashboard…">
               <>
                 {/* KPI Cards Row */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -262,7 +261,7 @@ export default function Dashboard() {
                   </div>
                 </div>
               </>
-            )}
+            </DataState>
           </div>
         </main>
 

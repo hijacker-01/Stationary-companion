@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AICopilotWidget from "./components/AICopilotWidget";
+import LoadingScreen from "./components/LoadingScreen";
 const AICockpit = React.lazy(() => import("./pages/AICockpit"));
 const Login = React.lazy(() => import("./pages/Login"));
 const Dashboard = React.lazy(() => import("./pages/Dashboard"));
@@ -120,12 +121,12 @@ function App() {
       <Toaster position="top-right" />
       <AICopilotWidget />
       <GlobalHooks />
-      <Suspense fallback={<div className="flex h-screen items-center justify-center text-gray-500">Loading Module...</div>}>
+      <Suspense fallback={<LoadingScreen label="Loading module…" />}>
           <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
         
-        <Route element={<ProtectedRoute allowedRoles={['admin', 'user']} />}>
+        <Route element={<ProtectedRoute />}>
           <Route path="/ai-cockpit" element={<AICockpit />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/inventory" element={<Inventory />} />

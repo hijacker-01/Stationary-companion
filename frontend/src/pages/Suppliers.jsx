@@ -1,6 +1,6 @@
 import { useEffect, useState, Fragment } from "react";
 import axios from "../api/axios";
-import Sidebar from "../components/Sidebar";
+import PageLayout from "../components/PageLayout";
 import { useDebounce } from "use-debounce";
 import { toast } from "react-hot-toast";
 import EmptyState from "../components/EmptyState";
@@ -237,27 +237,22 @@ export default function Suppliers() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
-
-        {/* Page Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Suppliers & Purchase Orders</h1>
-            <p className="text-sm text-slate-500 mt-1">Manage suppliers and incoming stock orders</p>
-          </div>
-          <div className="flex gap-3">
-            <button onClick={() => { setSupForm(emptySupplier); setEditSupId(null); setShowSupModal(true); focusFirstField('.fixed.inset-0.z-50'); }}
-              className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
-              <Plus className="w-4.5 h-4.5" /> Add Supplier
-            </button>
-            <button onClick={() => { setShowPOModal(true); focusFirstField('.fixed.inset-0.z-50'); }}
-              className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
-              <Plus className="w-4.5 h-4.5" /> New Purchase Order
-            </button>
-          </div>
-        </div>
+    <PageLayout
+      title="Suppliers & Purchase Orders"
+      subtitle="Manage suppliers and incoming stock orders"
+      actions={
+        <>
+          <button onClick={() => { setSupForm(emptySupplier); setEditSupId(null); setShowSupModal(true); focusFirstField('.fixed.inset-0.z-50'); }}
+            className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
+            <Plus className="w-4.5 h-4.5" /> Add Supplier
+          </button>
+          <button onClick={() => { setShowPOModal(true); focusFirstField('.fixed.inset-0.z-50'); }}
+            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
+            <Plus className="w-4.5 h-4.5" /> New Purchase Order
+          </button>
+        </>
+      }
+    >
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -752,8 +747,7 @@ export default function Suppliers() {
             </div>
           </div>
         )}
-      </main>
       <ConfirmModalComponent />
-    </div>
+    </PageLayout>
   );
 }

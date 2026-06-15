@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "../api/axios";
-import Sidebar from "../components/Sidebar";
+import PageLayout from "../components/PageLayout";
+import DataState from "../components/DataState";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -138,24 +139,16 @@ export default function Reports() {
   ];
 
   if (loading) return (
-    <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
-      <main className="flex-1 flex items-center justify-center">
-        <div className="text-slate-400 font-bold text-lg animate-pulse">Analyzing accounts and generating reports...</div>
-      </main>
-    </div>
+    <PageLayout title="Reports & Analytics" subtitle="Real-time business insights across revenue, stock status, tax filings, and margins.">
+      <DataState loading loadingLabel="Analyzing accounts and generating reports…" />
+    </PageLayout>
   );
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
-
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Reports & Analytics</h1>
-          <p className="text-sm text-slate-500 mt-1">Real-time business insights across revenue, stock status, tax filings, and margins.</p>
-        </div>
+    <PageLayout
+      title="Reports & Analytics"
+      subtitle="Real-time business insights across revenue, stock status, tax filings, and margins."
+    >
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-8 border-b border-slate-200 pb-4">
@@ -895,7 +888,6 @@ export default function Reports() {
           </div>
         )}
 
-      </main>
-    </div>
+    </PageLayout>
   );
 }

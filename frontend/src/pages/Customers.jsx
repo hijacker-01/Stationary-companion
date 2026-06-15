@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from "../api/axios";
-import Sidebar from "../components/Sidebar";
+import PageLayout from "../components/PageLayout";
+import DataState from "../components/DataState";
 import { useDebounce } from "use-debounce";
 import { toast } from "react-hot-toast";
-import EmptyState from "../components/EmptyState";
 import { useConfirm } from "../hooks/useConfirm";
 import {
   Users, IndianRupee, AlertTriangle, CheckCircle2, Search,
@@ -157,20 +157,16 @@ export default function Customers() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
-
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Customers & Ledger</h1>
-            <p className="text-sm text-slate-500 mt-1">Manage customers, credit and payment history</p>
-          </div>
-          <button onClick={() => { setForm(emptyCustomer); setEditId(null); setShowModal(true); }}
-            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
-            <Plus className="w-4.5 h-4.5" /> Add Customer
-          </button>
-        </div>
+    <PageLayout
+      title="Customers & Ledger"
+      subtitle="Manage customers, credit and payment history"
+      actions={
+        <button onClick={() => { setForm(emptyCustomer); setEditId(null); setShowModal(true); }}
+          className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
+          <Plus className="w-4.5 h-4.5" /> Add Customer
+        </button>
+      }
+    >
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {summaryCards.map((c, i) => {
@@ -217,17 +213,12 @@ export default function Customers() {
           <span className="text-sm text-slate-400 ml-auto">{total} customers</span>
         </div>
 
-        {isLoading ? (
-          <div className="flex justify-center items-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div></div>
-        ) : customers.length === 0 ? (
-          <EmptyState 
-            icon="Users" 
-            title="No customers found" 
-            description="Add your first customer to start tracking balances and creating invoices." 
-            actionLabel="Add Customer" 
-            onAction={() => { setForm(emptyCustomer); setEditId(null); setShowModal(true); }} 
-          />
-        ) : (
+        <DataState
+          loading={isLoading}
+          empty={customers.length === 0}
+          loadingLabel="Loading customers…"
+          emptyProps={{ icon: "Users", title: "No customers found", description: "Add your first customer to start tracking balances and creating invoices.", actionLabel: "Add Customer", onAction: () => { setForm(emptyCustomer); setEditId(null); setShowModal(true); } }}
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {customers.map(c => (
               <div key={c.id} className={`bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-150 ${!c.isActive ? 'opacity-60' : ''}`}>
@@ -286,8 +277,8 @@ export default function Customers() {
               </div>
             </div>
           ))}
-        </div>
-        )}
+          </div>
+        </DataState>
 
         {total > 0 && !isLoading && (
           <div className="mt-8 flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
@@ -527,8 +518,7 @@ export default function Customers() {
             </div>
           </div>
         )}
-      </main>
       <ConfirmModalComponent />
-    </div>
+    </PageLayout>
   );
 }

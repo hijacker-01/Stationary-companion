@@ -4,7 +4,7 @@ import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import { useDebounce } from "use-debounce";
 import { toast } from "react-hot-toast";
-import EmptyState from "../components/EmptyState";
+import DataState from "../components/DataState";
 import { useConfirm } from "../hooks/useConfirm";
 import SmartSelect from "../components/SmartSelect";
 import { focusFirstField } from "../utils/focusHelpers";
@@ -213,17 +213,12 @@ export default function Inventory() {
             </div>
           </div>
 
-          {isLoading ? (
-            <div className="flex justify-center items-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div></div>
-          ) : items.length === 0 ? (
-            <EmptyState 
-              icon="Package" 
-              title="No inventory items found" 
-              description="Add your first item to start tracking stock, pricing, and expiry dates." 
-              actionLabel="Add Item" 
-              onAction={() => { setForm(empty); setEditId(null); setShowModal(true); focusFirstField('.fixed.inset-0.z-50'); }} 
-            />
-          ) : (
+          <DataState
+            loading={isLoading}
+            empty={items.length === 0}
+            loadingLabel="Loading inventory…"
+            emptyProps={{ icon: "Package", title: "No inventory items found", description: "Add your first item to start tracking stock, pricing, and expiry dates.", actionLabel: "Add Item", onAction: () => { setForm(empty); setEditId(null); setShowModal(true); focusFirstField('.fixed.inset-0.z-50'); } }}
+          >
             <div className="flex-1 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200">
@@ -277,7 +272,7 @@ export default function Inventory() {
                 </tbody>
               </table>
             </div>
-          )}
+          </DataState>
 
           {totalItems > 0 && !isLoading && (
             <div className="mt-4 flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
