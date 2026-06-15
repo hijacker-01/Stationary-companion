@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
 import axios from "../api/axios";
-import Sidebar from "../components/Sidebar";
-import Header from "../components/Header";
+import PageLayout from "../components/PageLayout";
 import { toast } from "react-hot-toast";
 import {
   UploadCloud, Download, FileSpreadsheet, CheckCircle2,
@@ -127,29 +126,19 @@ export default function BulkImport() {
   const unknownHeaders = headers.filter((h) => !TEMPLATE_COLUMNS.includes(h));
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 overflow-auto p-6">
-          <div className="max-w-5xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                  <FileSpreadsheet className="w-5 h-5 text-teal-600" /> Bulk Import — Item Master
-                </h1>
-                <p className="text-sm text-slate-500 mt-1">
-                  Upload a CSV to create or update many items at once. Matching is done on Name + Batch.
-                </p>
-              </div>
+    <PageLayout
+      maxWidth="max-w-5xl"
+      title={<span className="flex items-center gap-2 text-xl"><FileSpreadsheet className="w-5 h-5 text-teal-600" /> Bulk Import — Item Master</span>}
+      subtitle="Upload a CSV to create or update many items at once. Matching is done on Name + Batch."
+      actions={
               <button
                 onClick={downloadTemplate}
                 className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-teal-700 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors"
               >
                 <Download className="w-4 h-4" /> Download CSV Template
               </button>
-            </div>
-
+      }
+    >
             {/* Upload area */}
             <div
               onDrop={onDrop}
@@ -278,9 +267,6 @@ export default function BulkImport() {
                 )}
               </div>
             )}
-          </div>
-        </main>
-      </div>
-    </div>
+    </PageLayout>
   );
 }
