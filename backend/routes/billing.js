@@ -26,10 +26,16 @@ const generateBillNo = async (req, transaction) => {
   const fyCode  = `${String(fyStart).slice(-2)}${String(fyEnd).slice(-2)}`; // e.g. "2526"
   const prefix  = `INV-${fyCode}-`;
 
-  // Find the last bill in this financial year (per branch, so each branch's GSTIN gets its own sequence)
+  // Find the highest bill number in this financial year (per branch, so each
+  // branch's GSTIN gets its own sequence). `paranoid: false` so soft-deleted
+  // bills still reserve their number — the billNo unique index covers them too,
+  // and reusing a deleted number would collide. Ordering by billNo (zero-padded
+  // within an FY, so lexical order == numeric order) is robust against
+  // out-of-order createdAt timestamps.
   const last = await Bill.findOne({
-    where: branchWhere(req, { billNo: { [require('sequelize').Op.like]: `${prefix}%` } }),
-    order: [["createdAt", "DESC"]],
+    where: branchWhere(req, { billNo: { [Op.like]: `${prefix}%` } }),
+    order: [["billNo", "DESC"]],
+    paranoid: false,
     transaction,
   });
 
@@ -211,6 +217,9 @@ router.post("/", protect, requirePermission("billing.create"), idempotency, asyn
       customerId,
       billNo: await generateBillNo(req, t),
       branchId: req.user.branchId,
+      // Honor a user-chosen invoice date (defaults to now). Keep the time component
+      // so same-day ordering is stable.
+      ...(req.body.date ? { createdAt: new Date(`${req.body.date}T${new Date().toTimeString().slice(0, 8)}`) } : {}),
     }, { transaction: t });
 
     // Auto-create double-entry journal for sales
@@ -235,7 +244,8 @@ router.post("/", protect, requirePermission("billing.create"), idempotency, asyn
     res.json(bill);
   } catch (err) {
     await t.rollback();
-    res.status(400).json({ error: err.message });
+    console.error("[billing] create failed:", err.name, err.message, err.errors?.map(e => `${e.path}: ${e.message}`));
+    res.status(400).json({ error: err.message, details: err.errors?.map(e => `${e.path}: ${e.message}`) });
   }
 });
 

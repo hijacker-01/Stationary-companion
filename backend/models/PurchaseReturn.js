@@ -2,7 +2,7 @@ const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
 
 const PurchaseReturn = sequelize.define("PurchaseReturn", {
-  returnNo:     { type: DataTypes.STRING, unique: true },
+  returnNo:     { type: DataTypes.STRING }, // unique per branch — see composite index
   originalPoNo: { type: DataTypes.STRING },
   supplierName: { type: DataTypes.STRING, allowNull: false },
   items:        { type: DataTypes.JSON },
@@ -14,7 +14,8 @@ const PurchaseReturn = sequelize.define("PurchaseReturn", {
   branchId:     { type: DataTypes.INTEGER, allowNull: false },
 }, {
   indexes: [
-    { fields: ['branchId', 'id'] }
+    { fields: ['branchId', 'id'] },
+    { unique: true, fields: ['branchId', 'returnNo'] }
   ]
 });
 

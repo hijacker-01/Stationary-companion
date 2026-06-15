@@ -25,7 +25,7 @@ const Item = sequelize.define("Item", {
 }, {
   paranoid: true,
   indexes: [
-    { unique: true, fields: ['name', 'batch'] },
+    { unique: true, fields: ['branchId', 'name', 'batch'] },
     { fields: ['category'] },
     { fields: ['branchId', 'id'] }
   ]

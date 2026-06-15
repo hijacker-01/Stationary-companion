@@ -2,7 +2,7 @@ const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
 
 const JournalVoucher = sequelize.define("JournalVoucher", {
-  jvNo: { type: DataTypes.STRING, unique: true },
+  jvNo: { type: DataTypes.STRING }, // unique per branch — see composite index
   date: { type: DataTypes.DATEONLY, allowNull: false },
   
   debitPartyType: { type: DataTypes.ENUM("customer", "supplier"), allowNull: false },
@@ -18,7 +18,8 @@ const JournalVoucher = sequelize.define("JournalVoucher", {
   branchId: { type: DataTypes.INTEGER, allowNull: false },
 }, {
   indexes: [
-    { fields: ['branchId', 'id'] }
+    { fields: ['branchId', 'id'] },
+    { unique: true, fields: ['branchId', 'jvNo'] }
   ]
 });
 

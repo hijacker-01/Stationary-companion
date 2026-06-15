@@ -3,7 +3,7 @@ const sequelize = require("../config/db");
 
 const Payment = sequelize.define("Payment", {
   type:        { type: DataTypes.ENUM("customer","supplier"), allowNull: false },
-  voucherNo:   { type: DataTypes.STRING, unique: true },
+  voucherNo:   { type: DataTypes.STRING }, // unique per branch — see composite index
   partyId:     { type: DataTypes.INTEGER, allowNull: false },
   partyName:   { type: DataTypes.STRING },
   amount:      { type: DataTypes.DECIMAL(15, 2), allowNull: false },
@@ -14,7 +14,8 @@ const Payment = sequelize.define("Payment", {
   branchId:    { type: DataTypes.INTEGER, allowNull: false },
 }, {
   indexes: [
-    { fields: ['branchId', 'id'] }
+    { fields: ['branchId', 'id'] },
+    { unique: true, fields: ['branchId', 'voucherNo'] }
   ]
 });
 

@@ -2,7 +2,7 @@ const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
 
 const PurchaseChallan = sequelize.define("PurchaseChallan", {
-  challanNo:       { type: DataTypes.STRING, unique: true },
+  challanNo:       { type: DataTypes.STRING }, // unique per branch — see composite index
   supplierId:      { type: DataTypes.INTEGER },
   supplierName: { type: DataTypes.STRING, allowNull: false },
   supplierPhone: { type: DataTypes.STRING },
@@ -31,7 +31,8 @@ const PurchaseChallan = sequelize.define("PurchaseChallan", {
   indexes: [
     { fields: ['supplierId'] },
     { fields: ['status'] },
-    { fields: ['branchId', 'id'] }
+    { fields: ['branchId', 'id'] },
+    { unique: true, fields: ['branchId', 'challanNo'] }
   ]
 });
 

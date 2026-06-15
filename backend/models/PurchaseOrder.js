@@ -2,7 +2,7 @@ const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
 
 const PurchaseOrder = sequelize.define("PurchaseOrder", {
-  poNumber:     { type: DataTypes.STRING, unique: true },
+  poNumber:     { type: DataTypes.STRING }, // unique per branch — see composite index
   supplierId:   { type: DataTypes.INTEGER, allowNull: false },
   supplierName: { type: DataTypes.STRING },
   items:        { type: DataTypes.JSON },
@@ -30,7 +30,8 @@ const PurchaseOrder = sequelize.define("PurchaseOrder", {
   indexes: [
     { fields: ['supplierId'] },
     { fields: ['status'] },
-    { fields: ['branchId', 'id'] }
+    { fields: ['branchId', 'id'] },
+    { unique: true, fields: ['branchId', 'poNumber'] }
   ]
 });
 

@@ -7,8 +7,14 @@ const rateLimit = require("express-rate-limit");
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 login requests per `window` (here, per 15 minutes)
-  message: { error: "Too many login attempts from this IP, please try again after 15 minutes" },
+  max: 10, // Allow up to 10 FAILED login attempts per IP per window
+  // Only count failed logins toward the limit — successful sign-ins (and
+  // legitimate re-logins) should never be throttled. This is the correct
+  // brute-force-protection pattern and avoids locking out real users.
+  skipSuccessfulRequests: true,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many failed login attempts from this IP, please try again after 15 minutes" },
 });
 
 router.post("/register", validate(registerSchema), register);
