@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "../api/axios";
-import Sidebar from "../components/Sidebar";
+import PageLayout from "../components/PageLayout";
 import {
   XCircle, AlertOctagon, AlertTriangle, CheckCircle2, Search, Clock, Package
 } from "lucide-react";
@@ -73,24 +73,18 @@ export default function ExpiryBox() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
-
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Expiry Box</h1>
-            <p className="text-sm text-slate-500 mt-1">Track all items nearing expiry date</p>
-          </div>
-          <div className="flex gap-4 text-xs font-medium text-slate-500 bg-white border border-slate-200 px-4 py-2 rounded-lg shadow-sm">
-            <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-red-500"></div>Expired</span>
-            <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-orange-500"></div>≤ 7 Days (Critical)</span>
-            <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-amber-500"></div>≤ 30 Days (Warning)</span>
-            <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-emerald-500"></div>&gt; 30 Days (Safe)</span>
-          </div>
+    <PageLayout
+      title="Expiry Box"
+      subtitle="Track all items nearing expiry date"
+      actions={
+        <div className="flex gap-4 text-xs font-medium text-slate-500 bg-white border border-slate-200 px-4 py-2 rounded-lg shadow-sm">
+          <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-red-500"></div>Expired</span>
+          <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-orange-500"></div>≤ 7 Days (Critical)</span>
+          <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-amber-500"></div>≤ 30 Days (Warning)</span>
+          <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-emerald-500"></div>&gt; 30 Days (Safe)</span>
         </div>
-
+      }
+    >
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {summaryCards.map((c, i) => {
@@ -210,7 +204,6 @@ export default function ExpiryBox() {
             </table>
           )}
         </div>
-      </main>
-    </div>
+    </PageLayout>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "../api/axios";
-import Sidebar from "../components/Sidebar";
+import PageLayout from "../components/PageLayout";
 import { Receipt, Plus, Trash2, IndianRupee } from "lucide-react";
 
 const token = () => localStorage.getItem("token");
@@ -47,22 +47,18 @@ export default function Expenses() {
   const total = expenses.reduce((acc, curr) => acc + curr.amount, 0);
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Daily Expenses</h1>
-            <p className="text-sm text-slate-500 mt-1">Record and track operational business expenses</p>
-          </div>
-          <button 
-            onClick={() => setShowModal(true)} 
-            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
-          >
-            <Plus className="w-4.5 h-4.5" /> Add Expense
-          </button>
-        </div>
-
+    <PageLayout
+      title="Daily Expenses"
+      subtitle="Record and track operational business expenses"
+      actions={
+        <button
+          onClick={() => setShowModal(true)}
+          className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
+        >
+          <Plus className="w-4.5 h-4.5" /> Add Expense
+        </button>
+      }
+    >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white border-l-4 border-l-rose-500 border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between">
             <div>
@@ -170,7 +166,6 @@ export default function Expenses() {
             </div>
           </div>
         )}
-      </main>
-    </div>
+    </PageLayout>
   );
 }

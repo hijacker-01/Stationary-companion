@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "../api/axios";
-import Sidebar from "../components/Sidebar";
+import PageLayout from "../components/PageLayout";
 import SmartSelect from "../components/SmartSelect";
 import { focusFirstField } from "../utils/focusHelpers";
 import { 
@@ -92,24 +92,19 @@ export default function Vouchers() {
   );
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Voucher Accounting</h1>
-            <p className="text-sm text-slate-500 mt-1">Manage receipt vouchers, supplier payment payouts, and ledger balance adjustments.</p>
-          </div>
-          <button
-            onClick={() => { setForm(emptyForm); setShowModal(true); focusFirstField('.fixed.inset-0.z-50'); }}
-            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
-          >
-            <Plus className="w-4.5 h-4.5" />
-            Create Voucher
-          </button>
-        </div>
-
+    <PageLayout
+      title="Voucher Accounting"
+      subtitle="Manage receipt vouchers, supplier payment payouts, and ledger balance adjustments."
+      actions={
+        <button
+          onClick={() => { setForm(emptyForm); setShowModal(true); focusFirstField('.fixed.inset-0.z-50'); }}
+          className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
+        >
+          <Plus className="w-4.5 h-4.5" />
+          Create Voucher
+        </button>
+      }
+    >
         {/* Search */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm flex items-center gap-3">
           <Search className="w-5 h-5 text-slate-400" />
@@ -311,7 +306,6 @@ export default function Vouchers() {
             </div>
           </div>
         )}
-      </main>
-    </div>
+    </PageLayout>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "../api/axios";
-import Sidebar from "../components/Sidebar";
+import PageLayout from "../components/PageLayout";
 import { Truck, CheckCircle, Package, UserPlus } from "lucide-react";
 
 const token = () => localStorage.getItem("token");
@@ -111,19 +111,10 @@ export default function DeliveryMan() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
-              <Truck className="w-7 h-7 text-teal-600" /> Dispatch & Delivery Management
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">Manage delivery personnel, assign routes, and settle payments</p>
-          </div>
-        </div>
-
+    <PageLayout
+      title={<span className="flex items-center gap-3"><Truck className="w-7 h-7 text-teal-600" /> Dispatch & Delivery Management</span>}
+      subtitle="Manage delivery personnel, assign routes, and settle payments"
+    >
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-8 border-b border-slate-200 pb-4">
           {tabs.map(t => {
@@ -333,7 +324,6 @@ export default function DeliveryMan() {
             {!clearanceDm && <div className="p-12 text-center text-slate-400">Select a Delivery Man to view assigned invoices.</div>}
           </div>
         )}
-      </main>
-    </div>
+    </PageLayout>
   );
 }

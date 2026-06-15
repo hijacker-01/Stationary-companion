@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "../api/axios";
-import Sidebar from "../components/Sidebar";
+import PageLayout from "../components/PageLayout";
 import {
   Settings as SettingsIcon,
   Building2,
@@ -151,40 +151,30 @@ export default function Settings() {
 
   if (!settings)
     return (
-      <div className="flex min-h-screen bg-slate-50">
-        <Sidebar />
-        <main className="flex-1 flex items-center justify-center text-slate-400">
-          Loading settings...
-        </main>
-      </div>
+      <PageLayout title="Settings">
+        <div className="flex items-center justify-center py-24 text-slate-400">Loading settings...</div>
+      </PageLayout>
     );
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Settings</h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Configure your business and system preferences
-            </p>
-          </div>
-          {tab !== "gstr1" && (
-            <button
-              onClick={handleSave}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer ${
-                saved
-                  ? "bg-green-500 text-white"
-                  : "bg-teal-600 hover:bg-teal-700 text-white"
-              }`}
-            >
-              {saved ? <><CheckCircle2 className="w-4 h-4" /> Saved!</> : <><Save className="w-4 h-4" /> Save Settings</>}
-            </button>
-          )}
-        </div>
-
+    <PageLayout
+      title="Settings"
+      subtitle="Configure your business and system preferences"
+      actions={
+        tab !== "gstr1" && (
+          <button
+            onClick={handleSave}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer ${
+              saved
+                ? "bg-green-500 text-white"
+                : "bg-teal-600 hover:bg-teal-700 text-white"
+            }`}
+          >
+            {saved ? <><CheckCircle2 className="w-4 h-4" /> Saved!</> : <><Save className="w-4 h-4" /> Save Settings</>}
+          </button>
+        )
+      }
+    >
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-8 border-b border-slate-200 pb-4">
           {TABS.map((t) => {
@@ -709,7 +699,6 @@ export default function Settings() {
             </div>
           )}
         </div>
-      </main>
-    </div>
+    </PageLayout>
   );
 }

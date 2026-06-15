@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "../api/axios";
-import Sidebar from "../components/Sidebar";
+import PageLayout from "../components/PageLayout";
 import { Users, CheckCircle2, Target, Plus, Pencil, Trash2 } from "lucide-react";
 
 const token = () => localStorage.getItem("token");
@@ -35,22 +35,16 @@ export default function SalesmanPage() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto max-h-screen">
-
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Salesman Master</h1>
-            <p className="text-sm text-slate-500 mt-1">Manage field representatives and area assignments</p>
-          </div>
-          <button onClick={() => { setForm(emptyForm); setEditId(null); setShowModal(true); }}
-            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
-            <Plus className="w-4.5 h-4.5" /> Add Salesman
-          </button>
-        </div>
-
+    <PageLayout
+      title="Salesman Master"
+      subtitle="Manage field representatives and area assignments"
+      actions={
+        <button onClick={() => { setForm(emptyForm); setEditId(null); setShowModal(true); }}
+          className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
+          <Plus className="w-4.5 h-4.5" /> Add Salesman
+        </button>
+      }
+    >
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {summaryCards.map((c, i) => {
@@ -166,7 +160,6 @@ export default function SalesmanPage() {
             </div>
           </div>
         )}
-      </main>
-    </div>
+    </PageLayout>
   );
 }
