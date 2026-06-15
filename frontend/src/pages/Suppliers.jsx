@@ -449,7 +449,7 @@ export default function Suppliers() {
 
         {/* ── SUPPLIER MODAL ── */}
         {showSupModal && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onKeyDown={(e) => { if (e.key === 'Enter' && e.shiftKey && supForm.name?.trim()) handleSaveSupplier(); }}>
             <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-bold text-slate-900">{editSupId ? "Edit" : "Add"} Supplier</h2>
@@ -482,15 +482,21 @@ export default function Suppliers() {
                     className="form-input" />
                 </div>
               </div>
-              <div className="flex gap-3 mt-6">
-                <button onClick={handleSaveSupplier}
-                  className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
-                  {editSupId ? "Update" : "Add"} Supplier
+              <div className="flex flex-col gap-2 mt-6">
+                <button onClick={handleSaveSupplier} disabled={!supForm.name?.trim()} tabIndex={-1}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
+                  Finish (Shift + Enter)
                 </button>
-                <button onClick={() => setShowSupModal(false)}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
-                  Cancel
-                </button>
+                <div className="flex gap-3">
+                  <button onClick={handleSaveSupplier}
+                    className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
+                    {editSupId ? "Update" : "Add"} Supplier
+                  </button>
+                  <button onClick={() => setShowSupModal(false)}
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
           </div>
