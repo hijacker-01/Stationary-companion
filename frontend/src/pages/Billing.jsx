@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef, Fragment } from "react";
+import { useEffect, useState, useRef, Fragment, lazy, Suspense } from "react";
 import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
-import BarcodeScannerModal from "../components/BarcodeScannerModal";
+// Lazy-loaded: pulls in html5-qrcode (~250KB), only needed when the scan modal opens.
+const BarcodeScannerModal = lazy(() => import("../components/BarcodeScannerModal"));
 import SmartSelect from "../components/SmartSelect";
 import {
   Plus,
@@ -754,7 +755,11 @@ export default function Billing() {
     return (
       <div className="flex min-h-screen bg-[#1b4985] font-sans text-xs">
         <Sidebar />
-        {showScanner && <BarcodeScannerModal onClose={() => setShowScanner(false)} onScan={handleBarcodeScan} />}
+        {showScanner && (
+          <Suspense fallback={null}>
+            <BarcodeScannerModal onClose={() => setShowScanner(false)} onScan={handleBarcodeScan} />
+          </Suspense>
+        )}
         <main className="flex-1 overflow-y-hidden max-h-screen flex flex-col p-1 gap-1">
           {/* TOP HEADER SECTION */}
           <div className="flex bg-[#1b4985] border border-white text-white p-1 shrink-0 gap-2">
