@@ -84,6 +84,30 @@ test("a record created by branch staff is stamped with their branchId", async ()
   await api(`/items/${res.data.id}`, { method: "DELETE", cookie: staff.cookie });
 });
 
+// ── Soft-delete restore (regression for the deleted-name+batch collision) ─────
+test("re-adding a soft-deleted item name+batch restores it instead of failing", async () => {
+  const name = `TEST Restore Item ${Date.now()}`;
+  const batch = "RST1";
+  const body = { name, batch, category: "General", unit: "PCS", mrp: 10, selling_price: 9, cost_price: 8, stock_qty: 5 };
+
+  // Create, then soft-delete.
+  const first = await api("/items", { method: "POST", cookie: staff.cookie, body });
+  assert.ok(first.status === 200 || first.status === 201, `create failed: ${JSON.stringify(first.data)}`);
+  const firstId = first.data.id;
+  const del = await api(`/items/${firstId}`, { method: "DELETE", cookie: staff.cookie });
+  assert.equal(del.status, 200);
+
+  // Re-adding the same name+batch must succeed (restore), not 400 on the
+  // (branchId, name, batch) unique index.
+  const second = await api("/items", { method: "POST", cookie: staff.cookie, body: { ...body, stock_qty: 12 } });
+  assert.ok(second.status === 200 || second.status === 201, `restore failed: ${JSON.stringify(second.data)}`);
+  assert.equal(second.data.id, firstId, "restored row should reuse the original id");
+  assert.equal(second.data.stock_qty, 12, "restored row should carry the new values");
+
+  // cleanup
+  await api(`/items/${firstId}`, { method: "DELETE", cookie: staff.cookie });
+});
+
 // ── Billing write path ────────────────────────────────────────────────────────
 test("creating a bill stamps branchId and a branch-scoped bill number", async () => {
   // Use a real item from the admin's branch.

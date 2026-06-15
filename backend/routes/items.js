@@ -9,6 +9,25 @@ router.use(protect);
 const pick = (obj, keys) => Object.fromEntries(keys.filter(k => k in obj).map(k => [k, obj[k]]));
 const ALLOWED = ["name","batch","hsn","pack","category","company","stock_qty","scheme_qty","unit","expiry","location","mrp","selling_price","cost_price","purchaseScheme","schedule","reorderPoint"];
 
+// The (branchId, name, batch) unique index also covers soft-deleted rows, so a
+// plain create() of a previously-deleted item collides. Look across deleted
+// rows: if a soft-deleted match exists, restore it and overwrite with the new
+// values instead of failing. Returns [item, created].
+async function upsertItem(req, data, { updateActive }) {
+  const where = branchWhere(req, { name: data.name, batch: data.batch || null });
+  const existing = await Item.findOne({ where, paranoid: false });
+  if (existing) {
+    if (!existing.deletedAt && !updateActive) {
+      // Active duplicate: let the unique constraint surface as before.
+      return [await Item.create({ ...data, branchId: req.user.branchId }), true];
+    }
+    if (existing.deletedAt) await existing.restore();
+    await existing.update({ ...data, branchId: req.user.branchId });
+    return [existing, false];
+  }
+  return [await Item.create({ ...data, branchId: req.user.branchId }), true];
+}
+
 // Get items (with pagination & search)
 router.get("/", async (req, res) => {
   try {
@@ -37,7 +56,9 @@ router.get("/", async (req, res) => {
 // Add new item
 router.post("/", async (req, res) => {
   try {
-    const item = await Item.create({ ...pick(req.body, ALLOWED), branchId: req.user.branchId });
+    // updateActive:false — re-adding a soft-deleted item restores it, but an
+    // active duplicate still trips the unique constraint and returns 400.
+    const [item] = await upsertItem(req, pick(req.body, ALLOWED), { updateActive: false });
     res.status(201).json(item);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -86,17 +107,11 @@ router.post("/bulk-import", async (req, res) => {
           throw new Error(`Invalid schedule "${data.schedule}" (must be one of ${VALID_SCHEDULES.join(", ")})`);
         }
 
-        const [item, created] = await Item.findOrCreate({
-          where: branchWhere(req, { name: data.name, batch: data.batch || null }),
-          defaults: { ...data, branchId: req.user.branchId },
-        });
-
-        if (created) {
-          results.created++;
-        } else {
-          await item.update(data);
-          results.updated++;
-        }
+        // updateActive:true — bulk import treats an existing (active or
+        // soft-deleted) name+batch as an update/restore, not an error.
+        const [, created] = await upsertItem(req, data, { updateActive: true });
+        if (created) results.created++;
+        else results.updated++;
       } catch (err) {
         results.errors.push({ row: i + 2, error: err.message });
       }
