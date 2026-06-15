@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { protect } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
 const EInvoiceService = require("../services/EInvoiceService");
 const Bill = require("../models/Bill");
 const EInvoiceLog = require("../models/EInvoiceLog");
@@ -8,7 +9,7 @@ const GSTReturn = require("../models/GSTReturn");
 
 router.post("/einvoice/generate/:billId", protect, async (req, res) => {
   try {
-    const bill = await Bill.findByPk(req.params.billId);
+    const bill = await Bill.findOne({ where: branchWhere(req, { id: req.params.billId }) });
     if (!bill) return res.status(404).json({ error: "Bill not found" });
 
     // Mock seller and buyer for API simulation

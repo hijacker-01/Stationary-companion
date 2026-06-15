@@ -1,9 +1,15 @@
 const express = require("express");
 const router = express.Router();
 const { protect } = require("../middleware/auth");
+const { Op } = require("sequelize");
 const Branch = require("../models/Branch");
 const StockTransfer = require("../models/StockTransfer");
 const BranchMetric = require("../models/BranchMetric");
+const Bill = require("../models/Bill");
+const PurchaseOrder = require("../models/PurchaseOrder");
+const Customer = require("../models/Customer");
+const Supplier = require("../models/Supplier");
+const Item = require("../models/Item");
 
 router.get("/branches", protect, async (req, res) => {
   try {
@@ -63,25 +69,67 @@ router.post("/transfer/:id/receive", protect, async (req, res) => {
 router.get("/benchmark", protect, async (req, res) => {
   try {
     const branches = await Branch.findAll({ where: { isActive: true } });
-    const benchmark = branches.map(b => ({
-      id: b.id, name: b.name, city: b.city,
-      sales: Math.round(100000 + Math.random() * 900000),
-      purchases: Math.round(80000 + Math.random() * 700000),
-      profitMargin: Math.round(8 + Math.random() * 15),
-      receivables: Math.round(50000 + Math.random() * 300000),
-      payables: Math.round(40000 + Math.random() * 250000),
-      efficiency: Math.round(60 + Math.random() * 40)
-    }));
+    const benchmark = [];
+    for (const b of branches) {
+      const scope = { branchId: b.id };
+      const [sales, purchases, salesSub, salesTotal] = await Promise.all([
+        Bill.sum("total", { where: scope }) || 0,
+        PurchaseOrder.sum("total", { where: scope }) || 0,
+        Bill.sum("subtotal", { where: scope }) || 0,
+        Bill.sum("total", { where: scope }) || 0,
+      ]);
+      const customers = await Customer.findAll({ where: { ...scope, balance: { [Op.gt]: 0 } }, attributes: ["balance"] });
+      const suppliers = await Supplier.findAll({ where: { ...scope, balance: { [Op.gt]: 0 } }, attributes: ["balance"] });
+      const receivables = customers.reduce((s, c) => s + (parseFloat(c.balance) || 0), 0);
+      const payables = suppliers.reduce((s, x) => s + (parseFloat(x.balance) || 0), 0);
+      // Gross margin from GST-exclusive subtotal vs total is not cost; approximate
+      // margin as gst-exclusive sales share, and efficiency as collection ratio.
+      const profitMargin = salesTotal > 0 ? Math.round(((salesSub || 0) / salesTotal) * 100) : 0;
+      const efficiency = (sales + receivables) > 0 ? Math.round((sales / (sales + receivables)) * 100) : 0;
+      benchmark.push({
+        id: b.id, name: b.name, city: b.city,
+        sales: Math.round(sales), purchases: Math.round(purchases),
+        profitMargin, receivables: Math.round(receivables), payables: Math.round(payables), efficiency,
+      });
+    }
     res.json(benchmark);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Real rebalancing suggestions: items overstocked in one branch (>2x reorder)
+// while below reorder in another branch.
 router.get("/optimizer", protect, async (req, res) => {
   try {
-    res.json({ suggestions: [
-      { action: "Transfer dead stock of Paracetamol 500mg from Delhi → Mumbai", impact: "₹45,000 potential revenue recovery", confidence: 87 },
-      { action: "Shift excess Vitamin D3 from Bangalore → Delhi (high demand detected)", impact: "Prevent stockout in 12 days", confidence: 92 }
-    ]});
+    const items = await Item.findAll({
+      attributes: ["name", "batch", "branchId", "stock_qty", "reorderPoint", "cost_price"],
+    });
+    const branches = await Branch.findAll();
+    const branchName = branches.reduce((acc, b) => { acc[b.id] = b.name; return acc; }, {});
+
+    // Group by item name.
+    const byName = {};
+    for (const it of items) {
+      (byName[it.name] = byName[it.name] || []).push(it);
+    }
+
+    const suggestions = [];
+    for (const [name, rows] of Object.entries(byName)) {
+      if (rows.length < 2) continue;
+      const surplus = rows.filter((r) => r.reorderPoint > 0 && r.stock_qty > r.reorderPoint * 2);
+      const shortage = rows.filter((r) => r.stock_qty <= (r.reorderPoint || 0));
+      for (const sh of shortage) {
+        const src = surplus.find((s) => s.branchId !== sh.branchId);
+        if (!src) continue;
+        const moveQty = Math.min(src.stock_qty - src.reorderPoint * 2 + 1, (sh.reorderPoint * 2) - sh.stock_qty);
+        if (moveQty <= 0) continue;
+        suggestions.push({
+          action: `Transfer ${moveQty} units of ${name} from ${branchName[src.branchId] || "Branch " + src.branchId} → ${branchName[sh.branchId] || "Branch " + sh.branchId}`,
+          impact: `Prevents stockout at ${branchName[sh.branchId] || "destination"}; frees overstock worth ~Rs.${Math.round(moveQty * (parseFloat(src.cost_price) || 0)).toLocaleString("en-IN")}`,
+          itemName: name, fromBranchId: src.branchId, toBranchId: sh.branchId, quantity: moveQty,
+        });
+      }
+    }
+    res.json({ suggestions: suggestions.slice(0, 20) });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

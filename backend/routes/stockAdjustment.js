@@ -4,6 +4,7 @@ const StockAdjustment = require("../models/StockAdjustment");
 const Item = require("../models/Item");
 const sequelize = require("../config/db");
 const { protect } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
 
 router.use(protect);
 
@@ -18,7 +19,7 @@ router.post("/", async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const { itemId, type, quantity, ...rest } = req.body;
-    const item = await Item.findByPk(itemId, { transaction: t });
+    const item = await Item.findOne({ where: branchWhere(req, { id: itemId }), transaction: t });
     if (!item) { await t.rollback(); return res.status(404).json({ error: "Item not found" }); }
 
     const qty = parseInt(quantity) || 0;

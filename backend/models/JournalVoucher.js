@@ -15,6 +15,11 @@ const JournalVoucher = sequelize.define("JournalVoucher", {
   
   amount: { type: DataTypes.DECIMAL(15, 2), allowNull: false },
   narration: { type: DataTypes.STRING, allowNull: false },
+  branchId: { type: DataTypes.INTEGER, allowNull: false },
+}, {
+  indexes: [
+    { fields: ['branchId', 'id'] }
+  ]
 });
 
 module.exports = JournalVoucher;

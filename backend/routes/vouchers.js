@@ -6,12 +6,15 @@ const Supplier = require("../models/Supplier");
 const sequelize = require("../config/db");
 const { Op } = require("sequelize");
 const validatePositiveValues = require("../middleware/validatePositiveValues");
+const { protect } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
 
 // Apply to all voucher routes
+router.use(protect);
 router.use(validatePositiveValues);
 
 // Helper to generate voucher numbers
-const generateVoucherNo = async (type, direction, t) => {
+const generateVoucherNo = async (req, type, direction, t) => {
   const prefix = direction === "in" ? "RV-" : "PV-";
   const now = new Date();
   const fyStart = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
@@ -20,7 +23,7 @@ const generateVoucherNo = async (type, direction, t) => {
   const fullPrefix = `${prefix}${yearPart}`;
 
   const last = await Payment.findOne({
-    where: { voucherNo: { [Op.like]: `${fullPrefix}%` } },
+    where: branchWhere(req, { voucherNo: { [Op.like]: `${fullPrefix}%` } }),
     order: [["createdAt", "DESC"]],
     transaction: t,
   });
@@ -37,7 +40,7 @@ const generateVoucherNo = async (type, direction, t) => {
 // GET all vouchers
 router.get("/", async (req, res) => {
   try {
-    const vouchers = await Payment.findAll({ order: [["createdAt", "DESC"]] });
+    const vouchers = await Payment.findAll({ where: branchWhere(req), order: [["createdAt", "DESC"]] });
     res.json(vouchers);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -47,7 +50,7 @@ router.get("/", async (req, res) => {
 // GET single voucher
 router.get("/:id", async (req, res) => {
   try {
-    const voucher = await Payment.findByPk(req.params.id);
+    const voucher = await Payment.findOne({ where: branchWhere(req, { id: req.params.id }) });
     if (!voucher) return res.status(404).json({ error: "Voucher not found" });
     res.json(voucher);
   } catch (err) {
@@ -70,7 +73,7 @@ router.post("/", async (req, res) => {
 
     // Update Customer / Supplier outstanding balance
     if (type === "customer") {
-      const cust = await Customer.findByPk(partyId, { transaction: t });
+      const cust = await Customer.findOne({ where: branchWhere(req, { id: partyId }), transaction: t });
       if (!cust) {
         await t.rollback();
         return res.status(404).json({ error: "Customer not found" });
@@ -83,7 +86,7 @@ router.post("/", async (req, res) => {
         await cust.increment("balance", { by: amt, transaction: t });
       }
     } else if (type === "supplier") {
-      const sup = await Supplier.findByPk(partyId, { transaction: t });
+      const sup = await Supplier.findOne({ where: branchWhere(req, { id: partyId }), transaction: t });
       if (!sup) {
         await t.rollback();
         return res.status(404).json({ error: "Supplier not found" });
@@ -97,7 +100,7 @@ router.post("/", async (req, res) => {
       }
     }
 
-    const voucherNo = await generateVoucherNo(type, direction, t);
+    const voucherNo = await generateVoucherNo(req, type, direction, t);
 
     const voucher = await Payment.create({
       type,
@@ -109,6 +112,7 @@ router.post("/", async (req, res) => {
       reference,
       note,
       direction,
+      branchId: req.user.branchId,
     }, { transaction: t });
 
     await t.commit();
@@ -123,7 +127,7 @@ router.post("/", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const voucher = await Payment.findByPk(req.params.id, { transaction: t });
+    const voucher = await Payment.findOne({ where: branchWhere(req, { id: req.params.id }), transaction: t });
     if (!voucher) {
       await t.rollback();
       return res.status(404).json({ error: "Voucher not found" });
@@ -133,7 +137,7 @@ router.delete("/:id", async (req, res) => {
 
     // Reverse balance changes
     if (voucher.type === "customer") {
-      const cust = await Customer.findByPk(voucher.partyId, { transaction: t });
+      const cust = await Customer.findOne({ where: branchWhere(req, { id: voucher.partyId }), transaction: t });
       if (cust) {
         if (voucher.direction === "in") {
           await cust.increment("balance", { by: amt, transaction: t });
@@ -142,7 +146,7 @@ router.delete("/:id", async (req, res) => {
         }
       }
     } else if (voucher.type === "supplier") {
-      const sup = await Supplier.findByPk(voucher.partyId, { transaction: t });
+      const sup = await Supplier.findOne({ where: branchWhere(req, { id: voucher.partyId }), transaction: t });
       if (sup) {
         if (voucher.direction === "out") {
           await sup.increment("balance", { by: amt, transaction: t });

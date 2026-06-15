@@ -31,6 +31,7 @@ router.post('/whatsapp-webhook', async (req, res) => {
                         customerName: phone || "Unknown WhatsApp User",
                         customerPhone: phone,
                         status: 'draft',
+                        branchId: item.branchId,
                         items: [{
                             name: item.name,
                             batch: item.batch,

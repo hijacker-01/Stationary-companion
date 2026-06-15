@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { protect } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
 const ComplianceItem = require("../models/ComplianceItem");
 const ComplianceAlert = require("../models/ComplianceAlert");
 const Bill = require("../models/Bill");
@@ -74,7 +75,7 @@ router.post("/alerts/:id/acknowledge", protect, async (req, res) => {
 
 router.get("/schedule-h", protect, async (req, res) => {
   try {
-    const bills = await Bill.findAll({ order: [["createdAt", "DESC"]], limit: 200 });
+    const bills = await Bill.findAll({ where: branchWhere(req), order: [["createdAt", "DESC"]], limit: 200 });
     const register = [];
     for (const bill of bills) {
       const items = typeof bill.items === "string" ? JSON.parse(bill.items) : (bill.items || []);

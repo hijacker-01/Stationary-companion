@@ -28,7 +28,8 @@ exports.postSalesJournal = async (bill, transaction) => {
       creditPartyId: 0,
       creditPartyName: "Sales",
       amount: bill.total,
-      narration: `Sales invoice ${bill.billNo} to ${bill.customerName}`
+      narration: `Sales invoice ${bill.billNo} to ${bill.customerName}`,
+      branchId: bill.branchId,
     }, { transaction });
 
     // 3. Create Journal Lines (Double Entry)
@@ -82,7 +83,8 @@ exports.postPurchaseJournal = async (po, transaction) => {
       creditPartyId: po.supplierId || 0,
       creditPartyName: po.supplierName || "Unknown",
       amount: po.total,
-      narration: `Purchase from ${po.supplierName} via PO ${po.poNumber}`
+      narration: `Purchase from ${po.supplierName} via PO ${po.poNumber}`,
+      branchId: po.branchId,
     }, { transaction });
 
     // Debit Inventory

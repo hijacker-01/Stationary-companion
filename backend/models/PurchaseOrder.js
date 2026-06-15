@@ -24,11 +24,13 @@ const PurchaseOrder = sequelize.define("PurchaseOrder", {
   sgstAmount:   { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
   igstAmount:   { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
   cessAmount:   { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
+  branchId:     { type: DataTypes.INTEGER, allowNull: false },
 }, {
   paranoid: true,
   indexes: [
     { fields: ['supplierId'] },
-    { fields: ['status'] }
+    { fields: ['status'] },
+    { fields: ['branchId', 'id'] }
   ]
 });
 

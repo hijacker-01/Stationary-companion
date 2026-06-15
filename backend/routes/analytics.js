@@ -6,6 +6,7 @@ const Item = require("../models/Item");
 const Customer = require("../models/Customer");
 const Supplier = require("../models/Supplier");
 const { protect, adminOnly } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
 
 // Standard Overhead Allocations (Phase 2 - True Profit Engine)
 const OVERHEADS = {
@@ -40,12 +41,12 @@ router.get("/profit", protect, adminOnly, async (req, res) => {
     }
 
     const bills = await Bill.findAll({
-      where: {
+      where: branchWhere(req, {
         createdAt: dateFilter
-      }
+      })
     });
 
-    const allItems = await Item.findAll();
+    const allItems = await Item.findAll({ where: branchWhere(req) });
     const itemMaster = {};
     allItems.forEach(i => {
       itemMaster[`${i.name}-${i.batch || ''}`] = i;
@@ -217,7 +218,7 @@ router.get("/profit", protect, adminOnly, async (req, res) => {
 // ── GET /api/analytics/valuation ─────────────────────────────────────────────
 router.get("/valuation", protect, async (req, res) => {
   try {
-    const items = await Item.findAll({ where: { stock_qty: { [Op.gt]: 0 } } });
+    const items = await Item.findAll({ where: branchWhere(req, { stock_qty: { [Op.gt]: 0 } }) });
     let totalValue = 0;
     const valuationList = items.map(item => {
       const rate = item.cost_price || item.mrp || 0;

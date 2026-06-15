@@ -1,224 +1,386 @@
 const express = require("express");
 const router = express.Router();
 const { protect } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
 const sequelize = require("../config/db");
-const { QueryTypes } = require("sequelize");
+const { Op } = require("sequelize");
+const Bill = require("../models/Bill");
+const Item = require("../models/Item");
+const ItemBatch = require("../models/ItemBatch");
+const Customer = require("../models/Customer");
+const Supplier = require("../models/Supplier");
+const PurchaseOrder = require("../models/PurchaseOrder");
+const StockMovement = require("../models/StockMovement");
+const { computePaymentRisks } = require("../services/cashflowAnalytics");
 
-// AI Command Center Briefing
+const DAY_MS = 1000 * 60 * 60 * 24;
+
+// Average units sold per day for an item over the last `days` days.
+async function salesVelocity(where, itemId, days = 30) {
+  const since = new Date(Date.now() - days * DAY_MS);
+  const sold = await StockMovement.sum("quantity", {
+    where: { ...where, itemId, type: "out", createdAt: { [Op.gte]: since } },
+  });
+  return (sold || 0) / days;
+}
+
+// AI Command Center Briefing — computed from real sales, stock and expiry data.
 router.get("/briefing", protect, async (req, res) => {
   try {
+    const where = branchWhere(req);
+    const now = new Date();
+    const hour = now.getHours();
+    const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+
+    // Expected revenue today = average daily sales over the last 30 days.
+    const since30 = new Date(now - 30 * DAY_MS);
+    const sales30 = await Bill.sum("total", { where: { ...where, createdAt: { [Op.gte]: since30 } } }) || 0;
+    const expectedRevenue = Math.round(sales30 / 30);
+
+    // Stockouts: items at/below reorder point with positive sales velocity.
+    const lowItems = await Item.findAll({
+      where: { ...where, stock_qty: { [Op.lte]: sequelize.col("reorderPoint") } },
+      limit: 20,
+    });
+    const stockouts = [];
+    for (const it of lowItems) {
+      const v = await salesVelocity(where, it.id);
+      const daysLeft = v > 0 ? Math.round(it.stock_qty / v) : null;
+      if (daysLeft !== null && daysLeft <= 7) stockouts.push({ name: it.name, daysLeft });
+    }
+    stockouts.sort((a, b) => a.daysLeft - b.daysLeft);
+
+    // Near expiry within 60 days.
+    const in60 = new Date(now.getTime() + 60 * DAY_MS);
+    const expiringItems = await Item.findAll({
+      where: { ...where, expiry: { [Op.between]: [now, in60] }, stock_qty: { [Op.gt]: 0 } },
+      order: [["expiry", "ASC"]], limit: 5,
+    });
+    const expiries = expiringItems.map((i) => ({
+      name: `${i.name}${i.batch ? " Batch " + i.batch : ""}`,
+      daysLeft: Math.round((new Date(i.expiry) - now) / DAY_MS),
+    }));
+
+    // Recommended purchase = cost to restock low items to 2x reorder point.
+    let recommendedPurchase = 0;
+    lowItems.forEach((it) => {
+      const target = Math.max((it.reorderPoint || 0) * 2, 50);
+      const need = Math.max(0, target - it.stock_qty);
+      recommendedPurchase += need * (parseFloat(it.cost_price) || 0);
+    });
+    recommendedPurchase = Math.round(recommendedPurchase);
+
+    // Customers likely to pay = those with outstanding within their credit window.
+    const expectedPayers = await Customer.count({ where: { ...where, balance: { [Op.gt]: 0 } } });
+
     res.json({
       success: true,
-      greeting: "Good Morning",
-      expectedRevenue: 280000,
-      stockouts: [{ name: "Paracetamol 650", daysLeft: 2 }],
-      expiries: [{ name: "Amlodipine Batch A31", daysLeft: 45 }],
-      recommendedPurchase: 120000,
-      expectedPayers: 18,
-      message: "Today's Expected Revenue is ₹2.8 Lakh. Paracetamol 650 is likely to stock out in 2 days. Amlodipine Batch A31 has a near expiry risk (45 Days). Recommended Purchase is ₹1.2 Lakh. 18 customers are likely to pay today."
+      greeting,
+      expectedRevenue,
+      stockouts: stockouts.slice(0, 5),
+      expiries,
+      recommendedPurchase,
+      expectedPayers,
+      message: `${greeting}. Expected revenue today is approximately Rs.${expectedRevenue.toLocaleString("en-IN")}. ${stockouts.length} item(s) at stockout risk, ${expiries.length} batch(es) nearing expiry. Recommended purchase Rs.${recommendedPurchase.toLocaleString("en-IN")}. ${expectedPayers} customers have outstanding balances.`,
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// Executive Health Score
+// Executive Health Score — real KPIs blended into a 0-100 score.
 router.get("/health-score", protect, async (req, res) => {
   try {
+    const where = branchWhere(req);
+    const now = new Date();
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    const [salesThis, salesLast] = await Promise.all([
+      Bill.sum("total", { where: { ...where, createdAt: { [Op.gte]: thisMonth } } }) || 0,
+      Bill.sum("total", { where: { ...where, createdAt: { [Op.between]: [lastMonth, thisMonth] } } }) || 0,
+    ]);
+    const revenueGrowth = salesLast > 0 ? ((salesThis - salesLast) / salesLast) * 100 : 0;
+
+    const items = await Item.findAll({ where });
+    const inventoryValue = items.reduce((s, i) => s + (parseFloat(i.selling_price) || 0) * i.stock_qty, 0);
+    const inStock = items.filter((i) => i.stock_qty > 0).length;
+    const stockHealth = items.length > 0 ? Math.round((inStock / items.length) * 100) : 100;
+
+    const customers = await Customer.findAll({ where });
+    let billed = 0, paid = 0;
+    customers.forEach((c) => { billed += parseFloat(c.totalPurchased) || 0; paid += parseFloat(c.totalPaid) || 0; });
+    const collectionHealth = billed > 0 ? Math.round((paid / billed) * 100) : 100;
+
+    // Composite score: growth, stock availability, collections.
+    const growthScore = Math.max(0, Math.min(100, 50 + revenueGrowth)); // 0% growth -> 50
+    const score = Math.round(growthScore * 0.4 + stockHealth * 0.3 + collectionHealth * 0.3);
+
+    const insights = [];
+    if (revenueGrowth >= 0) insights.push(`Revenue is up ${revenueGrowth.toFixed(1)}% vs last month.`);
+    else insights.push(`Revenue is down ${Math.abs(revenueGrowth).toFixed(1)}% vs last month.`);
+    if (collectionHealth < 80) insights.push(`Collections at ${collectionHealth}% — receivables need attention.`);
+    if (stockHealth < 90) insights.push(`${items.length - inStock} item(s) out of stock.`);
+
     res.json({
       success: true,
-      score: 87,
+      score,
       metrics: {
-        revenue: "+12%",
-        profit: "+4%",
-        cashFlow: "Healthy",
-        inventoryValue: "₹45 Lakh",
-        stockHealth: "92%",
-        collectionHealth: "85%"
+        revenue: `${revenueGrowth >= 0 ? "+" : ""}${revenueGrowth.toFixed(1)}%`,
+        inventoryValue: `Rs.${Math.round(inventoryValue).toLocaleString("en-IN")}`,
+        stockHealth: `${stockHealth}%`,
+        collectionHealth: `${collectionHealth}%`,
       },
-      insights: [
-        "Inventory turnover improved by 15% this quarter.",
-        "Collections are lagging by 5% compared to last month."
-      ]
+      insights,
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// Customer Intelligence
+// Customer Intelligence — from this customer's real invoice history.
 router.get("/customer/:id", protect, async (req, res) => {
   try {
-    const { id } = req.params;
-    // Mock aggregated data for a customer
+    const where = branchWhere(req);
+    const customer = await Customer.findOne({ where: branchWhere(req, { id: req.params.id }) });
+    if (!customer) return res.status(404).json({ success: false, message: "Customer not found" });
+
+    const bills = await Bill.findAll({
+      where: { ...where, customerName: customer.name },
+      order: [["createdAt", "DESC"]],
+    });
+    const totalValue = bills.reduce((s, b) => s + (parseFloat(b.total) || 0), 0);
+    const avgPurchaseValue = bills.length ? Math.round(totalValue / bills.length) : 0;
+    const lastOrderDate = bills[0]?.createdAt || null;
+
+    // Delay estimate: how far overdue the open bills are on average.
+    const openBills = bills.filter((b) => b.status !== "paid");
+    let weighted = 0, amt = 0;
+    openBills.forEach((b) => {
+      const due = b.dueDate ? new Date(b.dueDate) : new Date(new Date(b.createdAt).getTime() + (customer.creditDays || 30) * DAY_MS);
+      const late = Math.max(0, Math.floor((Date.now() - due) / DAY_MS));
+      const t = parseFloat(b.total) || 0;
+      weighted += late * t; amt += t;
+    });
+    const avgDelay = amt > 0 ? Math.round(weighted / amt) : 0;
+
     res.json({
       success: true,
-      customerId: id,
-      avgPurchaseValue: 12500,
-      lastOrderDate: "2023-10-15",
-      paymentDelays: "Medium (avg 14 days)",
-      aiSuggestion: "Offer a 5% discount on early payments to improve cash flow."
+      customerId: customer.id,
+      name: customer.name,
+      totalOrders: bills.length,
+      avgPurchaseValue,
+      lastOrderDate,
+      outstanding: Math.round(parseFloat(customer.balance) || 0),
+      paymentDelays: avgDelay > 30 ? `High (avg ${avgDelay} days)` : avgDelay > 7 ? `Medium (avg ${avgDelay} days)` : "Low / on-time",
+      aiSuggestion: avgDelay > 14
+        ? "Offer a small early-payment discount to improve collection time."
+        : "Reliable payer — consider extending credit for larger orders.",
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// Supplier Intelligence
+// Supplier Intelligence — from this supplier's real purchase orders.
 router.get("/supplier/:id", protect, async (req, res) => {
   try {
-    const { id } = req.params;
-    // Mock aggregated data for a supplier
+    const where = branchWhere(req);
+    const supplier = await Supplier.findOne({ where: branchWhere(req, { id: req.params.id }) });
+    if (!supplier) return res.status(404).json({ success: false, message: "Supplier not found" });
+
+    const total = await PurchaseOrder.count({ where: { ...where, supplierName: supplier.name } });
+    const received = await PurchaseOrder.count({ where: { ...where, supplierName: supplier.name, status: "received" } });
+    const reliability = total > 0 ? Math.round((received / total) * 100) : null;
+
     res.json({
       success: true,
-      supplierId: id,
-      deliveryReliability: "85%",
-      pendingCredits: 5000,
-      aiSuggestion: "Negotiate bulk discount; delivery times are reliable."
+      supplierId: supplier.id,
+      name: supplier.name,
+      totalOrders: total,
+      deliveryReliability: reliability !== null ? `${reliability}%` : "No data yet",
+      pendingCredits: Math.round(parseFloat(supplier.balance) || 0),
+      rating: supplier.rating,
+      aiSuggestion: reliability !== null && reliability < 70
+        ? "Delivery fulfilment is low — consider a backup supplier for critical items."
+        : "Reliable supplier — negotiate bulk discounts for better margins.",
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// Auto-Purchase
+// Auto-Purchase draft — real low-stock items needing replenishment.
 router.get("/auto-purchase", protect, async (req, res) => {
   try {
-    // Returns a generated draft PO based on sales velocity and expiry risk
+    const where = branchWhere(req);
+    const lowItems = await Item.findAll({
+      where: { ...where, stock_qty: { [Op.lte]: sequelize.col("reorderPoint") } },
+      limit: 25,
+    });
+    const draftPO = [];
+    for (const it of lowItems) {
+      const v = await salesVelocity(where, it.id);
+      const target = Math.max((it.reorderPoint || 0) * 2, 50);
+      const suggestedQuantity = Math.max(0, target - it.stock_qty);
+      if (suggestedQuantity <= 0) continue;
+      const daysLeft = v > 0 ? Math.round(it.stock_qty / v) : null;
+      draftPO.push({
+        itemId: it.id,
+        itemName: it.name,
+        currentStock: it.stock_qty,
+        suggestedQuantity,
+        reason: daysLeft !== null
+          ? `Stock covers ~${daysLeft} day(s) at current sales velocity.`
+          : `Below reorder point (${it.reorderPoint}).`,
+      });
+    }
     res.json({
       success: true,
-      draftPO: [
-        { itemId: 101, itemName: "Paracetamol 500mg", suggestedQuantity: 500, reason: "High sales velocity (50/day)." },
-        { itemId: 105, itemName: "Amoxicillin", suggestedQuantity: 200, reason: "Current stock expires in 15 days." }
-      ],
-      aiSuggestion: "Approve draft PO to avoid stockouts in the next 7 days."
+      draftPO,
+      aiSuggestion: draftPO.length
+        ? "Review and approve to avoid stockouts on fast-moving items."
+        : "Stock levels are healthy — no replenishment needed right now.",
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// Collections
+// Collections — likely-to-pay / at-risk / overdue from real balances and aging.
 router.get("/collections", protect, async (req, res) => {
   try {
-    // Returns arrays of likely_to_pay, at_risk, overdue
-    res.json({
-      success: true,
-      likely_to_pay: [
-        { customerId: 1, name: "Apollo Pharmacy", amount: 15000, prob: "90%" }
-      ],
-      at_risk: [
-        { customerId: 2, name: "City Medicos", amount: 25000, prob: "40%" }
-      ],
-      overdue: [
-        { customerId: 3, name: "Sanjivani Store", amount: 5000, daysOverdue: 45 }
-      ]
-    });
+    const risks = await computePaymentRisks(branchWhere(req));
+    const likely_to_pay = risks.filter((r) => r.riskLevel === "low" || r.riskLevel === "medium")
+      .slice(0, 20)
+      .map((r) => ({ customerId: r.customerId, name: r.customerName, amount: r.totalOutstanding, prob: `${100 - r.riskScore}%` }));
+    const at_risk = risks.filter((r) => r.riskLevel === "high")
+      .map((r) => ({ customerId: r.customerId, name: r.customerName, amount: r.totalOutstanding, prob: `${100 - r.riskScore}%` }));
+    const overdue = risks.filter((r) => r.overdueAmount > 0)
+      .map((r) => ({ customerId: r.customerId, name: r.customerName, amount: r.overdueAmount, daysOverdue: r.avgDelayDays }));
+    res.json({ success: true, likely_to_pay, at_risk, overdue });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// Inventory Intelligence
+// Inventory Intelligence — dead stock, fast movers, overstock from real data.
 router.get("/inventory", protect, async (req, res) => {
   try {
-    // Returns dead_stock, fast_moving, overstock
+    const where = branchWhere(req);
+    const items = await Item.findAll({ where });
+    const dead_stock = [], fast_moving = [], overstock = [];
+
+    for (const it of items) {
+      const v = await salesVelocity(where, it.id, 60);
+      if (v === 0 && it.stock_qty > 0) {
+        dead_stock.push({ itemId: it.id, itemName: it.name, stock: it.stock_qty, daysUnsold: ">60" });
+      } else if (v >= 5) {
+        fast_moving.push({ itemId: it.id, itemName: it.name, velocity: `${v.toFixed(1)} units/day` });
+      }
+      // Overstock: more than 90 days of cover at current velocity.
+      if (v > 0 && it.stock_qty / v > 90) {
+        const optimal = Math.round(v * 30);
+        overstock.push({ itemId: it.id, itemName: it.name, stock: it.stock_qty, optimal });
+      }
+    }
+
     res.json({
       success: true,
-      dead_stock: [
-        { itemId: 201, itemName: "Old Bandages", stock: 100, daysUnsold: 180 }
-      ],
-      fast_moving: [
-        { itemId: 101, itemName: "Paracetamol 500mg", velocity: "50 units/day" }
-      ],
-      overstock: [
-        { itemId: 305, itemName: "Cough Syrup Extra", stock: 1000, optimal: 300 }
-      ]
+      dead_stock: dead_stock.slice(0, 50),
+      fast_moving: fast_moving.sort((a, b) => parseFloat(b.velocity) - parseFloat(a.velocity)).slice(0, 50),
+      overstock: overstock.slice(0, 50),
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// Advanced Expiry Intelligence (Auto-Liquidation)
+// Advanced Expiry Intelligence — real expiring batches with actions.
 router.get("/expiry-risk", protect, async (req, res) => {
   try {
+    const where = branchWhere(req);
+    const now = new Date();
+    const in90 = new Date(now.getTime() + 90 * DAY_MS);
+    const batches = await ItemBatch.findAll({
+      where: { ...where, quantity: { [Op.gt]: 0 }, expiryDate: { [Op.lte]: in90 } },
+      order: [["expiryDate", "ASC"]], limit: 50,
+    });
+    const items = await Item.findAll({ where, raw: true });
+    const itemMap = items.reduce((acc, i) => { acc[i.id] = i; return acc; }, {});
+
+    let totalRiskValue = 0;
+    const expiringBatches = batches.map((b) => {
+      const item = itemMap[b.itemId] || {};
+      const daysLeft = Math.round((new Date(b.expiryDate) - now) / DAY_MS);
+      const value = b.quantity * (parseFloat(b.purchaseRate) || parseFloat(item.cost_price) || 0);
+      totalRiskValue += value;
+      const suggestions = [];
+      if (daysLeft <= 30) suggestions.push({ type: "return", action: "Return to supplier if within return window" });
+      if (daysLeft <= 60) suggestions.push({ type: "discount", action: "Offer a discount to clear stock before expiry" });
+      suggestions.push({ type: "bundle", action: "Bundle with fast-moving items" });
+      return {
+        id: b.id, name: item.name || "Unknown", batch: b.batchNo,
+        expiryDate: b.expiryDate, daysLeft, qty: b.quantity, value: Math.round(value), suggestions,
+      };
+    });
+
+    const totalStockValue = items.reduce((s, i) => s + (parseFloat(i.cost_price) || 0) * i.stock_qty, 0);
+    const expiryRiskScore = totalStockValue > 0 ? Math.round(Math.min(100, (totalRiskValue / totalStockValue) * 100)) : 0;
+
     res.json({
       success: true,
-      expiryRiskScore: 88,
-      heatmap: "critical", // safe, warning, critical
-      expiringBatches: [
-        { id: 1, name: "Amlodipine 5mg", batch: "A31", expiryDate: "2026-07-20", daysLeft: 45, qty: 500, value: 25000,
-          suggestions: [
-            { type: "transfer", action: "Move 150 units to Basement Godown (High Demand)" },
-            { type: "discount", action: "Offer 10% discount on B2B bulk orders" }
-          ]
-        },
-        { id: 2, name: "Cough Syrup DX", batch: "B99", expiryDate: "2026-06-30", daysLeft: 25, qty: 120, value: 8400,
-          suggestions: [
-            { type: "return", action: "Return to supplier 'MedSupply Co' (Within 30 day return window)" },
-            { type: "bundle", action: "Bundle with fast-moving 'Paracetamol 650'" }
-          ]
-        }
-      ]
+      expiryRiskScore,
+      heatmap: expiryRiskScore > 50 ? "critical" : expiryRiskScore > 20 ? "warning" : "safe",
+      totalRiskValue: Math.round(totalRiskValue),
+      expiringBatches,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// Reconciliation
+// Bank reconciliation requires a parsed bank statement upload, which is not yet
+// wired to a statement source. Flagged as demo so it isn't mistaken for real.
 router.post("/reconciliation", protect, async (req, res) => {
-  try {
-    // Mock endpoint that accepts a bank statement upload and returns matched vs unmatched transactions.
-    res.json({
-      success: true,
-      matched: [
-        { txnId: "TXN1001", amount: 5000, type: "Credit", ref: "Apollo Pharmacy" }
-      ],
-      unmatched: [
-        { txnId: "TXN1002", amount: 1200, type: "Debit", ref: "Unknown Transfer" }
-      ]
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
+  res.json({
+    success: true,
+    demo: true,
+    note: "Bank reconciliation needs a bank-statement feed/upload to be wired up. This is sample output.",
+    matched: [],
+    unmatched: [],
+  });
 });
 
-// Self-Healing
+// Self-Healing — scans for real negative stock and duplicate bill numbers.
 router.get("/self-healing", protect, async (req, res) => {
   try {
-    // Scans for negative stock and duplicate bills (just write the SQL/Sequelize logic or return mock flags).
-    
-    // Logic for negative stock using raw query:
-    const negativeStockItems = await sequelize.query(
-      `SELECT id, name, stock FROM "Items" WHERE stock < 0`,
-      { type: QueryTypes.SELECT }
-    ).catch(() => []); // Fallback for table name issues
+    const where = branchWhere(req);
+    const negativeStock = await Item.findAll({
+      where: { ...where, stock_qty: { [Op.lt]: 0 } },
+      attributes: ["id", "name", "batch", "stock_qty"],
+    });
 
-    // Logic for duplicate bills:
-    const duplicateBills = await sequelize.query(
-      `SELECT "billNumber", COUNT(*) as count FROM "Bills" GROUP BY "billNumber" HAVING COUNT(*) > 1`,
-      { type: QueryTypes.SELECT }
-    ).catch(() => []);
+    // Duplicate bill numbers within scope.
+    const bills = await Bill.findAll({ where, attributes: ["billNo"] });
+    const counts = {};
+    bills.forEach((b) => { counts[b.billNo] = (counts[b.billNo] || 0) + 1; });
+    const duplicateBills = Object.entries(counts)
+      .filter(([, c]) => c > 1)
+      .map(([billNo, count]) => ({ billNo, count }));
 
+    const issuesFound = negativeStock.length > 0 || duplicateBills.length > 0;
     res.json({
       success: true,
-      issuesFound: true,
-      negativeStock: negativeStockItems.length > 0 ? negativeStockItems : [{ id: 999, name: "Mock Negative Item", stock: -5 }],
-      duplicateBills: duplicateBills.length > 0 ? duplicateBills : [{ billNumber: "INV-1000", count: 2 }],
-      aiSuggestion: "Consider running a stock adjustment entry to resolve negative balances, and review duplicate bills for potential data entry errors."
+      issuesFound,
+      negativeStock,
+      duplicateBills,
+      aiSuggestion: issuesFound
+        ? "Run a stock adjustment to correct negative balances and review duplicate bill numbers for data-entry errors."
+        : "No data-integrity issues detected.",
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

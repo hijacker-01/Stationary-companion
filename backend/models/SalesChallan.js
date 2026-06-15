@@ -25,10 +25,12 @@ const SalesChallan = sequelize.define("SalesChallan", {
   billId:        { type: DataTypes.INTEGER },
   notes:         { type: DataTypes.TEXT },
   userId:        { type: DataTypes.INTEGER },
+  branchId:      { type: DataTypes.INTEGER, allowNull: false },
 }, {
   indexes: [
     { fields: ['customerId'] },
-    { fields: ['status'] }
+    { fields: ['status'] },
+    { fields: ['branchId', 'id'] }
   ]
 });
 

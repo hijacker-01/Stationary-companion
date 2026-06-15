@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { protect } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
 const SupplierPerformance = require("../models/SupplierPerformance");
 const RFQ = require("../models/RFQ");
 const RFQResponse = require("../models/RFQResponse");
@@ -14,10 +15,10 @@ router.get("/supplier-scores", protect, async (req, res) => {
   try {
     let scores = await SupplierPerformance.findAll({ order: [["overallScore", "DESC"]] });
     if (!scores.length) {
-      const suppliers = await Supplier.findAll({ where: { status: "active" }, limit: 20 });
+      const suppliers = await Supplier.findAll({ where: branchWhere(req, { status: "active" }), limit: 20 });
       for (const s of suppliers) {
-        const totalOrders = await PurchaseOrder.count({ where: { supplierId: s.id } });
-        const fulfilled = await PurchaseOrder.count({ where: { supplierId: s.id, status: "received" } });
+        const totalOrders = await PurchaseOrder.count({ where: branchWhere(req, { supplierId: s.id }) });
+        const fulfilled = await PurchaseOrder.count({ where: branchWhere(req, { supplierId: s.id, status: "received" }) });
         const onTime = totalOrders > 0 ? Math.round((fulfilled / totalOrders) * 100) : 0;
         const quality = Math.min(100, 60 + Math.random() * 40);
         const overall = Math.round((onTime * 0.4 + quality * 0.3 + Math.min(100, totalOrders * 5) * 0.3));
@@ -45,7 +46,7 @@ router.get("/rfqs", protect, async (req, res) => {
 router.post("/rfq", protect, async (req, res) => {
   try {
     const { itemName, requiredQty, urgency, deadline, notes } = req.body;
-    const item = await Item.findOne({ where: { name: { [Op.like]: `%${itemName}%` } } });
+    const item = await Item.findOne({ where: branchWhere(req, { name: { [Op.like]: `%${itemName}%` } }) });
     const rfq = await RFQ.create({
       rfqNumber: `RFQ-${Date.now()}`, itemId: item?.id, itemName: itemName || "Unknown",
       requiredQty, currentStock: item?.stock_qty || 0, urgency: urgency || "medium",
@@ -101,9 +102,9 @@ router.post("/rfq/:id/compare", protect, async (req, res) => {
 // GET /api/procurement/auto-po — AI-generated draft POs
 router.get("/auto-po", protect, async (req, res) => {
   try {
-    const autoPOs = await PurchaseOrder.findAll({ where: { source: "ai_auto", status: "pending" }, order: [["createdAt", "DESC"]], limit: 20 });
+    const autoPOs = await PurchaseOrder.findAll({ where: branchWhere(req, { source: "ai_auto", status: "pending" }), order: [["createdAt", "DESC"]], limit: 20 });
     if (!autoPOs.length) {
-      const lowStock = await Item.findAll({ where: { stock_qty: { [Op.lte]: require("sequelize").col("reorderPoint") } }, limit: 5 });
+      const lowStock = await Item.findAll({ where: branchWhere(req, { stock_qty: { [Op.lte]: require("sequelize").col("reorderPoint") } }), limit: 5 });
       const draftPOs = [];
       const past60Days = new Date();
       past60Days.setDate(past60Days.getDate() - 60);
@@ -114,7 +115,7 @@ router.get("/auto-po", protect, async (req, res) => {
       for (const item of lowStock) {
         // Calculate 60-day consumption
         const sales60d = await StockMovement.sum("quantity", {
-          where: { itemId: item.id, type: "out", referenceType: "sale", createdAt: { [Op.gte]: past60Days } }
+          where: branchWhere(req, { itemId: item.id, type: "out", referenceType: "sale", createdAt: { [Op.gte]: past60Days } })
         }) || 0;
 
         // Calculate quantity expiring in next 60 days
@@ -122,10 +123,10 @@ router.get("/auto-po", protect, async (req, res) => {
         future60Days.setDate(future60Days.getDate() + 60);
         
         const expiringStock = await ItemBatch.sum("quantity", {
-          where: { itemId: item.id, expiryDate: { [Op.lte]: future60Days } }
+          where: branchWhere(req, { itemId: item.id, expiryDate: { [Op.lte]: future60Days } })
         }) || 0;
 
-        const supplier = await Supplier.findOne({ where: { status: "active" } });
+        const supplier = await Supplier.findOne({ where: branchWhere(req, { status: "active" }) });
         if (supplier) {
           const qty = Math.max(item.reorderPoint * 2, 50);
           
@@ -144,7 +145,7 @@ router.get("/auto-po", protect, async (req, res) => {
             poNumber: `AI-PO-${Date.now()}-${item.id}`, supplierId: supplier.id, supplierName: supplier.name,
             items: [{ name: item.name, qty, rate: item.cost_price || 0, amount: qty * (item.cost_price || 0) }],
             total: qty * (item.cost_price || 0), source: "ai_auto", autoScore: 75 + Math.random() * 25, status,
-            notes
+            notes, branchId: req.user.branchId,
           });
           draftPOs.push(po);
         }
@@ -160,7 +161,7 @@ router.get("/dashboard", protect, async (req, res) => {
   try {
     const [totalRfqs, pendingResponses, aiPOs, avgScore] = await Promise.all([
       RFQ.count(), RFQ.count({ where: { status: "sent" } }),
-      PurchaseOrder.count({ where: { source: "ai_auto", status: "pending" } }),
+      PurchaseOrder.count({ where: branchWhere(req, { source: "ai_auto", status: "pending" }) }),
       SupplierPerformance.findOne({ attributes: [[require("sequelize").fn("AVG", require("sequelize").col("overallScore")), "avg"]] })
     ]);
     res.json({ totalRfqs, pendingResponses, aiPOs, avgSupplierScore: Math.round(avgScore?.dataValues?.avg || 0) });

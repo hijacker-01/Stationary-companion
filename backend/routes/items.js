@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Item = require("../models/Item");
 const { protect } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
 
 router.use(protect);
 
@@ -14,7 +15,7 @@ router.get("/", async (req, res) => {
     const { page = 1, limit = 50, search = '' } = req.query;
     const offset = (page - 1) * limit;
     
-    const where = {};
+    const where = branchWhere(req);
     if (search) {
       const { Op } = require("sequelize");
       where.name = { [Op.like]: `%${search}%` };
@@ -36,7 +37,7 @@ router.get("/", async (req, res) => {
 // Add new item
 router.post("/", async (req, res) => {
   try {
-    const item = await Item.create(pick(req.body, ALLOWED));
+    const item = await Item.create({ ...pick(req.body, ALLOWED), branchId: req.user.branchId });
     res.status(201).json(item);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -86,8 +87,8 @@ router.post("/bulk-import", async (req, res) => {
         }
 
         const [item, created] = await Item.findOrCreate({
-          where: { name: data.name, batch: data.batch || null },
-          defaults: data,
+          where: branchWhere(req, { name: data.name, batch: data.batch || null }),
+          defaults: { ...data, branchId: req.user.branchId },
         });
 
         if (created) {
@@ -110,7 +111,7 @@ router.post("/bulk-import", async (req, res) => {
 // Update item
 router.put("/:id", async (req, res) => {
   try {
-    const [count] = await Item.update(pick(req.body, ALLOWED), { where: { id: req.params.id } });
+    const [count] = await Item.update(pick(req.body, ALLOWED), { where: branchWhere(req, { id: req.params.id }) });
     if (count === 0) return res.status(404).json({ error: "Item not found" });
     res.json({ message: "Item updated" });
   } catch (err) {
@@ -121,7 +122,7 @@ router.put("/:id", async (req, res) => {
 // Delete item
 router.delete("/:id", async (req, res) => {
   try {
-    const count = await Item.destroy({ where: { id: req.params.id } });
+    const count = await Item.destroy({ where: branchWhere(req, { id: req.params.id }) });
     if (count === 0) return res.status(404).json({ error: "Item not found" });
     res.json({ message: "Item deleted" });
   } catch (err) {

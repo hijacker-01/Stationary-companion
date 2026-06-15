@@ -6,6 +6,10 @@ const Payment = require("../models/Payment");
 const Customer = require("../models/Customer");
 const sequelize = require("../config/db");
 const { Op } = require("sequelize");
+const { protect } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
+
+router.use(protect);
 
 // Get all delivery men
 router.get("/", async (req, res) => {
@@ -51,7 +55,7 @@ router.delete("/:id", async (req, res) => {
 router.get("/bills/pending", async (req, res) => {
   try {
     const bills = await Bill.findAll({
-      where: { deliveryStatus: "pending", status: { [Op.ne]: "paid" } },
+      where: branchWhere(req, { deliveryStatus: "pending", status: { [Op.ne]: "paid" } }),
       order: [["createdAt", "DESC"]]
     });
     res.json(bills);
@@ -70,7 +74,7 @@ router.post("/assign", async (req, res) => {
 
     await Bill.update(
       { deliveryManId: dm.id, deliveryManName: dm.name, deliveryStatus: "dispatched" },
-      { where: { id: { [Op.in]: billIds } }, transaction: t }
+      { where: branchWhere(req, { id: { [Op.in]: billIds } }), transaction: t }
     );
     await t.commit();
     res.json({ message: "Bills assigned for dispatch" });
@@ -81,7 +85,7 @@ router.post("/assign", async (req, res) => {
 });
 
 // Helper for Voucher Generation
-const generateVoucherNo = async (type, direction, t) => {
+const generateVoucherNo = async (req, type, direction, t) => {
   const prefix = direction === "in" ? "RV-" : "PV-";
   const now = new Date();
   const fyStart = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
@@ -90,7 +94,7 @@ const generateVoucherNo = async (type, direction, t) => {
   const fullPrefix = `${prefix}${yearPart}`;
 
   const last = await Payment.findOne({
-    where: { voucherNo: { [Op.like]: `${fullPrefix}%` } },
+    where: branchWhere(req, { voucherNo: { [Op.like]: `${fullPrefix}%` } }),
     order: [["createdAt", "DESC"]],
     transaction: t,
   });
@@ -115,7 +119,7 @@ router.post("/clearance", async (req, res) => {
     let totalCollected = 0;
 
     for (const s of settlements) {
-      const bill = await Bill.findByPk(s.billId, { transaction: t });
+      const bill = await Bill.findOne({ where: branchWhere(req, { id: s.billId }), transaction: t });
       if (!bill) continue;
 
       if (s.status === "delivered") {
@@ -125,10 +129,10 @@ router.post("/clearance", async (req, res) => {
         if (collected > 0) {
           totalCollected += collected;
           // Create receipt voucher for the payment collected
-          const cust = await Customer.findOne({ where: { name: bill.customerName }, transaction: t });
+          const cust = await Customer.findOne({ where: branchWhere(req, { name: bill.customerName }), transaction: t });
           if (cust) {
             await cust.decrement("balance", { by: collected, transaction: t });
-            const voucherNo = await generateVoucherNo("customer", "in", t);
+            const voucherNo = await generateVoucherNo(req, "customer", "in", t);
             await Payment.create({
               type: "customer",
               voucherNo,
@@ -138,7 +142,8 @@ router.post("/clearance", async (req, res) => {
               mode: s.mode || "cash",
               reference: `Bill ${bill.billNo} - DM ${dm.name}`,
               note: "Payment collected via Delivery Dispatch",
-              direction: "in"
+              direction: "in",
+              branchId: req.user.branchId,
             }, { transaction: t });
           }
           

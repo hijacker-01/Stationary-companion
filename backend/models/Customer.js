@@ -21,8 +21,12 @@ const Customer = sequelize.define("Customer", {
   registrationType: { type: DataTypes.ENUM("regular", "composition", "unregistered", "consumer"), defaultValue: "regular" },
   isComposition: { type: DataTypes.BOOLEAN, defaultValue: false },
   isActive:      { type: DataTypes.BOOLEAN, defaultValue: true },
+  branchId:      { type: DataTypes.INTEGER, allowNull: false },
 }, {
-  paranoid: true
+  paranoid: true,
+  indexes: [
+    { fields: ['branchId', 'id'] }
+  ]
 });
 
 module.exports = Customer;

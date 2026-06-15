@@ -9,8 +9,12 @@ const User = sequelize.define("User", {
   phone:       { type: DataTypes.STRING },
   permissions: { type: DataTypes.JSON, defaultValue: [] },
   isActive:    { type: DataTypes.BOOLEAN, defaultValue: true },
+  branchId:    { type: DataTypes.INTEGER, allowNull: false },
 }, {
-  paranoid: true
+  paranoid: true,
+  indexes: [
+    { fields: ['branchId', 'id'] }
+  ]
 });
 
 User.beforeCreate(async (user, options) => {

@@ -5,12 +5,13 @@ const Supplier      = require("../models/Supplier");
 const PurchaseOrder = require("../models/PurchaseOrder");
 const Payment       = require("../models/Payment");
 const { protect }   = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
 
 // ── GET /api/creditors ───────────────────────────────────────────────────────
 router.get("/", protect, async (req, res) => {
   try {
     const suppliers = await Supplier.findAll({
-      where: { balance: { [Op.gt]: 0 }, status: "active" },
+      where: branchWhere(req, { balance: { [Op.gt]: 0 }, status: "active" }),
       order: [["balance", "DESC"]],
     });
 
@@ -20,7 +21,7 @@ router.get("/", protect, async (req, res) => {
     for (const sup of suppliers) {
       // Get purchase orders for aging (those with outstanding balance implied)
       const purchases = await PurchaseOrder.findAll({
-        where: { supplierName: sup.name },
+        where: branchWhere(req, { supplierName: sup.name }),
         order: [["createdAt", "ASC"]],
       });
 
@@ -40,7 +41,7 @@ router.get("/", protect, async (req, res) => {
 
       // Get last payment date
       const lastPayment = await Payment.findOne({
-        where: { partyName: sup.name, direction: "out" },
+        where: branchWhere(req, { partyName: sup.name, direction: "out" }),
         order: [["createdAt", "DESC"]],
       });
 

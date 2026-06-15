@@ -5,63 +5,8 @@ const cookieParser = require("cookie-parser");
 require("dotenv").config();
 const sequelize = require("./config/db");
 
-require("./models/User");
-require("./models/Item");
-require("./models/Bill");
-require("./models/Settings");
-require("./models/Supplier");
-require("./models/PurchaseOrder");
-require("./models/Customer");
-require("./models/Payment");
-require("./models/Scheme");
-require("./models/SalesReturn");
-require("./models/PurchaseReturn");
-require("./models/Salesman");
-require("./models/StockAdjustment");
-require("./models/DeliveryMan");
-require("./models/DirectMessage");
-require("./models/Expense");
-require("./models/JournalVoucher");
-// New Models
-require("./models/ItemBatch");
-require("./models/StockMovement");
-require("./models/LedgerAccount");
-require("./models/JournalLine");
-require("./models/AuditLog");
-require("./models/IdempotencyKey");
-require("./models/PurchaseChallan");
-require("./models/SalesChallan");
-// 12.0 Enterprise Routes Models
-require("./models/SupplierPerformance");
-require("./models/RFQ");
-require("./models/RFQResponse");
-require("./models/Branch");
-require("./models/StockTransfer");
-require("./models/BranchMetric");
-require("./models/MarketplaceOrder");
-require("./models/SupplierScheme");
-require("./models/Tender");
-require("./models/InstitutionalBill");
-require("./models/CashFlowForecast");
-require("./models/PaymentRisk");
-require("./models/PickingTask");
-require("./models/ComplianceItem");
-require("./models/ComplianceAlert");
-require("./models/AutomationRule");
-require("./models/AutomationLog");
-require("./models/Plugin");
-require("./models/Webhook");
-require("./models/APIKey");
-// 12.0 Enterprise GST & Compliance Models
-require("./models/GSTStateMaster");
-require("./models/GSTCategory");
-require("./models/EInvoiceLog");
-require("./models/EWayBillLog");
-require("./models/ComplianceRule");
-require("./models/ComplianceAuditLog");
-require("./models/GSTReturn");
-require("./models/ITCRecord");
-require("./models/GSTAuditLog");
+// Loads all 64 models and wires up their Sequelize associations.
+require("./models");
 
 const app = express();
 app.use(helmet());

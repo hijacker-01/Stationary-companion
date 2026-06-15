@@ -11,6 +11,11 @@ const PurchaseReturn = sequelize.define("PurchaseReturn", {
   totalAmount:  { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
   reason:       { type: DataTypes.STRING },
   status:       { type: DataTypes.ENUM("pending","approved"), defaultValue: "approved" },
+  branchId:     { type: DataTypes.INTEGER, allowNull: false },
+}, {
+  indexes: [
+    { fields: ['branchId', 'id'] }
+  ]
 });
 
 module.exports = PurchaseReturn;

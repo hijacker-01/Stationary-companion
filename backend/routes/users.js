@@ -33,7 +33,7 @@ router.get("/:id", protect, adminOnly, async (req, res) => {
 // Create user (admin only)
 router.post("/", protect, adminOnly, async (req, res) => {
   try {
-    const { name, email, password, role, phone, permissions } = req.body;
+    const { name, email, password, role, phone, permissions, branchId } = req.body;
     const exists = await User.findOne({ where: { email } });
     if (exists) return res.status(400).json({ error: "Email already exists" });
     const hashed = await bcrypt.hash(password, 10);
@@ -41,6 +41,7 @@ router.post("/", protect, adminOnly, async (req, res) => {
       name, email, password: hashed, role,
       phone: phone || null,
       permissions: permissions || [],
+      branchId: branchId || req.user.branchId,
     });
     const { password: _, ...safe } = user.toJSON();
     res.json(safe);
@@ -52,8 +53,9 @@ router.post("/", protect, adminOnly, async (req, res) => {
 // Update user
 router.put("/:id", protect, adminOnly, async (req, res) => {
   try {
-    const { name, email, role, phone, permissions, password } = req.body;
+    const { name, email, role, phone, permissions, password, branchId } = req.body;
     const update = { name, email, role, phone, permissions };
+    if (branchId) update.branchId = branchId;
     if (password) update.password = await bcrypt.hash(password, 10);
     await User.update(update, { where: { id: req.params.id } });
     res.json({ message: "User updated" });

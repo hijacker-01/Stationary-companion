@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const Settings = require("../models/Settings");
+const Branch = require("../models/Branch");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -16,8 +17,13 @@ exports.register = async (req, res) => {
       return res.status(400).json({ error: "Email already registered" });
     }
 
+    const [branch] = await Branch.findOrCreate({
+      where: { code: "HQ" },
+      defaults: { name: "Head Office", code: "HQ", isActive: true },
+    });
+
     const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hashed, role: "admin" });
+    const user = await User.create({ name, email, password: hashed, role: "admin", branchId: branch.id });
 
     // Initialize Company details in Settings
     await Settings.destroy({ where: {} });
@@ -47,9 +53,10 @@ exports.login = async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: "Invalid credentials" });
+    const isCrossBranch = user.role === "admin" || (user.permissions && user.permissions.includes("*"));
     const token = jwt.sign(
-      { id: user.id, role: user.role, permissions: user.permissions }, 
-      process.env.JWT_SECRET, 
+      { id: user.id, role: user.role, permissions: user.permissions, branchId: user.branchId, isCrossBranch },
+      process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
     

@@ -4,6 +4,10 @@ const Bill = require("../models/Bill");
 const Item = require("../models/Item");
 const { Op } = require("sequelize");
 const sequelize = require("../config/db");
+const { protect } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
+
+router.use(protect);
 
 // Paginated Invoices Report
 router.get("/invoices", async (req, res) => {
@@ -11,7 +15,7 @@ router.get("/invoices", async (req, res) => {
     const { page = 1, limit = 100, from, to } = req.query;
     const offset = (page - 1) * limit;
 
-    const where = {};
+    const where = branchWhere(req);
     if (from && to) {
       where.createdAt = {
         [Op.between]: [new Date(from), new Date(new Date(to).setHours(23, 59, 59))],
@@ -61,7 +65,7 @@ router.get("/invoices", async (req, res) => {
 router.get("/sales", async (req, res) => {
   try {
     const { from, to } = req.query;
-    const where = {};
+    const where = branchWhere(req);
     if (from && to) {
       where.createdAt = {
         [Op.between]: [new Date(from), new Date(new Date(to).setHours(23, 59, 59))],
@@ -95,7 +99,7 @@ router.get("/sales", async (req, res) => {
 // Stock Summary
 router.get("/stock", async (req, res) => {
   try {
-    const items = await Item.findAll();
+    const items = await Item.findAll({ where: branchWhere(req) });
     const totalItems = items.length;
     const totalValue = items.reduce((s, i) => s + (i.selling_price * i.stock_qty), 0);
     const lowStock = items.filter(i => i.stock_qty <= 10);
@@ -126,7 +130,7 @@ router.get("/stock", async (req, res) => {
 // Expiry Summary
 router.get("/expiry-summary", async (req, res) => {
   try {
-    const items = await Item.findAll();
+    const items = await Item.findAll({ where: branchWhere(req) });
     const today = new Date();
 
     const expired = items.filter(i => new Date(i.expiry) < today);
@@ -163,10 +167,10 @@ router.get("/outstanding", async (req, res) => {
     const Supplier = require("../models/Supplier");
     
     const customers = await Customer.findAll({
-      where: { balance: { [Op.gt]: 0 } }
+      where: branchWhere(req, { balance: { [Op.gt]: 0 } })
     });
     const suppliers = await Supplier.findAll({
-      where: { balance: { [Op.gt]: 0 } }
+      where: branchWhere(req, { balance: { [Op.gt]: 0 } })
     });
 
     const today = new Date();
@@ -208,7 +212,7 @@ router.get("/outstanding", async (req, res) => {
 router.get("/salesman-sales", async (req, res) => {
   try {
     const bills = await Bill.findAll({
-      where: { status: "paid" }
+      where: branchWhere(req, { status: "paid" })
     });
 
     const repWise = {};
@@ -231,7 +235,7 @@ router.get("/salesman-sales", async (req, res) => {
 router.get("/item-sales", async (req, res) => {
   try {
     const bills = await Bill.findAll({
-      where: { status: "paid" }
+      where: branchWhere(req, { status: "paid" })
     });
 
     const itemWise = {};
@@ -264,11 +268,11 @@ router.get("/pnl", async (req, res) => {
     // To be perfectly accurate without historical cost tracking, we'll use the item's current cost_price,
     // or fallback to 80% of MRP if cost_price is missing.
     const Item = require("../models/Item");
-    const allItems = await Item.findAll();
+    const allItems = await Item.findAll({ where: branchWhere(req) });
     const costMap = {};
     allItems.forEach(i => costMap[i.name] = i.cost_price || (i.mrp * 0.8) || 0);
 
-    const bills = await Bill.findAll(); // Assuming all generated bills count towards revenue
+    const bills = await Bill.findAll({ where: branchWhere(req) }); // Assuming all generated bills count towards revenue
     
     let totalSales = 0;
     let totalCOGS = 0;

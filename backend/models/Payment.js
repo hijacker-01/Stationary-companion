@@ -11,6 +11,11 @@ const Payment = sequelize.define("Payment", {
   reference:   { type: DataTypes.STRING },
   note:        { type: DataTypes.TEXT },
   direction:   { type: DataTypes.ENUM("in","out"), allowNull: false },
+  branchId:    { type: DataTypes.INTEGER, allowNull: false },
+}, {
+  indexes: [
+    { fields: ['branchId', 'id'] }
+  ]
 });
 
 module.exports = Payment;

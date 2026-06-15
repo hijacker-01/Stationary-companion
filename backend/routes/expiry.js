@@ -6,6 +6,7 @@ const Item = require("../models/Item");
 const Supplier = require("../models/Supplier");
 const PurchaseChallan = require("../models/PurchaseChallan");
 const { protect, adminOnly } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
 const sequelize = require("../config/db");
 
 // Helper to calculate days remaining
@@ -21,13 +22,13 @@ const getDaysRemaining = (expiryDate) => {
 router.get("/dashboard", protect, async (req, res) => {
   try {
     const batches = await ItemBatch.findAll({
-      where: { quantity: { [Op.gt]: 0 } },
+      where: branchWhere(req, { quantity: { [Op.gt]: 0 } }),
       raw: true,
     });
 
     // We need item names. For simplicity in raw queries, we'll fetch Items and map them.
     // In a real production system, use sequelize associations. We'll map manually for safety here.
-    const items = await Item.findAll({ raw: true });
+    const items = await Item.findAll({ where: branchWhere(req), raw: true });
     const itemMap = items.reduce((acc, i) => { acc[i.id] = i; return acc; }, {});
 
     let totalInventoryValue = 0;
@@ -118,8 +119,8 @@ router.get("/dashboard", protect, async (req, res) => {
 // ── PHASE 5: Action Center (Auto Recommendations) ──────────────────────────────
 router.get("/actions", protect, async (req, res) => {
   try {
-    const batches = await ItemBatch.findAll({ where: { quantity: { [Op.gt]: 0 } }, raw: true });
-    const items = await Item.findAll({ raw: true });
+    const batches = await ItemBatch.findAll({ where: branchWhere(req, { quantity: { [Op.gt]: 0 } }), raw: true });
+    const items = await Item.findAll({ where: branchWhere(req), raw: true });
     const itemMap = items.reduce((acc, i) => { acc[i.id] = i; return acc; }, {});
 
     const actionList = [];
@@ -208,12 +209,12 @@ router.get("/fefo-suggest", protect, async (req, res) => {
     const { itemName, requiredQty } = req.query;
     if (!itemName) return res.status(400).json({ error: "Item name is required" });
 
-    const item = await Item.findOne({ where: { name: itemName }, raw: true });
+    const item = await Item.findOne({ where: branchWhere(req, { name: itemName }), raw: true });
     if (!item) return res.status(404).json({ error: "Item not found" });
 
     // Fetch batches ordered by nearest expiry (FEFO)
     const batches = await ItemBatch.findAll({
-      where: { itemId: item.id, quantity: { [Op.gt]: 0 } },
+      where: branchWhere(req, { itemId: item.id, quantity: { [Op.gt]: 0 } }),
       order: [["expiryDate", "ASC"]],
       raw: true
     });
@@ -254,7 +255,7 @@ router.get("/", protect, async (req, res) => {
     
     // The old ExpiryBox expected items with an expiry property
     const items = await Item.findAll({
-      where: { expiry: { [Op.lte]: future } },
+      where: branchWhere(req, { expiry: { [Op.lte]: future } }),
       order: [["expiry", "ASC"]],
     });
     res.json(items);

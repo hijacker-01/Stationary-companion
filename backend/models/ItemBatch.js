@@ -8,7 +8,12 @@ const ItemBatch = sequelize.define("ItemBatch", {
   mrp: { type: DataTypes.DECIMAL(15, 2) },
   purchaseRate: { type: DataTypes.DECIMAL(15, 2) },
   quantity: { type: DataTypes.INTEGER, defaultValue: 0 },
-  rackCode: { type: DataTypes.STRING }
+  rackCode: { type: DataTypes.STRING },
+  branchId: { type: DataTypes.INTEGER, allowNull: false },
+}, {
+  indexes: [
+    { fields: ['branchId', 'id'] }
+  ]
 });
 
 module.exports = ItemBatch;

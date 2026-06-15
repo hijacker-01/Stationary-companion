@@ -4,6 +4,7 @@ const { Op }   = require("sequelize");
 const Payment  = require("../models/Payment");
 const Bill     = require("../models/Bill");
 const { protect } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
 
 // ── GET /api/cashbook?startDate=&endDate= ────────────────────────────────────
 router.get("/", protect, async (req, res) => {
@@ -15,25 +16,25 @@ router.get("/", protect, async (req, res) => {
 
     // Fetch all cash/bank transactions in range
     const payments = await Payment.findAll({
-      where: { createdAt: { [Op.between]: [`${from} 00:00:00`, `${to} 23:59:59`] } },
+      where: branchWhere(req, { createdAt: { [Op.between]: [`${from} 00:00:00`, `${to} 23:59:59`] } }),
       order: [["createdAt", "ASC"]],
     });
 
     // Fetch cash sales in range
     const cashSales = await Bill.findAll({
-      where: {
+      where: branchWhere(req, {
         paymentMode: "cash",
         createdAt: { [Op.between]: [`${from} 00:00:00`, `${to} 23:59:59`] },
-      },
+      }),
       order: [["createdAt", "ASC"]],
     });
 
     // Calculate opening balance (sum of all cash in - cash out BEFORE startDate)
     const priorPayments = await Payment.findAll({
-      where: { createdAt: { [Op.lt]: `${from} 00:00:00` } },
+      where: branchWhere(req, { createdAt: { [Op.lt]: `${from} 00:00:00` } }),
     });
     const priorCashSales = await Bill.findAll({
-      where: { paymentMode: "cash", createdAt: { [Op.lt]: `${from} 00:00:00` } },
+      where: branchWhere(req, { paymentMode: "cash", createdAt: { [Op.lt]: `${from} 00:00:00` } }),
     });
 
     let openingBalance = 0;

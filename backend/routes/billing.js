@@ -10,6 +10,7 @@ const accounting = require("../services/accounting");
 const stockMovement = require("../services/stockMovement");
 const idempotency = require("../middleware/idempotency");
 const { protect, requirePermission } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
 const ComplianceEngine = require("../services/ComplianceEngine");
 const validatePositiveValues = require("../middleware/validatePositiveValues");
 
@@ -17,7 +18,7 @@ const validatePositiveValues = require("../middleware/validatePositiveValues");
 router.use(validatePositiveValues);
 
 // Generate sequential bill number per financial year (e.g. INV-2526-0001)
-const generateBillNo = async (transaction) => {
+const generateBillNo = async (req, transaction) => {
   const now = new Date();
   // Indian financial year: Apr-Mar
   const fyStart = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
@@ -25,9 +26,9 @@ const generateBillNo = async (transaction) => {
   const fyCode  = `${String(fyStart).slice(-2)}${String(fyEnd).slice(-2)}`; // e.g. "2526"
   const prefix  = `INV-${fyCode}-`;
 
-  // Find the last bill in this financial year
+  // Find the last bill in this financial year (per branch, so each branch's GSTIN gets its own sequence)
   const last = await Bill.findOne({
-    where: { billNo: { [require('sequelize').Op.like]: `${prefix}%` } },
+    where: branchWhere(req, { billNo: { [require('sequelize').Op.like]: `${prefix}%` } }),
     order: [["createdAt", "DESC"]],
     transaction,
   });
@@ -48,7 +49,7 @@ router.get("/", protect, async (req, res) => {
     const { page = 1, limit = 50, search = '' } = req.query;
     const offset = (page - 1) * limit;
     
-    const where = {};
+    const where = branchWhere(req);
     if (search) {
       where[Op.or] = [
         { billNo: { [Op.like]: `%${search}%` } },
@@ -77,7 +78,7 @@ router.get("/", protect, async (req, res) => {
 // Get single bill
 router.get("/:id", protect, async (req, res) => {
   try {
-    const bill = await Bill.findByPk(req.params.id);
+    const bill = await Bill.findOne({ where: branchWhere(req, { id: req.params.id }) });
     if (!bill) return res.status(404).json({ error: "Bill not found" });
     res.json(bill);
   } catch (err) {
@@ -115,12 +116,12 @@ router.post("/", protect, requirePermission("billing.create"), idempotency, asyn
     const itemKeys = billedItems.map(item => ({ name: item.name, batch: item.batch || "" }));
     
     // Fetch all items in a single query with locking
-    const items = await Item.findAll({ 
-      where: {
+    const items = await Item.findAll({
+      where: branchWhere(req, {
         [Op.or]: itemKeys
-      }, 
-      transaction: t, 
-      lock: t.LOCK.UPDATE 
+      }),
+      transaction: t,
+      lock: t.LOCK.UPDATE
     });
 
     const itemsMap = new Map();
@@ -174,7 +175,7 @@ router.post("/", protect, requirePermission("billing.create"), idempotency, asyn
     let customerId = null;
     if (req.body.customerName) {
       let customer = await Customer.findOne({
-        where: { name: req.body.customerName },
+        where: branchWhere(req, { name: req.body.customerName }),
         transaction: t,
       });
       if (!customer) {
@@ -184,6 +185,7 @@ router.post("/", protect, requirePermission("billing.create"), idempotency, asyn
           address: req.body.customerAddress || "",
           dlNumber: req.body.customerDl || "",
           gstNumber: req.body.customerGst || "",
+          branchId: req.user.branchId,
         }, { transaction: t });
       } else {
         const updates = {};
@@ -207,7 +209,8 @@ router.post("/", protect, requirePermission("billing.create"), idempotency, asyn
     const bill = await Bill.create({
       ...req.body,
       customerId,
-      billNo: await generateBillNo(t),
+      billNo: await generateBillNo(req, t),
+      branchId: req.user.branchId,
     }, { transaction: t });
 
     // Auto-create double-entry journal for sales
@@ -240,7 +243,7 @@ router.post("/", protect, requirePermission("billing.create"), idempotency, asyn
 router.delete("/:id", protect, requirePermission("billing.create"), async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const bill = await Bill.findByPk(req.params.id, { transaction: t });
+    const bill = await Bill.findOne({ where: branchWhere(req, { id: req.params.id }), transaction: t });
     if (!bill) {
       await t.rollback();
       return res.status(404).json({ error: "Bill not found" });
@@ -249,7 +252,7 @@ router.delete("/:id", protect, requirePermission("billing.create"), async (req, 
     // Restore stock for each item in the deleted bill
     const billedItems = (bill.items || []).filter(r => r.name);
     for (const billedItem of billedItems) {
-      const item = await Item.findOne({ where: { name: billedItem.name, batch: billedItem.batch || "" }, transaction: t });
+      const item = await Item.findOne({ where: branchWhere(req, { name: billedItem.name, batch: billedItem.batch || "" }), transaction: t });
       if (item) {
         const qtyToRestore = (parseInt(billedItem.qty) || 0) + (parseInt(billedItem.schemeQty) || 0);
         await item.update({ 

@@ -4,6 +4,7 @@ const Customer = require("../models/Customer");
 const Payment = require("../models/Payment");
 const Bill = require("../models/Bill");
 const { protect } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
 const { Op } = require("sequelize");
 
 // ── CUSTOMERS ──
@@ -11,8 +12,8 @@ router.get("/", protect, async (req, res) => {
   try {
     const { page = 1, limit = 50, search = '', includeInactive = 'false' } = req.query;
     const offset = (page - 1) * limit;
-    
-    const where = {};
+
+    const where = branchWhere(req);
     if (search) where.name = { [Op.like]: `%${search}%` };
     if (includeInactive !== 'true') where.isActive = true;
 
@@ -34,14 +35,14 @@ router.get("/", protect, async (req, res) => {
 
 router.post("/", protect, async (req, res) => {
   try {
-    const c = await Customer.create(req.body);
+    const c = await Customer.create({ ...req.body, branchId: req.user.branchId });
     res.json(c);
   } catch(err) { res.status(400).json({ error: err.message }); }
 });
 
 router.put("/:id", protect, async (req, res) => {
   try {
-    await Customer.update(req.body, { where: { id: req.params.id } });
+    await Customer.update(req.body, { where: branchWhere(req, { id: req.params.id }) });
     res.json({ message: "Customer updated" });
   } catch(err) { res.status(400).json({ error: err.message }); }
 });
@@ -49,7 +50,7 @@ router.put("/:id", protect, async (req, res) => {
 router.delete("/:id", protect, async (req, res) => {
   try {
     // Check if customer has any bills before allowing hard delete
-    const customer = await Customer.findByPk(req.params.id);
+    const customer = await Customer.findOne({ where: branchWhere(req, { id: req.params.id }) });
     if (!customer) return res.status(404).json({ error: "Customer not found" });
 
     const billCount = await Bill.count({ where: { customerName: customer.name } });
@@ -61,16 +62,16 @@ router.delete("/:id", protect, async (req, res) => {
       });
     }
 
-    await Customer.destroy({ where: { id: req.params.id } });
+    await Customer.destroy({ where: branchWhere(req, { id: req.params.id }) });
     res.json({ message: "Customer deleted" });
   } catch(err) { res.status(500).json({ error: err.message }); }
 });
 
 router.patch("/:id/deactivate", protect, async (req, res) => {
   try {
-    const customer = await Customer.findByPk(req.params.id);
+    const customer = await Customer.findOne({ where: branchWhere(req, { id: req.params.id }) });
     if (!customer) return res.status(404).json({ error: "Customer not found" });
-    
+
     await customer.update({ isActive: false });
     res.json({ message: "Customer deactivated" });
   } catch(err) { res.status(500).json({ error: err.message }); }
@@ -78,9 +79,9 @@ router.patch("/:id/deactivate", protect, async (req, res) => {
 
 router.patch("/:id/activate", protect, async (req, res) => {
   try {
-    const customer = await Customer.findByPk(req.params.id);
+    const customer = await Customer.findOne({ where: branchWhere(req, { id: req.params.id }) });
     if (!customer) return res.status(404).json({ error: "Customer not found" });
-    
+
     await customer.update({ isActive: true });
     res.json({ message: "Customer reactivated" });
   } catch(err) { res.status(500).json({ error: err.message }); }
@@ -89,7 +90,7 @@ router.patch("/:id/activate", protect, async (req, res) => {
 // ── LEDGER ──
 router.get("/:id/ledger", protect, async (req, res) => {
   try {
-    const customer = await Customer.findByPk(req.params.id);
+    const customer = await Customer.findOne({ where: branchWhere(req, { id: req.params.id }) });
     if (!customer) return res.status(404).json({ error: "Customer not found" });
 
     const bills = await Bill.findAll({
@@ -154,7 +155,7 @@ router.get("/:id/ledger", protect, async (req, res) => {
 // ── PAYMENTS ──
 router.post("/:id/payment", protect, async (req, res) => {
   try {
-    const customer = await Customer.findByPk(req.params.id);
+    const customer = await Customer.findOne({ where: branchWhere(req, { id: req.params.id }) });
     if (!customer) return res.status(404).json({ error: "Customer not found" });
 
     const sequelize = require("../config/db");
@@ -166,6 +167,7 @@ router.post("/:id/payment", protect, async (req, res) => {
         partyName: customer.name,
         direction: "in",
         ...req.body,
+        branchId: req.user.branchId,
       }, { transaction: t });
 
       // Update customer balance
@@ -193,9 +195,10 @@ router.post("/supplier/:id/payment", protect, async (req, res) => {
         partyId: req.params.id,
         direction: "out",
         ...req.body,
+        branchId: req.user.branchId,
       }, { transaction: t });
-      
-      const supplier = await Supplier.findByPk(req.params.id, { transaction: t });
+
+      const supplier = await Supplier.findOne({ where: branchWhere(req, { id: req.params.id }), transaction: t });
       if (supplier) {
         await supplier.decrement("balance", { by: req.body.amount, transaction: t });
         await supplier.increment("totalPaid", { by: req.body.amount, transaction: t });

@@ -4,6 +4,7 @@ const Supplier = require("../models/Supplier");
 const PurchaseOrder = require("../models/PurchaseOrder");
 const Item = require("../models/Item");
 const { protect, requirePermission } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
 const AuditLog = require("../models/AuditLog");
 const sequelize = require("../config/db");
 const accounting = require("../services/accounting");
@@ -38,7 +39,7 @@ router.get("/", protect, async (req, res) => {
     const { page = 1, limit = 50, search = '', includeInactive = 'false' } = req.query;
     const offset = (page - 1) * limit;
     
-    const where = {};
+    const where = branchWhere(req);
     if (search) where.name = { [Op.like]: `%${search}%` };
     if (includeInactive !== 'true') where.isActive = true;
 
@@ -62,7 +63,7 @@ router.get("/", protect, async (req, res) => {
 
 router.post("/", protect, async (req, res) => {
   try {
-    const s = await Supplier.create(req.body);
+    const s = await Supplier.create({ ...req.body, branchId: req.user.branchId });
     res.json(s);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -71,7 +72,7 @@ router.post("/", protect, async (req, res) => {
 
 router.put("/:id", protect, async (req, res) => {
   try {
-    await Supplier.update(req.body, { where: { id: req.params.id } });
+    await Supplier.update(req.body, { where: branchWhere(req, { id: req.params.id }) });
     res.json({ message: "Supplier updated" });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -80,13 +81,13 @@ router.put("/:id", protect, async (req, res) => {
 
 router.delete("/:id", protect, async (req, res) => {
   try {
-    const supplier = await Supplier.findByPk(req.params.id);
+    const supplier = await Supplier.findOne({ where: branchWhere(req, { id: req.params.id }) });
     if (!supplier) return res.status(404).json({ error: "Supplier not found" });
 
     // Assuming we check PurchaseChallan or PurchaseOrder count
     const PurchaseChallan = require("../models/PurchaseChallan");
     const challanCount = await PurchaseChallan.count({ where: { supplierId: req.params.id } });
-    
+
     if (challanCount > 0) {
       return res.status(400).json({
         error: "Cannot delete supplier",
@@ -95,7 +96,7 @@ router.delete("/:id", protect, async (req, res) => {
       });
     }
 
-    await Supplier.destroy({ where: { id: req.params.id } });
+    await Supplier.destroy({ where: branchWhere(req, { id: req.params.id }) });
     res.json({ message: "Supplier deleted" });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -104,9 +105,9 @@ router.delete("/:id", protect, async (req, res) => {
 
 router.patch("/:id/deactivate", protect, async (req, res) => {
   try {
-    const supplier = await Supplier.findByPk(req.params.id);
+    const supplier = await Supplier.findOne({ where: branchWhere(req, { id: req.params.id }) });
     if (!supplier) return res.status(404).json({ error: "Supplier not found" });
-    
+
     await supplier.update({ isActive: false });
     res.json({ message: "Supplier deactivated" });
   } catch(err) { res.status(500).json({ error: err.message }); }
@@ -114,9 +115,9 @@ router.patch("/:id/deactivate", protect, async (req, res) => {
 
 router.patch("/:id/activate", protect, async (req, res) => {
   try {
-    const supplier = await Supplier.findByPk(req.params.id);
+    const supplier = await Supplier.findOne({ where: branchWhere(req, { id: req.params.id }) });
     if (!supplier) return res.status(404).json({ error: "Supplier not found" });
-    
+
     await supplier.update({ isActive: true });
     res.json({ message: "Supplier reactivated" });
   } catch(err) { res.status(500).json({ error: err.message }); }
@@ -126,6 +127,7 @@ router.patch("/:id/activate", protect, async (req, res) => {
 router.get("/orders", protect, async (req, res) => {
   try {
     const orders = await PurchaseOrder.findAll({
+      where: branchWhere(req),
       order: [["createdAt", "DESC"]],
     });
     res.json(orders);
@@ -136,7 +138,7 @@ router.get("/orders", protect, async (req, res) => {
 
 router.get("/orders/:id", protect, async (req, res) => {
   try {
-    const order = await PurchaseOrder.findByPk(req.params.id);
+    const order = await PurchaseOrder.findOne({ where: branchWhere(req, { id: req.params.id }) });
     if (!order) return res.status(404).json({ error: "Order not found" });
     res.json(order);
   } catch (err) {
@@ -149,6 +151,7 @@ router.post("/orders", protect, async (req, res) => {
     const order = await PurchaseOrder.create({
       ...req.body,
       poNumber: genPO(),
+      branchId: req.user.branchId,
     });
     // Update supplier balance
     if (order.paymentMode === "credit") {
@@ -166,13 +169,13 @@ router.post("/orders", protect, async (req, res) => {
 // Mark as received — add items to inventory
 router.put("/orders/:id/receive", protect, async (req, res) => {
   try {
-    const order = await PurchaseOrder.findByPk(req.params.id);
+    const order = await PurchaseOrder.findOne({ where: branchWhere(req, { id: req.params.id }) });
     if (!order) return res.status(404).json({ error: "Order not found" });
 
     // Add each item to inventory
     for (const item of order.items || []) {
       const existing = await Item.findOne({
-        where: { name: item.name, batch: item.batch || null },
+        where: branchWhere(req, { name: item.name, batch: item.batch || null }),
       });
       if (existing) {
         await existing.increment("stock_qty", { by: parseInt(item.qty || 1) });
@@ -195,6 +198,7 @@ router.put("/orders/:id/receive", protect, async (req, res) => {
           mrp: item.mrp || 0,
           selling_price: item.selling_price || item.mrp || 0,
           cost_price: item.costPrice || 0,
+          branchId: req.user.branchId,
         });
       }
     }
@@ -214,7 +218,7 @@ router.put("/orders/:id/receive", protect, async (req, res) => {
 
 router.put("/orders/:id", protect, async (req, res) => {
   try {
-    await PurchaseOrder.update(req.body, { where: { id: req.params.id } });
+    await PurchaseOrder.update(req.body, { where: branchWhere(req, { id: req.params.id }) });
     res.json({ message: "Order updated" });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -223,7 +227,7 @@ router.put("/orders/:id", protect, async (req, res) => {
 
 router.delete("/orders/:id", protect, async (req, res) => {
   try {
-    await PurchaseOrder.destroy({ where: { id: req.params.id } });
+    await PurchaseOrder.destroy({ where: branchWhere(req, { id: req.params.id }) });
     res.json({ message: "Order deleted" });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -270,15 +274,16 @@ router.post(
         .map((l) => l.replace(/\|/g, " ").replace(/\s+/g, " ").trim())
         .filter(Boolean);
 
-      let supplierName = "SUBHASH MEDICOSE";
-      let invoiceNo = "INV-" + Math.floor(1000 + Math.random() * 9000);
+      let supplierName = "";
+      let invoiceNo = "";
       let date = new Date().toISOString().split("T")[0];
       let items = [];
 
-      // Header extraction (Your existing logic here is good)
+      // Header extraction: take the first non-empty line as the supplier name
+      // unless a clearer match is found below. The user can correct it in the UI.
       for (const line of lines) {
-        if (line.match(/(?:SUBHASH MEDICOSE|SUBHASH MEDICAL STORE)/i)) {
-          supplierName = "SUBHASH MEDICOSE";
+        if (!supplierName && line.length > 3 && !/invoice|bill|date|gst/i.test(line)) {
+          supplierName = line;
         }
         const invMatch = line.match(
           /(?:Invoice No|Inv No|Bill No)\s*[:.-]?\s*([A-Za-z0-9-]+)/i,
@@ -313,10 +318,7 @@ router.post(
         const match = line.match(forgivingRegex);
 
         if (match) {
-          const name = match[3].trim();
-          // Skip table headers
-          if (name.match(/(?:Product|Description|Item|Name)/i)) continue;
-
+          let name = match[3].trim();
           // Skip table headers
           if (name.match(/(?:Product|Description|Item|Name)/i)) continue;
 
@@ -488,6 +490,7 @@ router.post("/direct-purchase", protect, requirePermission("inventory.write"), i
       paymentMode,
       status: "received",
       receivedDate: date || new Date(),
+      branchId: req.user.branchId,
     }, { transaction: t });
 
     // Update supplier balance if bought on credit
@@ -502,7 +505,7 @@ router.post("/direct-purchase", protect, requirePermission("inventory.write"), i
     // Add each item to inventory instantly
     for (const item of items || []) {
       const existing = await Item.findOne({
-        where: { name: item.name, batch: item.batch || null },
+        where: branchWhere(req, { name: item.name, batch: item.batch || null }),
       });
       if (existing) {
         await existing.update({
@@ -525,6 +528,7 @@ router.post("/direct-purchase", protect, requirePermission("inventory.write"), i
           mrp: item.mrp || 0,
           selling_price: item.selling_price || item.mrp || 0,
           cost_price: item.costPrice || 0,
+          branchId: req.user.branchId,
         }, { transaction: t });
         
         await stockMovement.recordIn(newItem, parseInt(item.qty || 1) + parseInt(item.schemeQty || 0), "purchase", order.id, req.user ? req.user.id : null, "Direct purchase (New item)", t);

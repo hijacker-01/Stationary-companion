@@ -21,11 +21,13 @@ const Item = sequelize.define("Item", {
   reorderPoint:   { type: DataTypes.INTEGER, defaultValue: 10 },
   salesmanId:     { type: DataTypes.INTEGER },
   taxCategoryId:  { type: DataTypes.INTEGER },
+  branchId:       { type: DataTypes.INTEGER, allowNull: false },
 }, {
   paranoid: true,
   indexes: [
     { unique: true, fields: ['name', 'batch'] },
-    { fields: ['category'] }
+    { fields: ['category'] },
+    { fields: ['branchId', 'id'] }
   ]
 });
 

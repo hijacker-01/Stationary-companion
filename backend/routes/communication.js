@@ -1,24 +1,21 @@
 const express = require("express");
 const router = express.Router();
 const { protect } = require("../middleware/auth");
+const { sendMessage, isConfigured } = require("../services/messaging");
+
+// Report whether a real gateway is configured (so the UI can show a banner).
+router.get("/status", protect, (req, res) => {
+  res.json({ configured: isConfigured(), provider: "twilio" });
+});
 
 router.post("/send", protect, async (req, res) => {
   try {
     const { to, message, channel } = req.body;
-    
-    // In production, this would call Twilio API:
-    // client.messages.create({ body: message, from: 'whatsapp:+14155238886', to: `whatsapp:${to}` })
-    
-    console.log(`[Twilio Mock] Sent ${channel} to ${to}: ${message}`);
-    
-    res.json({
-      success: true,
-      message: `${channel} sent successfully to ${to}`,
-      sid: `SM${Math.random().toString(36).substring(7)}`
-    });
+    const result = await sendMessage({ to, message, channel });
+    res.json(result);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Failed to send message" });
+    console.error("[communication] send failed:", err.message);
+    res.status(400).json({ success: false, message: err.message });
   }
 });
 

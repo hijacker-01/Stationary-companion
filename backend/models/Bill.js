@@ -29,12 +29,14 @@ const Bill = sequelize.define("Bill", {
   cessAmount:   { type: DataTypes.DECIMAL(15, 2), defaultValue: 0 },
   irn:          { type: DataTypes.STRING(64) },
   ewbNumber:    { type: DataTypes.STRING(15) },
+  branchId:     { type: DataTypes.INTEGER, allowNull: false },
 }, {
   paranoid: true,
   indexes: [
     { fields: ['customerId'] },
     { fields: ['salesmanId'] },
-    { fields: ['status'] }
+    { fields: ['status'] },
+    { fields: ['branchId', 'id'] }
   ]
 });
 

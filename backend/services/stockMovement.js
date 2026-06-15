@@ -9,7 +9,8 @@ exports.recordOut = async (item, quantity, referenceType, referenceId, userId, n
     referenceType,
     referenceId,
     userId,
-    notes
+    notes,
+    branchId: item.branchId,
   }, { transaction });
 };
 
@@ -22,7 +23,8 @@ exports.recordIn = async (item, quantity, referenceType, referenceId, userId, no
     referenceType,
     referenceId,
     userId,
-    notes
+    notes,
+    branchId: item.branchId,
   }, { transaction });
 };
 
@@ -36,6 +38,7 @@ exports.recordAdjustment = async (item, quantity, referenceId, userId, notes, tr
     referenceType: "adjust",
     referenceId,
     userId,
-    notes
+    notes,
+    branchId: item.branchId,
   }, { transaction });
 };

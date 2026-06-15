@@ -20,8 +20,12 @@ const Supplier = sequelize.define("Supplier", {
   stateCode:    { type: DataTypes.STRING(2) },
   registrationType: { type: DataTypes.ENUM("regular", "composition", "unregistered", "sez"), defaultValue: "regular" },
   isActive:     { type: DataTypes.BOOLEAN, defaultValue: true },
+  branchId:     { type: DataTypes.INTEGER, allowNull: false },
 }, {
-  paranoid: true
+  paranoid: true,
+  indexes: [
+    { fields: ['branchId', 'id'] }
+  ]
 });
 
 module.exports = Supplier;

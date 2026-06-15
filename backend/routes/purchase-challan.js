@@ -9,15 +9,16 @@ const AuditLog        = require("../models/AuditLog");
 const stockMovement   = require("../services/stockMovement");
 const accounting      = require("../services/accounting");
 const { protect }     = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
 
 // ── Generate challan number ──────────────────────────────────────────────────
-const generateChallanNo = async (transaction) => {
+const generateChallanNo = async (req, transaction) => {
   const now = new Date();
   const fyStart = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
   const fyEnd = fyStart + 1;
   const prefix = `PCH-${String(fyStart).slice(-2)}${String(fyEnd).slice(-2)}-`;
   const last = await PurchaseChallan.findOne({
-    where: { challanNo: { [Op.like]: `${prefix}%` } },
+    where: branchWhere(req, { challanNo: { [Op.like]: `${prefix}%` } }),
     order: [["createdAt", "DESC"]], transaction,
   });
   let next = 1;
@@ -31,7 +32,7 @@ const generateChallanNo = async (transaction) => {
 // ── GET all challans ─────────────────────────────────────────────────────────
 router.get("/", protect, async (req, res) => {
   try {
-    const where = {};
+    const where = branchWhere(req);
     if (req.query.status) where.status = req.query.status;
     if (req.query.supplierId) where.supplierId = req.query.supplierId;
     if (req.query.from && req.query.to) {
@@ -45,7 +46,7 @@ router.get("/", protect, async (req, res) => {
 // ── GET single challan ───────────────────────────────────────────────────────
 router.get("/:id", protect, async (req, res) => {
   try {
-    const c = await PurchaseChallan.findByPk(req.params.id);
+    const c = await PurchaseChallan.findOne({ where: branchWhere(req, { id: req.params.id }) });
     if (!c) return res.status(404).json({ error: "Challan not found" });
     res.json(c);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -57,15 +58,16 @@ router.post("/", protect, async (req, res) => {
   try {
     const challan = await PurchaseChallan.create({
       ...req.body,
-      challanNo: await generateChallanNo(t),
+      challanNo: await generateChallanNo(req, t),
       status: "draft",
       userId: req.user ? req.user.id : null,
+      branchId: req.user.branchId,
     }, { transaction: t, lock: t.LOCK.UPDATE });
 
     const items = req.body.items || [];
     for (const row of items) {
       if (!row.name) continue;
-      let item = await Item.findOne({ where: { name: row.name, batch: row.batch || "" }, transaction: t, lock: t.LOCK.UPDATE });
+      let item = await Item.findOne({ where: branchWhere(req, { name: row.name, batch: row.batch || "" }), transaction: t, lock: t.LOCK.UPDATE });
       if (item) {
         await item.update({ stock_qty: item.stock_qty + (parseInt(row.qty) || 0) }, { transaction: t, lock: t.LOCK.UPDATE });
       } else {
@@ -73,6 +75,7 @@ router.post("/", protect, async (req, res) => {
           name: row.name, batch: row.batch || "", expiry: row.expiry || null,
           mrp: row.mrp || 0, cost_price: row.rate || 0, selling_price: row.mrp || 0,
           stock_qty: parseInt(row.qty) || 0, category: "General", unit: "PCS",
+          branchId: req.user.branchId,
         }, { transaction: t, lock: t.LOCK.UPDATE });
       }
       await stockMovement.recordIn(item, parseInt(row.qty) || 0, "purchase", null, req.user ? req.user.id : null, `Challan ${challan.challanNo} created`, t);
@@ -93,7 +96,7 @@ router.post("/", protect, async (req, res) => {
 router.put("/:id", protect, async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const challan = await PurchaseChallan.findByPk(req.params.id, { transaction: t, lock: t.LOCK.UPDATE });
+    const challan = await PurchaseChallan.findOne({ where: branchWhere(req, { id: req.params.id }), transaction: t, lock: t.LOCK.UPDATE });
     if (!challan) { await t.rollback(); return res.status(404).json({ error: "Not found" }); }
     if (challan.status === "converted") { await t.rollback(); return res.status(400).json({ error: "Cannot edit a converted challan" }); }
     const old = challan.toJSON();
@@ -111,7 +114,7 @@ router.put("/:id", protect, async (req, res) => {
 // ── POST approve challan ─────────────────────────────────────────────────────
 router.post("/:id/approve", protect, async (req, res) => {
   try {
-    const challan = await PurchaseChallan.findByPk(req.params.id);
+    const challan = await PurchaseChallan.findOne({ where: branchWhere(req, { id: req.params.id }) });
     if (!challan) return res.status(404).json({ error: "Not found" });
     if (challan.status !== "draft" && challan.status !== "pending") {
       return res.status(400).json({ error: "Only draft/pending challans can be approved" });
@@ -125,7 +128,7 @@ router.post("/:id/approve", protect, async (req, res) => {
 router.post("/:id/convert", protect, async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const challan = await PurchaseChallan.findByPk(req.params.id, { transaction: t, lock: t.LOCK.UPDATE });
+    const challan = await PurchaseChallan.findOne({ where: branchWhere(req, { id: req.params.id }), transaction: t, lock: t.LOCK.UPDATE });
     if (!challan) { await t.rollback(); return res.status(404).json({ error: "Not found" }); }
     if (challan.status !== "approved") { await t.rollback(); return res.status(400).json({ error: "Only approved challans can be converted" }); }
 
@@ -136,11 +139,12 @@ router.post("/:id/convert", protect, async (req, res) => {
     let supplierId = challan.supplierId;
     if (challan.supplierName) {
       const Supplier = require('../models/Supplier');
-      let supplier = await Supplier.findOne({ where: { name: challan.supplierName }, transaction: t, lock: t.LOCK.UPDATE });
+      let supplier = await Supplier.findOne({ where: branchWhere(req, { name: challan.supplierName }), transaction: t, lock: t.LOCK.UPDATE });
       if (!supplier) {
         supplier = await Supplier.create({
           name: challan.supplierName, phone: challan.supplierPhone || "",
           gstNumber: challan.supplierGst || "", dlNumber: challan.supplierDl || "",
+          branchId: req.user.branchId,
         }, { transaction: t, lock: t.LOCK.UPDATE });
       }
       supplierId = supplier.id;
@@ -157,6 +161,7 @@ router.post("/:id/convert", protect, async (req, res) => {
       total: challan.total,
       status: "received",
       notes: challan.notes,
+      branchId: req.user.branchId,
     }, { transaction: t, lock: t.LOCK.UPDATE });
 
     // Post accounting journal
@@ -182,16 +187,16 @@ router.post("/:id/convert", protect, async (req, res) => {
 // ── DELETE challan ───────────────────────────────────────────────────────────
 router.delete("/:id", protect, async (req, res) => {
   try {
-    const challan = await PurchaseChallan.findByPk(req.params.id);
+    const challan = await PurchaseChallan.findOne({ where: branchWhere(req, { id: req.params.id }) });
     if (!challan) return res.status(404).json({ error: "Not found" });
     if (challan.status === "converted") return res.status(400).json({ error: "Cannot delete converted challan" });
-    
+
     const t = await sequelize.transaction();
     try {
       const items = challan.items || [];
       for (const row of items) {
         if (!row.name) continue;
-        const item = await Item.findOne({ where: { name: row.name, batch: row.batch || "" }, transaction: t, lock: t.LOCK.UPDATE });
+        const item = await Item.findOne({ where: branchWhere(req, { name: row.name, batch: row.batch || "" }), transaction: t, lock: t.LOCK.UPDATE });
         if (item) {
           const qty = parseInt(row.qty) || 0;
           if (item.stock_qty >= qty) {

@@ -26,10 +26,12 @@ const PurchaseChallan = sequelize.define("PurchaseChallan", {
   purchaseOrderId: { type: DataTypes.INTEGER },
   notes:           { type: DataTypes.TEXT },
   userId:          { type: DataTypes.INTEGER },
+  branchId:        { type: DataTypes.INTEGER, allowNull: false },
 }, {
   indexes: [
     { fields: ['supplierId'] },
-    { fields: ['status'] }
+    { fields: ['status'] },
+    { fields: ['branchId', 'id'] }
   ]
 });
 

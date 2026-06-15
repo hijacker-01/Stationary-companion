@@ -14,6 +14,11 @@ const SalesReturn = sequelize.define("SalesReturn", {
   reason:         { type: DataTypes.STRING },
   status:         { type: DataTypes.ENUM("pending","approved","rejected"), defaultValue: "approved" },
   restockItems:   { type: DataTypes.BOOLEAN, defaultValue: true },
+  branchId:       { type: DataTypes.INTEGER, allowNull: false },
+}, {
+  indexes: [
+    { fields: ['branchId', 'id'] }
+  ]
 });
 
 module.exports = SalesReturn;

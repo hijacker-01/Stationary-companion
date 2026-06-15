@@ -5,12 +5,13 @@ const Customer = require("../models/Customer");
 const Bill     = require("../models/Bill");
 const Payment  = require("../models/Payment");
 const { protect } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
 
 // ── GET /api/debtors ─────────────────────────────────────────────────────────
 router.get("/", protect, async (req, res) => {
   try {
     const customers = await Customer.findAll({
-      where: { balance: { [Op.gt]: 0 } },
+      where: branchWhere(req, { balance: { [Op.gt]: 0 } }),
       order: [["balance", "DESC"]],
     });
 
@@ -20,10 +21,10 @@ router.get("/", protect, async (req, res) => {
     for (const cust of customers) {
       // Get unpaid/partial bills for aging
       const unpaidBills = await Bill.findAll({
-        where: {
+        where: branchWhere(req, {
           customerName: cust.name,
           status: { [Op.in]: ["unpaid", "partial"] },
-        },
+        }),
         order: [["createdAt", "ASC"]],
       });
 
@@ -39,7 +40,7 @@ router.get("/", protect, async (req, res) => {
 
       // Get last payment date
       const lastPayment = await Payment.findOne({
-        where: { partyName: cust.name, direction: "in" },
+        where: branchWhere(req, { partyName: cust.name, direction: "in" }),
         order: [["createdAt", "DESC"]],
       });
 

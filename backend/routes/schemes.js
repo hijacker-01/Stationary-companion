@@ -3,6 +3,10 @@ const router = express.Router();
 const Scheme = require("../models/Scheme");
 const Item = require("../models/Item");
 const { Op } = require("sequelize");
+const { protect } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
+
+router.use(protect);
 
 // Get all schemes
 router.get("/", async (req, res) => {
@@ -21,7 +25,7 @@ router.get("/check", async (req, res) => {
     if (!itemName) return res.json([]);
 
     // Find the item to get its company
-    const item = await Item.findOne({ where: { name: itemName } });
+    const item = await Item.findOne({ where: branchWhere(req, { name: itemName }) });
     if (!item || !item.company) return res.json([]);
 
     const today = new Date().toISOString().split("T")[0];

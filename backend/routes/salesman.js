@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const Salesman = require("../models/Salesman");
+const { protect } = require("../middleware/auth");
+
+router.use(protect);
 
 router.get("/", async (req, res) => {
   try {

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/auth');
+const { protect, requirePermission } = require('../middleware/auth');
+const { branchWhere } = require('../middleware/branchScope');
 const idempotency = require('../middleware/idempotency');
 const sequelize = require('../config/db');
 const AuditLog = require('../models/AuditLog');
@@ -35,7 +36,7 @@ router.get('/logistics/routes', protect, async (req, res) => {
 });
 
 // /api/enterprise/approvals
-router.get('/approvals', protect, (req, res) => {
+router.get('/approvals', protect, requirePermission('approve_invoices'), (req, res) => {
     res.json({
         success: true,
         data: [
@@ -48,7 +49,7 @@ router.get('/approvals', protect, (req, res) => {
 // /api/enterprise/crm/leads
 router.get('/crm/leads', protect, async (req, res) => {
     try {
-        const leads = await CRMLead.findAll();
+        const leads = await CRMLead.findAll({ where: branchWhere(req) });
         res.json({ success: true, data: leads });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
@@ -73,13 +74,13 @@ router.get('/recall', protect, async (req, res) => {
             return res.status(400).json({ success: false, error: 'Batch number is required' });
         }
 
-        const batch = await ItemBatch.findOne({ where: { batchNo } });
+        const batch = await ItemBatch.findOne({ where: branchWhere(req, { batchNo }) });
         if (!batch) {
             return res.status(404).json({ success: false, error: 'Batch not found' });
         }
 
-        const allBills = await Bill.findAll();
-        const allChallans = await SalesChallan.findAll();
+        const allBills = await Bill.findAll({ where: branchWhere(req) });
+        const allChallans = await SalesChallan.findAll({ where: branchWhere(req) });
 
         const affectedBills = allBills.filter(b => {
             const items = typeof b.items === 'string' ? JSON.parse(b.items) : (b.items || []);

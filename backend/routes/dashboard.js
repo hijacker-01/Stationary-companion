@@ -5,6 +5,11 @@ const Bill = require("../models/Bill");
 const Item = require("../models/Item");
 const Customer = require("../models/Customer");
 const PurchaseOrder = require("../models/PurchaseOrder");
+const { protect } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
+const { sendMessage } = require("../services/messaging");
+
+router.use(protect);
 
 router.get("/", async (req, res) => {
   try {
@@ -17,7 +22,7 @@ router.get("/", async (req, res) => {
 
     // Today's sales
     const todayBills = await Bill.findAll({
-      where: { createdAt: { [Op.between]: [todayStart, todayEnd] } }
+      where: branchWhere(req, { createdAt: { [Op.between]: [todayStart, todayEnd] } })
     });
     const todaySales   = todayBills.reduce((s, b) => s + (b.total || 0), 0);
     const todayBillCount = todayBills.length;
@@ -25,7 +30,7 @@ router.get("/", async (req, res) => {
     const todayCredit  = todayBills.filter(b => b.paymentMode === "credit").reduce((s, b) => s + b.total, 0);
 
     // Monthly sales (last 12 months)
-    const allBills = await Bill.findAll({ order: [["createdAt", "ASC"]] });
+    const allBills = await Bill.findAll({ where: branchWhere(req), order: [["createdAt", "ASC"]] });
     const monthlyMap = {};
     allBills.forEach(b => {
       const key = new Date(b.createdAt).toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
@@ -35,7 +40,7 @@ router.get("/", async (req, res) => {
 
     // Outstanding customers
     const outstanding = await Customer.findAll({
-      where: { balance: { [Op.gt]: 0 } },
+      where: branchWhere(req, { balance: { [Op.gt]: 0 } }),
       order: [["balance", "DESC"]],
       limit: 10,
       attributes: ["id", "name", "phone", "balance"],
@@ -43,7 +48,7 @@ router.get("/", async (req, res) => {
 
     // Low stock items (below 10 or reorderPoint)
     const lowStock = await Item.findAll({
-      where: { stock_qty: { [Op.lte]: 10 } },
+      where: branchWhere(req, { stock_qty: { [Op.lte]: 10 } }),
       order: [["stock_qty", "ASC"]],
       limit: 10,
     });
@@ -52,10 +57,10 @@ router.get("/", async (req, res) => {
     const sixtyDaysFromNow = new Date();
     sixtyDaysFromNow.setDate(sixtyDaysFromNow.getDate() + 60);
     const nearExpiry = await Item.findAll({
-      where: {
+      where: branchWhere(req, {
         expiry: { [Op.between]: [new Date(), sixtyDaysFromNow] },
         stock_qty: { [Op.gt]: 0 },
-      },
+      }),
       order: [["expiry", "ASC"]],
       limit: 10,
     });
@@ -74,7 +79,7 @@ router.get("/", async (req, res) => {
       .map(([name, sales]) => ({ name, sales: parseFloat(sales.toFixed(2)) }));
 
     // Pending (unpaid) bills
-    const unpaidBills = await Bill.findAll({ where: { status: "unpaid" } });
+    const unpaidBills = await Bill.findAll({ where: branchWhere(req, { status: "unpaid" }) });
     const totalOutstanding = unpaidBills.reduce((s, b) => s + b.total, 0);
 
     // Total revenue (all time)
@@ -103,17 +108,37 @@ router.get("/", async (req, res) => {
 
 router.post("/reminders/send", async (req, res) => {
   try {
+    const channel = req.body.channel === "whatsapp" ? "whatsapp" : "sms";
     const outstanding = await Customer.findAll({
-      where: { balance: { [Op.gt]: 0 } }
+      where: branchWhere(req, { balance: { [Op.gt]: 0 } })
     });
-    
-    // Simulate sending emails or SMS
-    console.log(`Sending reminders to ${outstanding.length} customers with outstanding balances.`);
-    
+
+    let sent = 0, skipped = 0, simulated = false;
+    const failures = [];
+
+    for (const c of outstanding) {
+      if (!c.phone) { skipped++; continue; }
+      const amount = Math.round(parseFloat(c.balance) || 0);
+      const text = `Dear ${c.name}, our records show an outstanding balance of Rs.${amount.toLocaleString("en-IN")}. Kindly arrange payment at your earliest convenience. Thank you.`;
+      try {
+        const r = await sendMessage({ to: c.phone, message: text, channel });
+        if (r.simulated) simulated = true;
+        sent++;
+      } catch (e) {
+        failures.push({ customer: c.name, error: e.message });
+      }
+    }
+
     res.json({
       success: true,
-      count: outstanding.length,
-      message: `Successfully sent payment reminders to ${outstanding.length} customers.`
+      sent,
+      skipped,
+      failed: failures.length,
+      simulated,
+      message: simulated
+        ? `Prepared ${sent} reminders (simulated — set TWILIO_* env vars to send for real). ${skipped} skipped (no phone).`
+        : `Sent ${sent} payment reminders via ${channel}. ${skipped} skipped (no phone).`,
+      failures,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

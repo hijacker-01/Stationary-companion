@@ -5,20 +5,21 @@ const Customer = require("../models/Customer");
 const Supplier = require("../models/Supplier");
 const sequelize = require("../config/db");
 const { protect } = require("../middleware/auth");
+const { branchWhere } = require("../middleware/branchScope");
 const { Op } = require("sequelize");
 
 // Helper to update party balance
-const updateBalance = async (partyType, partyId, amount, isDebit, t) => {
+const updateBalance = async (req, partyType, partyId, amount, isDebit, t) => {
   // In accounting:
   // Customers (Assets): Debit increases balance, Credit decreases balance.
   // Suppliers (Liabilities): Credit increases balance, Debit decreases balance.
-  
+
   // Wait, in our simple system:
   // Customer.balance = what they owe us.
   // Supplier.balance = what we owe them.
-  
+
   if (partyType === "customer") {
-    const cust = await Customer.findByPk(partyId, { transaction: t });
+    const cust = await Customer.findOne({ where: branchWhere(req, { id: partyId }), transaction: t });
     if (!cust) throw new Error("Customer not found");
     if (isDebit) {
       await cust.increment("balance", { by: amount, transaction: t });
@@ -26,7 +27,7 @@ const updateBalance = async (partyType, partyId, amount, isDebit, t) => {
       await cust.decrement("balance", { by: amount, transaction: t });
     }
   } else if (partyType === "supplier") {
-    const supp = await Supplier.findByPk(partyId, { transaction: t });
+    const supp = await Supplier.findOne({ where: branchWhere(req, { id: partyId }), transaction: t });
     if (!supp) throw new Error("Supplier not found");
     if (isDebit) {
       await supp.decrement("balance", { by: amount, transaction: t });
@@ -39,7 +40,7 @@ const updateBalance = async (partyType, partyId, amount, isDebit, t) => {
 // Get all JVs
 router.get("/", protect, async (req, res) => {
   try {
-    const jvs = await JournalVoucher.findAll({ order: [["date", "DESC"], ["createdAt", "DESC"]] });
+    const jvs = await JournalVoucher.findAll({ where: branchWhere(req), order: [["date", "DESC"], ["createdAt", "DESC"]] });
     res.json(jvs);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -60,7 +61,7 @@ router.post("/", protect, async (req, res) => {
     const prefix = `JV-${String(fyStart).slice(-2)}${String(fyStart + 1).slice(-2)}-`;
     
     const last = await JournalVoucher.findOne({
-      where: { jvNo: { [Op.like]: `${prefix}%` } },
+      where: branchWhere(req, { jvNo: { [Op.like]: `${prefix}%` } }),
       order: [["createdAt", "DESC"]],
       transaction: t,
     });
@@ -74,12 +75,13 @@ router.post("/", protect, async (req, res) => {
     const jvNo = `${prefix}${String(next).padStart(4, "0")}`;
 
     const jv = await JournalVoucher.create({
-      jvNo, date, debitPartyType, debitPartyId, debitPartyName, creditPartyType, creditPartyId, creditPartyName, amount, narration
+      jvNo, date, debitPartyType, debitPartyId, debitPartyName, creditPartyType, creditPartyId, creditPartyName, amount, narration,
+      branchId: req.user.branchId,
     }, { transaction: t });
 
     // Update balances
-    await updateBalance(debitPartyType, debitPartyId, amount, true, t);
-    await updateBalance(creditPartyType, creditPartyId, amount, false, t);
+    await updateBalance(req, debitPartyType, debitPartyId, amount, true, t);
+    await updateBalance(req, creditPartyType, creditPartyId, amount, false, t);
 
     await t.commit();
     res.json(jv);
@@ -93,12 +95,12 @@ router.post("/", protect, async (req, res) => {
 router.delete("/:id", protect, async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const jv = await JournalVoucher.findByPk(req.params.id, { transaction: t });
+    const jv = await JournalVoucher.findOne({ where: branchWhere(req, { id: req.params.id }), transaction: t });
     if (!jv) throw new Error("JV not found");
 
     // Reverse the balances
-    await updateBalance(jv.debitPartyType, jv.debitPartyId, jv.amount, false, t);
-    await updateBalance(jv.creditPartyType, jv.creditPartyId, jv.amount, true, t);
+    await updateBalance(req, jv.debitPartyType, jv.debitPartyId, jv.amount, false, t);
+    await updateBalance(req, jv.creditPartyType, jv.creditPartyId, jv.amount, true, t);
 
     await jv.destroy({ transaction: t });
     await t.commit();
