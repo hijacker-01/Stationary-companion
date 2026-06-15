@@ -10,7 +10,9 @@ import { useEffect } from "react";
  */
 export function useFormNav() {
   useEffect(() => {
-    const FOCUSABLE = 'input:not([disabled]):not([type="hidden"]):not([readonly]), select:not([disabled]), textarea:not([disabled]):not([readonly]), button:not([disabled]), [data-smart-select] input:not([disabled])';
+    // Elements with tabindex="-1" are intentionally kept out of the Enter-chain
+    // (e.g. the barcode-scan button), so callers can opt fields out of the flow.
+    const FOCUSABLE = 'input:not([disabled]):not([type="hidden"]):not([readonly]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), textarea:not([disabled]):not([readonly]):not([tabindex="-1"]), button:not([disabled]):not([tabindex="-1"]), [data-smart-select] input:not([disabled])';
 
     const handleKeyDown = (e) => {
       if (e.key !== 'Enter') return;

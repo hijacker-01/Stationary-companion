@@ -31,13 +31,19 @@ export function advanceFocusFrom(element) {
  */
 export function focusFirstField(containerSelector) {
   setTimeout(() => {
-    const container = typeof containerSelector === 'string' 
-      ? document.querySelector(containerSelector) 
+    const container = typeof containerSelector === 'string'
+      ? document.querySelector(containerSelector)
       : containerSelector;
     if (!container) return;
-    const first = container.querySelector(
-      'input:not([disabled]):not([type="hidden"]):not([readonly]), select:not([disabled]), textarea:not([disabled]):not([readonly])'
-    );
+    // The selector may resolve to a field itself (e.g. "#search-customer") or to
+    // a wrapper. If it's already a field, focus it directly; otherwise focus the
+    // first field inside it.
+    const isField = ['INPUT', 'SELECT', 'TEXTAREA'].includes(container.tagName);
+    const first = isField
+      ? container
+      : container.querySelector(
+          'input:not([disabled]):not([type="hidden"]):not([readonly]), select:not([disabled]), textarea:not([disabled]):not([readonly])'
+        );
     if (first) {
       first.focus();
       if (first.tagName === 'INPUT') setTimeout(() => first.select(), 0);

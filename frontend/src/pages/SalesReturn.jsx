@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import { CornerDownLeft, Plus, Printer, CheckCircle2, AlertTriangle, Search, Eye, Trash2, ArrowLeft } from "lucide-react";
+import { useDocumentKeyboard } from "../hooks/useDocumentKeyboard";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
@@ -26,6 +27,7 @@ export default function SalesReturn() {
       .then(r => setBills(r.data));
 
   useEffect(() => { fetchReturns(); fetchBills(); }, []);
+  useDocumentKeyboard({ view, onFinish: () => handleSubmit(), onPrint: () => window.print() });
 
   const handleSelectBill = (bill) => {
     setSelectedBill(bill);
@@ -255,10 +257,17 @@ export default function SalesReturn() {
                 <span>Credit Amount</span><span>₹{totalAmount.toFixed(2)}</span>
               </div>
             </div>
-            <button onClick={handleSubmit}
-              className="w-full mt-4 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold text-sm shadow-sm hover:shadow transition cursor-pointer">
-              <CheckCircle2 className="w-4 h-4" /> Issue Credit Note
-            </button>
+            <div className="flex gap-2 mt-4">
+              <button onClick={handleSubmit} tabIndex={-1}
+                className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-semibold text-sm shadow-sm hover:shadow transition cursor-pointer">
+                <CheckCircle2 className="w-4 h-4" /> Finish Return
+                <span className="text-xs text-emerald-100">(Shift + Enter)</span>
+              </button>
+              <button onClick={handleSubmit}
+                className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold text-sm shadow-sm hover:shadow transition cursor-pointer">
+                <CheckCircle2 className="w-4 h-4" /> Issue Credit Note
+              </button>
+            </div>
           </div>
         </div>
       </main>

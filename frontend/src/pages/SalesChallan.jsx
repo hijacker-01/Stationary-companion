@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useConfirm } from "../hooks/useConfirm";
 import SmartSelect from "../components/SmartSelect";
+import { useDocumentKeyboard } from "../hooks/useDocumentKeyboard";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
@@ -113,6 +114,13 @@ export default function SalesChallan() {
       focusFirstField('#search-customer, [placeholder="Search..."]');
     }
   }, [view]);
+
+  // Shift+Enter to finish/save, Enter on preview to print
+  useDocumentKeyboard({
+    view,
+    onFinish: () => handleSaveBillRef.current?.(),
+    onPrint: () => window.print()
+  });
 
   const toggleRow = (id) => {
     const newSet = new Set(expandedRows);
@@ -677,10 +685,20 @@ export default function SalesChallan() {
               <div className="px-5 py-4 bg-green-50 flex flex-col justify-center">
                 <p className="text-[12px] uppercase tracking-widest text-green-700 mb-1 font-black border-b border-green-200 pb-1">GRAND TOTAL</p>
                 <div className="text-4xl font-black text-green-700 mt-1 mb-2 tracking-tighter">₹{grandTotal.toLocaleString('en-IN')}</div>
-                <button onClick={handleSaveBill}
-                  className="mt-auto w-full bg-[#1b4985] text-white font-black text-[13px] px-3 py-2.5 rounded hover:bg-blue-800 transition-colors flex items-center justify-center gap-2">
-                  <Check className="w-4 h-4" /> Save Bill [F10]
-                </button>
+                <div className="mt-auto flex gap-2 flex-col">
+                  <button
+                    onClick={handleSaveBill}
+                    tabIndex={-1}
+                    className="w-full bg-emerald-600 text-white font-black text-[13px] px-3 py-2.5 rounded hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    ✓ Finish Challan
+                    <span className="text-[10px] font-normal opacity-90 ml-auto">Shift + Enter</span>
+                  </button>
+                  <button onClick={handleSaveBill}
+                    className="w-full bg-[#1b4985] text-white font-black text-[13px] px-3 py-2.5 rounded hover:bg-blue-800 transition-colors flex items-center justify-center gap-2">
+                    <Check className="w-4 h-4" /> Save Bill [F10]
+                  </button>
+                </div>
               </div>
             </div>
           </div>

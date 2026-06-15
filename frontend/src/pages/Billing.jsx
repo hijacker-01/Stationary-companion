@@ -61,6 +61,7 @@ export default function Billing() {
     gstNumber: "",
     transportDetails: "Hand Delivery",
     dueDate: "",
+    date: new Date().toISOString().slice(0, 10),
   });
   const [discount, setDiscount] = useState(0);
   const [paymentMode, setPaymentMode] = useState("cash");
@@ -123,6 +124,30 @@ export default function Billing() {
     if (view === 'create') {
       focusFirstField('#search-customer, [placeholder="Search Customer..."]');
     }
+  }, [view]);
+
+  // Shift+Enter finishes/saves the bill from anywhere in the create view.
+  // Capture phase so it isn't pre-empted by the global Enter-navigation hooks.
+  useEffect(() => {
+    const onShiftEnter = (e) => {
+      if (e.key === 'Enter' && e.shiftKey && view === 'create') {
+        e.preventDefault();
+        e.stopPropagation();
+        handleSaveBillRef.current?.();
+      }
+    };
+    window.addEventListener('keydown', onShiftEnter, true);
+    return () => window.removeEventListener('keydown', onShiftEnter, true);
+  }, [view]);
+
+  // On the saved-bill preview, a single Enter prints the invoice.
+  useEffect(() => {
+    if (view !== 'preview') return;
+    const onEnter = (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); window.print(); }
+    };
+    window.addEventListener('keydown', onEnter, true);
+    return () => window.removeEventListener('keydown', onEnter, true);
   }, [view]);
 
   const toggleRow = (id) => {
@@ -366,6 +391,7 @@ export default function Billing() {
       customerDl: customer.dlNumber,
       customerGst: customer.gstNumber,
       dueDate: customer.dueDate || null,
+      date: customer.date || null,
       transportDetails: customer.transportDetails,
       salesmanId: selectedSalesman.id || null,
       salesmanName: selectedSalesman.name || "",
@@ -434,6 +460,7 @@ export default function Billing() {
       gstNumber: "",
       transportDetails: "Hand Delivery",
       dueDate: "",
+      date: new Date().toISOString().slice(0, 10),
     });
     setDiscount(0);
     setPaymentMode("cash");
@@ -743,7 +770,7 @@ export default function Billing() {
                       value={customer.name} 
                       onChange={e => handleCustomerSelect(e.target.value)} 
                       onFocus={() => { setActiveDropdown('customer'); setDropdownIndex(0); }}
-                      onBlur={() => setTimeout(() => setActiveDropdown(null), 200)}
+                      onBlur={() => setTimeout(() => setActiveDropdown(prev => prev === 'customer' ? null : prev), 200)}
                       aria-expanded={activeDropdown === 'customer' ? 'true' : 'false'}
                       onKeyDown={(e) => {
                         if (activeDropdown === 'customer') {
@@ -765,7 +792,8 @@ export default function Billing() {
                               handleCustomerSelect(e.target.value);
                             }
                             setActiveDropdown(null);
-                            advanceFocusFrom(e.target);
+                            // Flow: customer → date → first item
+                            setTimeout(() => { document.getElementById('bill-date')?.focus(); }, 50);
                           } else if (e.key === 'Escape') {
                             e.preventDefault();
                             setActiveDropdown(null);
@@ -778,7 +806,7 @@ export default function Billing() {
                     {activeDropdown === 'customer' && (
                       <ul className="absolute left-0 top-full mt-0.5 w-[300px] bg-white border border-gray-400 shadow-xl z-50 max-h-48 overflow-y-auto">
                         {customers.filter(c => !customer.name || c.name.toLowerCase().includes(customer.name.toLowerCase())).map((c, idx) => (
-                          <li key={c.id || c.name} className={`px-2 py-1 cursor-pointer text-xs text-black border-b border-gray-100 last:border-0 ${dropdownIndex === idx ? 'bg-blue-200' : 'hover:bg-blue-50'}`} onMouseDown={(e) => { e.preventDefault(); handleCustomerSelect(c.name); setActiveDropdown(null); advanceFocusFrom(document.querySelector('[placeholder="Search Customer..."]')); }}>
+                          <li key={c.id || c.name} className={`px-2 py-1 cursor-pointer text-xs text-black border-b border-gray-100 last:border-0 ${dropdownIndex === idx ? 'bg-blue-200' : 'hover:bg-blue-50'}`} onMouseDown={(e) => { e.preventDefault(); handleCustomerSelect(c.name); setActiveDropdown(null); setTimeout(() => document.getElementById('bill-date')?.focus(), 50); }}>
                             <div className="font-bold">{c.name}</div>
                             <div className="text-[10px] text-gray-500">{c.phone || c.address || 'No details'}</div>
                           </li>
@@ -854,7 +882,14 @@ export default function Billing() {
                 <h3 className="font-bold border-b border-slate-500 pb-1 mb-1">Key Info</h3>
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-[10px]">Date</span>
-                  <input value={new Date().toLocaleDateString('en-GB')} className="bg-[#a8c6e6] text-black px-1 py-0.5 outline-none w-24 text-right" readOnly />
+                  <input
+                    id="bill-date"
+                    type="date"
+                    value={customer.date}
+                    onChange={e => setCustomer({ ...customer, date: e.target.value })}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('search-product-0')?.focus(); } }}
+                    className="bg-white text-black px-1 py-0.5 outline-none w-28 text-right"
+                  />
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[10px] w-20 leading-tight">Current Dues<br/>Pending</span>
@@ -864,8 +899,9 @@ export default function Billing() {
                 </div>
               </div>
               <div className="flex gap-4 items-center">
-                <button 
+                <button
                   onClick={() => setShowScanner(true)}
+                  tabIndex={-1}
                   className="bg-blue-600 text-white px-4 py-1.5 rounded flex items-center font-bold text-xs hover:bg-blue-700"
                 >
                   [F4] Scan Barcode
@@ -919,7 +955,7 @@ export default function Billing() {
                           value={row.searchStr !== undefined ? row.searchStr : row.name} 
                           onChange={(e) => handleItemSelect(i, e.target.value)} 
                           onFocus={() => { setActiveDropdown(`item-${i}`); setDropdownIndex(0); }}
-                          onBlur={() => setTimeout(() => setActiveDropdown(null), 200)}
+                          onBlur={() => setTimeout(() => setActiveDropdown(prev => prev === `item-${i}` ? null : prev), 200)}
                           aria-expanded={activeDropdown === `item-${i}` ? 'true' : 'false'}
                           onKeyDown={(e) => {
                             if (activeDropdown === `item-${i}`) {
@@ -936,17 +972,24 @@ export default function Billing() {
                               } else if (e.key === 'Enter') {
                                 e.preventDefault();
                                 e.stopPropagation();
+                                const typed = (row.searchStr !== undefined ? row.searchStr : row.name) || '';
+                                // Pick the highlighted match, or accept typed text. A blank
+                                // line does nothing here — use Shift+Enter / Finish Bill to save.
                                 if (filtered[dropdownIndex]) {
                                   const it = filtered[dropdownIndex];
                                   handleItemSelect(i, `${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`);
-                                } else {
+                                } else if (typed.trim()) {
                                   handleItemSelect(i, e.target.value);
+                                } else {
+                                  setActiveDropdown(null);
+                                  return;
                                 }
                                 setActiveDropdown(null);
+                                // …then jump to Qty for this row.
                                 setTimeout(() => {
-                                  const row = e.target.closest('tr');
-                                  if (row) {
-                                    const qtyInput = row.querySelector('input[type="number"]');
+                                  const tr = e.target.closest('tr');
+                                  if (tr) {
+                                    const qtyInput = tr.querySelector('input[type="number"]');
                                     if (qtyInput) { qtyInput.focus(); qtyInput.select(); }
                                   }
                                 }, 50);
@@ -980,7 +1023,7 @@ export default function Billing() {
                      <td className="px-1 border-r border-slate-300 text-right"><input type="number" min="0" value={row.schemeQty || ""} onChange={e => handleRowChange(i, "schemeQty", e.target.value)} className="w-full text-right bg-transparent outline-none text-black text-green-700 font-bold" /></td>
                      <td className="px-1 border-r border-slate-300 text-right text-slate-500">{row.name ? parseFloat(row.mrp||0).toFixed(2) : ''}</td>
                      <td className="px-1 border-r border-slate-300 text-right"><input type="number" value={row.selling_price || ""} onChange={e => handleRowChange(i, "selling_price", e.target.value)} className="w-full text-right bg-transparent outline-none text-black" /></td>
-                     <td className="px-1 border-r border-slate-300 text-right text-slate-500">{row.name ? (parseFloat(row.gst||0).toFixed(2) + '%') : ''}</td>
+                     <td className="px-1 border-r border-slate-300 text-right">{row.name ? <input type="number" min="0" step="0.01" value={row.gst ?? ""} onChange={e => handleRowChange(i, "gst", e.target.value)} className="w-full text-right bg-transparent outline-none text-black" /> : ''}</td>
                      <td className="px-1 text-right font-bold">{row.name ? (parseFloat(row.amount||0)).toFixed(2) : ''}</td>
                    </tr>
                  )})}
@@ -1043,6 +1086,14 @@ export default function Billing() {
                <button className="bg-[#1b4985] text-white border border-slate-500 hover:bg-[#255b9e] text-[10px] w-12 text-center py-0.5 leading-tight opacity-50 cursor-not-allowed">F17<br/>Count</button>
              </div>
              <div className="flex gap-1">
+               <button
+                 onClick={handleSaveBill}
+                 tabIndex={-1}
+                 className="bg-emerald-600 text-white border border-emerald-300 hover:bg-emerald-700 text-xs font-bold px-4 text-center py-0.5 leading-tight flex flex-col items-center justify-center"
+               >
+                 ✓ Finish Bill
+                 <span className="text-[9px] font-normal opacity-90">Shift + Enter</span>
+               </button>
                <button onClick={() => setView('list')} className="bg-[#1b4985] text-white border border-white hover:bg-[#255b9e] text-[10px] w-12 text-center py-0.5 leading-tight flex items-center justify-center">Close</button>
              </div>
           </div>
@@ -1149,6 +1200,7 @@ export default function Billing() {
             >
               <Printer className="w-4.5 h-4.5" />
               Print / Save PDF
+              <span className="text-[10px] font-normal opacity-90 ml-1">(Enter)</span>
             </button>
           </div>
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import { Plus, Printer, Send, Trash2, Eye, ArrowLeft, X } from "lucide-react";
+import { useDocumentKeyboard } from "../hooks/useDocumentKeyboard";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
@@ -22,6 +23,7 @@ export default function PurchaseReturn() {
   const fetchSuppliers = () => axios.get("/suppliers").then(r => setSuppliers(r.data));
 
   useEffect(() => { fetchReturns(); fetchItems(); fetchSuppliers(); }, []);
+  useDocumentKeyboard({ view, onFinish: () => handleSubmit(), onPrint: () => window.print() });
 
   const handleItemSelect = (idx, searchStr) => {
     const [namePart, batchPart] = searchStr.split(" | Batch: ");
@@ -195,9 +197,15 @@ export default function PurchaseReturn() {
               <div className="flex justify-between text-slate-600"><span>GST</span><span>₹{gstAmt.toFixed(2)}</span></div>
               <div className="border-t pt-2 flex justify-between font-bold text-red-600 text-lg"><span>Total</span><span>₹{(subtotal + gstAmt).toFixed(2)}</span></div>
             </div>
-            <button onClick={handleSubmit} className="w-full mt-4 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-semibold text-sm shadow-sm hover:shadow transition cursor-pointer">
-              <Send className="w-4 h-4" /> Issue Debit Note
-            </button>
+            <div className="flex gap-2 mt-4">
+              <button onClick={handleSubmit} tabIndex={-1} className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-semibold text-sm shadow-sm hover:shadow transition cursor-pointer">
+                <Send className="w-4 h-4" /> Finish Return
+                <span className="text-xs text-emerald-100">(Shift + Enter)</span>
+              </button>
+              <button onClick={handleSubmit} className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-semibold text-sm shadow-sm hover:shadow transition cursor-pointer">
+                <Send className="w-4 h-4" /> Issue Debit Note
+              </button>
+            </div>
           </div>
         </div>
       </main>

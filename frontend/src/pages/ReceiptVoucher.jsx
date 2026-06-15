@@ -103,7 +103,7 @@ export default function ReceiptVoucher() {
 
   const handleKeyDown = (e) => {
     if (e.key === "Escape") resetForm();
-    if (e.key === "Enter" && showModal && form.customerName && form.amount) handleSave();
+    if (e.key === "Enter" && e.shiftKey && showModal && form.customerName && form.amount) handleSave();
   };
 
   return (
@@ -276,6 +276,15 @@ export default function ReceiptVoucher() {
                   tabIndex={6}
                 >
                   Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  tabIndex={-1}
+                  className="px-4 py-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-xs disabled:opacity-50 flex items-center gap-1"
+                >
+                  {saving && <Loader2 size={12} className="animate-spin" />} Finish Receipt
+                  <span className="text-xs">(Shift + Enter)</span>
                 </button>
                 <button
                   onClick={handleSave}
