@@ -52,6 +52,7 @@ export default function Dashboard() {
     { label: "CASH/CREDIT Bill", to: "/billing", ai: false },
     { label: "Purchase Challan", to: "/purchase-challan", ai: false },
     { label: "Sales DM (Challan)", to: "/sales-challan", ai: false },
+    { label: "Purchase Bill", to: "/purchase-bills", ai: false },
     { label: "AI Smart Ledger / Scan", to: "/ai-ledger", ai: true },
     { label: "Receipt Voucher", to: "/receipt-voucher", ai: false },
     { label: "Payment Voucher", to: "/payment-voucher", ai: false },
@@ -296,9 +297,6 @@ export default function Dashboard() {
             }
           }}
         >
-          <div className="text-center py-1 bg-[#d6d6d6] border-b border-gray-300 font-bold text-[11px] text-gray-700">
-            D.M.
-          </div>
           <div className="flex flex-col w-full">
             {rightActions.map((action, i) => (
               <button
