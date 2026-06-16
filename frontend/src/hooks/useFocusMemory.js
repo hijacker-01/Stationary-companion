@@ -12,6 +12,15 @@ export function useFocusMemory() {
         return;
       }
 
+      // A page can declare an explicit default focus target (e.g. the
+      // Dashboard's Bills action). Honor it over remembered/fallback focus so
+      // landing on the page (e.g. via ESC) always starts there.
+      const pageDefault = document.querySelector('[data-default-focus]');
+      if (pageDefault && !pageDefault.closest('[role="dialog"]')) {
+        pageDefault.focus();
+        return;
+      }
+
       const storedSelector = sessionStorage.getItem(`focus_mem_${location.pathname}`);
       let restored = false;
       

@@ -302,6 +302,7 @@ export default function Dashboard() {
               <button
                 key={i}
                 ref={i === 0 ? billsBtnRef : null}
+                {...(i === 0 ? { "data-default-focus": true } : {})}
                 onClick={action.action ? action.action : () => navigate(action.to)}
                 className={`w-full py-2 px-3 text-center border-b border-gray-300 transition-colors shadow-sm focus:outline-none focus:bg-[#1b4985] focus:text-white
                   ${action.ai ? 'bg-[#f3e5f5] text-[#4a148c] font-extrabold hover:bg-[#e1bee7]' : 'bg-[#f4f4f4] text-gray-800 font-medium hover:bg-white'}
