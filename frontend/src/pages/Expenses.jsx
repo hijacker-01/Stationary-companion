@@ -124,10 +124,10 @@ export default function Expenses() {
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 border border-slate-100 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
               <h2 className="text-lg font-bold text-slate-900 mb-6">Add New Expense</h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} onKeyDown={(e) => { if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); handleSubmit(e); } }} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Date</label>
-                  <input type="date" required value={form.date} onChange={e=>setForm({...form, date:e.target.value})} className="form-input" />
+                  <input type="date" autoFocus required value={form.date} onChange={e=>setForm({...form, date:e.target.value})} className="form-input" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Category</label>

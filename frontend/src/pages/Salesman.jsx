@@ -120,11 +120,11 @@ export default function SalesmanPage() {
 
         {/* Modal */}
         {showModal && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onKeyDown={(e) => { if (e.key === 'Enter' && e.shiftKey && form.name) { e.preventDefault(); handleSubmit(); } }}>
             <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-bold text-slate-900">{editId ? "Edit" : "Add"} Salesman</h2>
-                <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 text-2xl cursor-pointer">×</button>
+                <button onClick={() => setShowModal(false)} tabIndex={-1} className="text-slate-400 hover:text-slate-600 text-2xl cursor-pointer">×</button>
               </div>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 {[
@@ -132,10 +132,10 @@ export default function SalesmanPage() {
                   { k: "phone", l: "Phone", p: "+91..." },
                   { k: "email", l: "Email", p: "john@co.com" },
                   { k: "area", l: "Area / Route", p: "South Mumbai" },
-                ].map(f => (
+                ].map((f, fi) => (
                   <div key={f.k}>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{f.l}</label>
-                    <input value={form[f.k]} onChange={e => setForm({ ...form, [f.k]: e.target.value })} placeholder={f.p} className="form-input" />
+                    <input autoFocus={fi === 0} value={form[f.k]} onChange={e => setForm({ ...form, [f.k]: e.target.value })} placeholder={f.p} className="form-input" />
                   </div>
                 ))}
               </div>
