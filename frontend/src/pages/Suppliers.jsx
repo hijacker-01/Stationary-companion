@@ -504,7 +504,7 @@ export default function Suppliers() {
 
         {/* ── PO MODAL ── */}
         {showPOModal && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onKeyDown={(e) => { if (e.key === 'Enter' && e.shiftKey && poSupplier && poItems.some(i => i.name)) handleSavePO(); }}>
             <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-bold text-slate-900">New Purchase Order</h2>
@@ -704,6 +704,7 @@ export default function Suppliers() {
                 <button onClick={handleSavePO}
                   className="flex-1 flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
                   <ClipboardList className="w-4 h-4" /> Create Purchase Order
+                  <span className="text-xs text-teal-100">(Shift + Enter)</span>
                 </button>
                 <button onClick={() => setShowPOModal(false)}
                   className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
