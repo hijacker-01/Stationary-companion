@@ -545,7 +545,7 @@ export default function PurchaseChallan() {
                         value={row.searchStr !== undefined ? row.searchStr : row.name}
                         onChange={(e) => { handleItemSelect(i, e.target.value); setActiveDropdown(i); setDropdownIndex(-1); }}
                         onFocus={() => { setActiveDropdown(i); setDropdownIndex(-1); }}
-                        onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
+                        onBlur={() => setTimeout(() => setActiveDropdown(prev => prev === i ? null : prev), 150)}
                         aria-expanded={activeDropdown === i}
                         onKeyDown={(e) => {
                           const searchVal = (row.searchStr !== undefined ? row.searchStr : row.name || '').toLowerCase();
@@ -689,13 +689,15 @@ export default function PurchaseChallan() {
                       } else if (e.key === 'ArrowUp') {
                         e.preventDefault(); e.stopPropagation();
                         setSupplierDropdownIndex(prev => Math.max(prev - 1, 0));
-                      } else if (e.key === 'Enter' && supplierDropdownOpen && supplierDropdownIndex >= 0 && filtered[supplierDropdownIndex]) {
+                      } else if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault(); e.stopPropagation();
-                        handleSupplierSelect(filtered[supplierDropdownIndex].name);
+                        if (supplierDropdownOpen && supplierDropdownIndex >= 0 && filtered[supplierDropdownIndex]) {
+                          handleSupplierSelect(filtered[supplierDropdownIndex].name);
+                        }
                         setSupplierDropdownOpen(false);
                         setSupplierDropdownIndex(-1);
-                        const el = document.getElementById('search-supplier');
-                        if (el) advanceFocusFrom(el);
+                        // Jump straight into the first product line (bill-style flow).
+                        document.getElementById('search-product-0')?.focus();
                       } else if (e.key === 'Escape') {
                         setSupplierDropdownOpen(false); setSupplierDropdownIndex(-1);
                       }

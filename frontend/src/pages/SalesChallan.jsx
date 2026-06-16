@@ -528,7 +528,7 @@ export default function SalesChallan() {
                         value={row.searchStr !== undefined ? row.searchStr : row.name}
                         onChange={(e) => handleItemSelect(i, e.target.value)}
                         onFocus={() => { setActiveDropdown(`item-${i}`); setDropdownIndex(0); }}
-                        onBlur={() => setTimeout(() => setActiveDropdown(null), 200)}
+                        onBlur={() => setTimeout(() => setActiveDropdown(prev => prev === `item-${i}` ? null : prev), 200)}
                         aria-expanded={activeDropdown === `item-${i}` ? 'true' : 'false'}
                         onKeyDown={(e) => {
                           if (activeDropdown === `item-${i}`) {
@@ -656,6 +656,7 @@ export default function SalesChallan() {
                 <p className="text-[11px] uppercase tracking-widest text-[#1b4985] mb-2 font-black border-b border-gray-100 pb-1">Customer [F3]</p>
                 <input id="search-customer" type="text" list="customer-list" value={customer.name}
                   onChange={(e) => handleCustomerSelect(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); document.getElementById('search-product-0')?.focus(); } }}
                   className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm font-black bg-yellow-50 focus:outline-none focus:border-[#1b4985] mb-2" placeholder="Search..." />
                 <datalist id="customer-list">{customers.map(c => <option key={c.id} value={c.name} />)}</datalist>
                 <div className="flex justify-between font-bold mt-1"><span className="text-gray-500">Phone:</span><span className="text-gray-900">{customer.phone || '—'}</span></div>
