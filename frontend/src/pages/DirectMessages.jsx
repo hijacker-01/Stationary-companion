@@ -99,7 +99,7 @@ export default function DirectMessages() {
         {/* User List Panel */}
         <div className="w-80 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
           <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-teal-600" />
+            <MessageSquare className="w-5 h-5 text-brand-600" />
             <h2 className="font-bold text-slate-900">Team Chat</h2>
           </div>
           <div className="overflow-y-auto flex-1 p-2">
@@ -107,10 +107,10 @@ export default function DirectMessages() {
               <button
                 key={u.id}
                 onClick={() => selectUser(u)}
-                className={`w-full flex items-center justify-between p-3 mb-1 rounded-xl transition cursor-pointer ${selectedUser?.id === u.id ? "bg-teal-50 border border-teal-200" : "hover:bg-slate-50 border border-transparent"}`}
+                className={`w-full flex items-center justify-between p-3 mb-1 rounded-xl transition cursor-pointer ${selectedUser?.id === u.id ? "bg-brand-50 border border-brand-200" : "hover:bg-slate-50 border border-transparent"}`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${selectedUser?.id === u.id ? "bg-teal-600 text-white" : "bg-slate-100 text-slate-600"}`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${selectedUser?.id === u.id ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-600"}`}>
                     {u.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="text-left">
@@ -134,7 +134,7 @@ export default function DirectMessages() {
             <>
               {/* Chat Header */}
               <div className="p-4 border-b border-slate-200 flex items-center gap-3 bg-slate-50">
-                <div className="w-10 h-10 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center font-bold">
+                <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold">
                   {selectedUser.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -154,9 +154,9 @@ export default function DirectMessages() {
                   const isMine = m.senderId === currentUser.id;
                   return (
                     <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm ${isMine ? "bg-teal-600 text-white rounded-tr-sm" : "bg-white border border-slate-200 text-slate-900 rounded-tl-sm shadow-sm"}`}>
+                      <div className={`max-w-[70%] rounded-2xl px-4 py-2 text-sm ${isMine ? "bg-brand-600 text-white rounded-tr-sm" : "bg-white border border-slate-200 text-slate-900 rounded-tl-sm shadow-sm"}`}>
                         <p>{m.message}</p>
-                        <p className={`text-[10px] mt-1 text-right ${isMine ? "text-teal-200" : "text-slate-400"}`}>
+                        <p className={`text-[10px] mt-1 text-right ${isMine ? "text-brand-200" : "text-slate-400"}`}>
                           {new Date(m.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                         </p>
                       </div>
@@ -176,7 +176,7 @@ export default function DirectMessages() {
                     placeholder="Type a message..."
                     className="form-input flex-1 !rounded-full"
                   />
-                  <button type="submit" className="w-10 h-10 bg-teal-600 hover:bg-teal-700 text-white rounded-full flex items-center justify-center transition shadow-sm cursor-pointer">
+                  <button type="submit" className="w-10 h-10 bg-brand-600 hover:bg-brand-700 text-white rounded-full flex items-center justify-center transition shadow-sm cursor-pointer">
                     <Send className="w-4 h-4 ml-0.5" />
                   </button>
                 </form>

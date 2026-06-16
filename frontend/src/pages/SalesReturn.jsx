@@ -84,7 +84,7 @@ export default function SalesReturn() {
           <button onClick={() => { setView("list"); setSelectedBill(null); setActiveReturn(null); }} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 font-semibold cursor-pointer">
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
-          <button onClick={() => window.print()} className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
+          <button onClick={() => window.print()} className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
             <Printer className="w-4 h-4" /> Print Credit Note
           </button>
         </div>
@@ -152,7 +152,7 @@ export default function SalesReturn() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">New Sales Return</h1>
-            <p className="text-sm text-slate-500 mt-1">Against Bill: <span className="font-mono font-bold text-teal-600">{selectedBill.billNo}</span> — {selectedBill.customerName}</p>
+            <p className="text-sm text-slate-500 mt-1">Against Bill: <span className="font-mono font-bold text-brand-600">{selectedBill.billNo}</span> — {selectedBill.customerName}</p>
           </div>
           <button onClick={() => setView("list")} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 font-semibold cursor-pointer">
             <ArrowLeft className="w-4 h-4" /> Back
@@ -236,7 +236,7 @@ export default function SalesReturn() {
               </div>
               <div className="flex items-center gap-3">
                 <input type="checkbox" id="restock" checked={restock} onChange={e => setRestock(e.target.checked)}
-                  className="w-4 h-4 accent-teal-600" />
+                  className="w-4 h-4 accent-brand-600" />
                 <label htmlFor="restock" className="text-sm text-slate-700 flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-green-500" /> Add returned items back to inventory stock
                 </label>
@@ -285,7 +285,7 @@ export default function SalesReturn() {
             <p className="text-sm text-slate-500 mt-1">Credit Notes issued for returned goods</p>
           </div>
           <button onClick={() => setView("select-bill")}
-            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
+            className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
             <Plus className="w-4.5 h-4.5" /> New Return
           </button>
         </div>
@@ -307,12 +307,12 @@ export default function SalesReturn() {
               ).map(b => (
                 <div key={b.id} className="flex items-center justify-between py-3 px-2 hover:bg-slate-50 rounded">
                   <div>
-                    <p className="font-mono font-bold text-teal-600">{b.billNo}</p>
+                    <p className="font-mono font-bold text-brand-600">{b.billNo}</p>
                     <p className="text-sm text-slate-700">{b.customerName}</p>
                     <p className="text-xs text-slate-400">{new Date(b.createdAt).toLocaleDateString("en-IN")} · ₹{b.total}</p>
                   </div>
                   <button onClick={() => handleSelectBill(b)}
-                    className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm hover:shadow transition cursor-pointer">
+                    className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm hover:shadow transition cursor-pointer">
                     Select
                   </button>
                 </div>
@@ -340,7 +340,7 @@ export default function SalesReturn() {
                 <tr key={r.id}>
                   <td className="font-mono text-green-600 font-bold">{r.returnNo}</td>
                   <td className="font-semibold text-slate-900">{r.customerName}</td>
-                  <td className="font-mono text-teal-600">{r.originalBillNo || "—"}</td>
+                  <td className="font-mono text-brand-600">{r.originalBillNo || "—"}</td>
                   <td className="text-slate-500">{new Date(r.createdAt).toLocaleDateString("en-IN")}</td>
                   <td className="text-slate-500">{r.items?.length || 0} items</td>
                   <td className="font-bold text-green-600">₹{r.totalAmount}</td>
@@ -351,7 +351,7 @@ export default function SalesReturn() {
                   </td>
                   <td>
                     <div className="flex items-center gap-3">
-                      <button onClick={() => { setActiveReturn(r); setView("preview"); }} className="text-teal-600 hover:text-teal-800 text-xs font-semibold cursor-pointer flex items-center gap-1">
+                      <button onClick={() => { setActiveReturn(r); setView("preview"); }} className="text-brand-600 hover:text-brand-800 text-xs font-semibold cursor-pointer flex items-center gap-1">
                         <Eye className="w-3.5 h-3.5" /> View
                       </button>
                       <button onClick={() => handleDelete(r.id)} className="text-rose-600 hover:text-rose-800 text-xs font-semibold cursor-pointer flex items-center gap-1">

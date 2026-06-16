@@ -161,7 +161,7 @@ export default function Inventory() {
   const totalValue = items.reduce((sum, i) => sum + ((i.stock_qty || 0) * (i.cost_price || 0)), 0);
 
   const summaryCards = [
-    { title: "Total Items", value: totalItems, icon: Package, color: "bg-teal-50 text-teal-600 border-teal-200" },
+    { title: "Total Items", value: totalItems, icon: Package, color: "bg-brand-50 text-brand-600 border-brand-200" },
     { title: "Inventory Value", value: `₹${totalValue.toLocaleString()}`, icon: DollarSign, color: "bg-indigo-50 text-indigo-600 border-indigo-200" },
     { title: "Low Stock", value: lowStockItems.length, icon: AlertTriangle, color: "bg-amber-50 text-amber-600 border-amber-200" },
     { title: "Out of Stock", value: outOfStockItems.length, icon: AlertCircle, color: "bg-rose-50 text-rose-600 border-rose-200" },
@@ -182,7 +182,7 @@ export default function Inventory() {
             </div>
             <button 
               onClick={() => { setForm(empty); setEditId(null); setShowModal(true); focusFirstField('.fixed.inset-0.z-50'); }}
-              className="flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-teal-700 transition"
+              className="flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-brand-700 transition"
             >
               <Plus className="w-4 h-4" /> Add Item
             </button>
@@ -208,7 +208,7 @@ export default function Inventory() {
                 placeholder="Search inventory by name, batch..." 
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 w-64 bg-white"
+                className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 w-64 bg-white"
               />
             </div>
           </div>
@@ -259,7 +259,7 @@ export default function Inventory() {
                           <button onClick={() => openAdjustment(item)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Adjust Stock">
                             <Settings className="w-4 h-4" />
                           </button>
-                          <button onClick={() => handleEdit(item)} className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition">
+                          <button onClick={() => handleEdit(item)} className="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition">
                             <Edit3 className="w-4 h-4" />
                           </button>
                           <button onClick={() => handleDelete(item)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">

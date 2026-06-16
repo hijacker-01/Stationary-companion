@@ -112,7 +112,7 @@ export default function DeliveryMan() {
 
   return (
     <PageLayout
-      title={<span className="flex items-center gap-3"><Truck className="w-7 h-7 text-teal-600" /> Dispatch & Delivery Management</span>}
+      title={<span className="flex items-center gap-3"><Truck className="w-7 h-7 text-brand-600" /> Dispatch & Delivery Management</span>}
       subtitle="Manage delivery personnel, assign routes, and settle payments"
     >
         {/* Tabs */}
@@ -123,7 +123,7 @@ export default function DeliveryMan() {
               <button key={t.key} onClick={() => setTab(t.key)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition cursor-pointer ${
                   tab === t.key
-                    ? "bg-teal-600 text-white shadow-sm"
+                    ? "bg-brand-600 text-white shadow-sm"
                     : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                 }`}>
                 <Icon className="w-4.5 h-4.5" />
@@ -155,7 +155,7 @@ export default function DeliveryMan() {
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Route/Area</label>
                   <input value={form.route} onChange={e => setForm({ ...form, route: e.target.value })} className="form-input" />
                 </div>
-                <button type="submit" className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
+                <button type="submit" className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
                   Save Record
                 </button>
               </form>
@@ -219,14 +219,14 @@ export default function DeliveryMan() {
                 </thead>
                 <tbody>
                   {pendingBills.map(b => (
-                    <tr key={b.id} className="hover:bg-teal-50/50">
+                    <tr key={b.id} className="hover:bg-brand-50/50">
                       <td className="text-center">
                         <input type="checkbox" checked={selectedBills.includes(b.id)} onChange={e => {
                           if (e.target.checked) setSelectedBills([...selectedBills, b.id]);
                           else setSelectedBills(selectedBills.filter(id => id !== b.id));
                         }} />
                       </td>
-                      <td className="font-mono font-bold text-teal-600 text-xs">{b.billNo}</td>
+                      <td className="font-mono font-bold text-brand-600 text-xs">{b.billNo}</td>
                       <td className="font-semibold text-slate-900">{b.customerName}</td>
                       <td className="text-slate-500 text-xs">{b.customerAddress}</td>
                       <td className="text-right font-bold">₹{b.total?.toFixed(2)}</td>
@@ -254,7 +254,7 @@ export default function DeliveryMan() {
                   {dms.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
               </div>
-              <button onClick={handleClearance} className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
+              <button onClick={handleClearance} className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
                 Settle & Close Ledger
               </button>
             </div>
@@ -275,7 +275,7 @@ export default function DeliveryMan() {
                   <tbody>
                     {dmBills.map(b => (
                       <tr key={b.id}>
-                        <td className="font-mono font-bold text-teal-600 text-xs">{b.billNo}</td>
+                        <td className="font-mono font-bold text-brand-600 text-xs">{b.billNo}</td>
                         <td className="font-semibold text-slate-900">{b.customerName}</td>
                         <td className="text-right font-medium">₹{b.total?.toFixed(2)}</td>
                         <td className="text-center">

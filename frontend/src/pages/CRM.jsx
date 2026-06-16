@@ -80,7 +80,7 @@ export default function CRM() {
                     <td className="p-1.5 border-r border-gray-300 font-mono text-gray-500">{c.id}</td>
                     <td className="p-1.5 border-r border-gray-300 font-bold">{c.name}</td>
                     <td className="p-1.5 border-r border-gray-300">
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${c.type === 'Doctor' ? 'bg-indigo-100 text-indigo-800' : 'bg-teal-100 text-teal-800'}`}>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${c.type === 'Doctor' ? 'bg-indigo-100 text-indigo-800' : 'bg-brand-100 text-brand-800'}`}>
                         {c.type}
                       </span>
                     </td>

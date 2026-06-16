@@ -10,7 +10,7 @@ export default function DataState({ loading, error, empty, children, emptyProps 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-24">
-        <span className="inline-block h-8 w-8 animate-spin rounded-full border-[3px] border-teal-600/20 border-t-teal-600" />
+        <span className="inline-block h-8 w-8 animate-spin rounded-full border-[3px] border-brand-600/20 border-t-brand-600" />
         <p className="text-sm text-slate-500">{loadingLabel}</p>
       </div>
     );

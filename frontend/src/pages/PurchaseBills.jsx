@@ -130,7 +130,7 @@ export default function PurchaseBills() {
           <div className="flex justify-between items-end mb-8">
             <div>
               <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                <FileText className="w-6 h-6 text-teal-600" /> Purchase Bill Entry
+                <FileText className="w-6 h-6 text-brand-600" /> Purchase Bill Entry
               </h1>
               <p className="text-sm text-slate-500 mt-1">Directly record inward invoices to update inventory and ledgers.</p>
             </div>
@@ -140,7 +140,7 @@ export default function PurchaseBills() {
               <button 
                 onClick={() => fileInputRef.current?.click()}
                 disabled={extracting}
-                className="bg-teal-50 border border-teal-200 text-teal-700 hover:bg-teal-100 px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2 shadow-sm"
+                className="bg-brand-50 border border-brand-200 text-brand-700 hover:bg-brand-100 px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2 shadow-sm"
               >
                 {extracting ? <Wand2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                 {extracting ? "Extracting..." : "Upload Bill (AI OCR)"}
@@ -158,7 +158,7 @@ export default function PurchaseBills() {
                   <SmartSelect
                     value={form.supplierId}
                     onChange={handleSupplierSelect}
-                    className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-400 bg-white"
+                    className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-400 bg-white"
                     placeholder="-- Select Supplier --"
                     autoFocus
                     options={[
@@ -175,11 +175,11 @@ export default function PurchaseBills() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Invoice Number</label>
-                  <input type="text" required value={form.invoiceNo} onChange={e=>setForm({...form, invoiceNo:e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-400 font-mono" placeholder="INV-..." />
+                  <input type="text" required value={form.invoiceNo} onChange={e=>setForm({...form, invoiceNo:e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-400 font-mono" placeholder="INV-..." />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Bill Date</label>
-                  <input type="date" required value={form.date} onChange={e=>setForm({...form, date:e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-400" />
+                  <input type="date" required value={form.date} onChange={e=>setForm({...form, date:e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-400" />
                 </div>
               </div>
             </div>
@@ -188,7 +188,7 @@ export default function PurchaseBills() {
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="bg-slate-50 px-6 py-4 border-b flex justify-between items-center">
                 <h2 className="font-bold text-slate-700">Line Items</h2>
-                <button type="button" onClick={addItem} className="text-teal-600 text-sm font-semibold flex items-center gap-1 hover:text-teal-800">
+                <button type="button" onClick={addItem} className="text-brand-600 text-sm font-semibold flex items-center gap-1 hover:text-brand-800">
                   <Plus className="w-4 h-4" /> Add Row
                 </button>
               </div>
@@ -213,28 +213,28 @@ export default function PurchaseBills() {
                       return (
                       <tr key={idx} className="hover:bg-slate-50">
                         <td className="px-4 py-2">
-                          <input type="text" required value={item.name} onChange={e=>updateItem(idx, "name", e.target.value)} className="w-full border rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-teal-400" placeholder="Product name" />
+                          <input type="text" required value={item.name} onChange={e=>updateItem(idx, "name", e.target.value)} className="w-full border rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-brand-400" placeholder="Product name" />
                         </td>
                         <td className="px-4 py-2">
-                          <input type="text" required value={item.batch} onChange={e=>updateItem(idx, "batch", e.target.value)} className="w-full border rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-teal-400 font-mono" placeholder="Batch" />
+                          <input type="text" required value={item.batch} onChange={e=>updateItem(idx, "batch", e.target.value)} className="w-full border rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-brand-400 font-mono" placeholder="Batch" />
                         </td>
                         <td className="px-4 py-2">
-                          <input type="number" min="1" required value={item.qty} onChange={e=>updateItem(idx, "qty", e.target.value)} className="w-full border rounded px-2 py-1 text-sm outline-none text-right focus:ring-1 focus:ring-teal-400" />
+                          <input type="number" min="1" required value={item.qty} onChange={e=>updateItem(idx, "qty", e.target.value)} className="w-full border rounded px-2 py-1 text-sm outline-none text-right focus:ring-1 focus:ring-brand-400" />
                         </td>
                         <td className="px-4 py-2">
                           <input type="number" min="0" value={item.schemeQty} onChange={e=>updateItem(idx, "schemeQty", e.target.value)} className="w-full border rounded px-2 py-1 text-sm outline-none text-right bg-green-50 text-green-700 focus:ring-1 focus:ring-green-400" />
                         </td>
                         <td className="px-4 py-2">
-                          <input type="number" step="0.01" required value={item.costPrice} onChange={e=>updateItem(idx, "costPrice", e.target.value)} className="w-full border rounded px-2 py-1 text-sm outline-none text-right focus:ring-1 focus:ring-teal-400" />
+                          <input type="number" step="0.01" required value={item.costPrice} onChange={e=>updateItem(idx, "costPrice", e.target.value)} className="w-full border rounded px-2 py-1 text-sm outline-none text-right focus:ring-1 focus:ring-brand-400" />
                         </td>
                         <td className="px-4 py-2">
-                          <input type="number" step="0.01" required value={item.mrp} onChange={e=>updateItem(idx, "mrp", e.target.value)} className="w-full border rounded px-2 py-1 text-sm outline-none text-right focus:ring-1 focus:ring-teal-400" />
+                          <input type="number" step="0.01" required value={item.mrp} onChange={e=>updateItem(idx, "mrp", e.target.value)} className="w-full border rounded px-2 py-1 text-sm outline-none text-right focus:ring-1 focus:ring-brand-400" />
                         </td>
                         <td className="px-4 py-2">
                           <SmartSelect
                             value={item.taxPercent}
                             onChange={e => updateItem(idx, "taxPercent", e.target.value)}
-                            className="w-full border rounded px-1 py-1 text-sm outline-none text-right focus:ring-1 focus:ring-teal-400 bg-white"
+                            className="w-full border rounded px-1 py-1 text-sm outline-none text-right focus:ring-1 focus:ring-brand-400 bg-white"
                             options={[
                               { value: '0', label: '0%' },
                               { value: '5', label: '5%' },
@@ -272,13 +272,13 @@ export default function PurchaseBills() {
                 </div>
                 <div>
                   <div className="text-xs text-slate-500 font-semibold uppercase">Grand Total</div>
-                  <div className="text-2xl font-extrabold text-teal-700">₹{total.toFixed(2)}</div>
+                  <div className="text-2xl font-extrabold text-brand-700">₹{total.toFixed(2)}</div>
                 </div>
               </div>
               <button 
                 type="submit" 
                 disabled={saving || items.length === 0}
-                className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white px-8 py-3 rounded-xl font-bold transition shadow flex items-center gap-2"
+                className="bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white px-8 py-3 rounded-xl font-bold transition shadow flex items-center gap-2"
               >
                 {saving ? "Saving..." : "Save Bill & Update Inventory"}
                 {!saving && <CheckCircle2 className="w-5 h-5" />}

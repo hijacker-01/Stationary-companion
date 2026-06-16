@@ -167,7 +167,7 @@ export default function Settings() {
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer ${
               saved
                 ? "bg-green-500 text-white"
-                : "bg-teal-600 hover:bg-teal-700 text-white"
+                : "bg-brand-600 hover:bg-brand-700 text-white"
             }`}
           >
             {saved ? <><CheckCircle2 className="w-4 h-4" /> Saved!</> : <><Save className="w-4 h-4" /> Save Settings</>}
@@ -185,7 +185,7 @@ export default function Settings() {
                 onClick={() => setTab(t.key)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition cursor-pointer ${
                   tab === t.key
-                    ? "bg-teal-600 text-white shadow-sm"
+                    ? "bg-brand-600 text-white shadow-sm"
                     : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                 }`}
               >
@@ -330,11 +330,11 @@ export default function Settings() {
               </div>
 
               {/* GST Info Box */}
-              <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 mt-4">
-                <p className="text-sm font-semibold text-teal-700 mb-2 flex items-center gap-2">
+              <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 mt-4">
+                <p className="text-sm font-semibold text-brand-700 mb-2 flex items-center gap-2">
                   <Landmark className="w-4 h-4" /> GST Rate Reference
                 </p>
-                <div className="grid grid-cols-3 gap-3 text-xs text-teal-600">
+                <div className="grid grid-cols-3 gap-3 text-xs text-brand-600">
                   {[
                     { rate: "0%", items: "Essential food, healthcare" },
                     { rate: "5%", items: "Packaged food, medicines" },
@@ -344,9 +344,9 @@ export default function Settings() {
                   ].map((g) => (
                     <div
                       key={g.rate}
-                      className="bg-white rounded-lg p-2 border border-teal-100"
+                      className="bg-white rounded-lg p-2 border border-brand-100"
                     >
-                      <p className="font-bold text-teal-800">{g.rate}</p>
+                      <p className="font-bold text-brand-800">{g.rate}</p>
                       <p className="opacity-70 mt-0.5">{g.items}</p>
                     </div>
                   ))}
@@ -390,7 +390,7 @@ export default function Settings() {
                 <p className="text-xs text-slate-500 mb-1">
                   Bills are numbered <strong>sequentially per financial year</strong> (Apr–Mar):
                 </p>
-                <div className="font-mono text-teal-600 font-bold text-sm bg-white border border-teal-100 rounded-lg px-3 py-2 mt-1">
+                <div className="font-mono text-brand-600 font-bold text-sm bg-white border border-brand-100 rounded-lg px-3 py-2 mt-1">
                   INV-2526-0001 → INV-2526-0002 → INV-2526-0003…
                 </div>
                 <p className="text-xs text-slate-400 mt-2">
@@ -515,7 +515,7 @@ export default function Settings() {
                 <button
                   onClick={fetchGSTR1}
                   disabled={loadingGst}
-                  className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
+                  className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
                 >
                   {loadingGst ? "Loading..." : "Generate Report"}
                 </button>
@@ -537,8 +537,8 @@ export default function Settings() {
                       {
                         label: "Total Bills",
                         value: gstr1.totalBills,
-                        borderColor: "border-l-teal-500",
-                        color: "bg-teal-50 text-teal-600",
+                        borderColor: "border-l-brand-500",
+                        color: "bg-brand-50 text-brand-600",
                         icon: ClipboardList,
                       },
                       {
@@ -601,7 +601,7 @@ export default function Settings() {
                         <tbody>
                           {gstr1.rateWise?.map((r) => (
                             <tr key={r.rate}>
-                              <td className="font-semibold text-teal-600">
+                              <td className="font-semibold text-brand-600">
                                 {r.rate}%
                               </td>
                               <td className="text-right text-slate-700">
@@ -657,7 +657,7 @@ export default function Settings() {
                         <tbody>
                           {gstr1.b2c?.map((b, i) => (
                             <tr key={i}>
-                              <td className="font-mono text-teal-600 text-xs">
+                              <td className="font-mono text-brand-600 text-xs">
                                 {b.billNo}
                               </td>
                               <td className="text-slate-500 text-xs">

@@ -38,7 +38,7 @@ const ALL_PERMISSIONS = [
 
 const ROLE_COLORS = {
   admin:   "bg-purple-100 text-purple-700 border-purple-200",
-  manager: "bg-teal-100 text-teal-700 border-teal-200",
+  manager: "bg-brand-100 text-brand-700 border-brand-200",
   staff:   "bg-slate-100 text-slate-600 border-slate-200",
   billing_operator: "bg-green-100 text-green-700 border-green-200",
   accountant: "bg-orange-100 text-orange-700 border-orange-200",
@@ -201,7 +201,7 @@ export default function Users() {
                     className={`p-3 rounded-xl text-center border-2 transition cursor-pointer ${
                       form.role === r.key
                         ? r.key === "admin"    ? "border-purple-500 bg-purple-50"
-                        : r.key === "manager"  ? "border-teal-500 bg-teal-50"
+                        : r.key === "manager"  ? "border-brand-500 bg-brand-50"
                         : r.key === "accountant" ? "border-orange-500 bg-orange-50"
                         : r.key === "billing_operator" ? "border-green-500 bg-green-50"
                         : "border-slate-400 bg-slate-50"
@@ -225,7 +225,7 @@ export default function Users() {
               <h2 className="font-semibold text-slate-900">Module Permissions</h2>
               <div className="flex gap-3">
                 <button onClick={() => setForm(f => ({ ...f, permissions: ALL_PERMISSIONS.map(p => p.key) }))}
-                  className="text-xs text-teal-600 hover:underline cursor-pointer">Select All</button>
+                  className="text-xs text-brand-600 hover:underline cursor-pointer">Select All</button>
                 <span className="text-slate-300">|</span>
                 <button onClick={() => setForm(f => ({ ...f, permissions: [] }))}
                   className="text-xs text-rose-500 hover:underline cursor-pointer">Clear All</button>
@@ -240,12 +240,12 @@ export default function Users() {
                     onClick={() => togglePermission(p.key)}
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm transition text-left cursor-pointer ${
                       form.permissions.includes(p.key)
-                        ? "bg-teal-50 border-teal-300 text-teal-700"
+                        ? "bg-brand-50 border-brand-300 text-brand-700"
                         : "bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300"
                     }`}
                   >
                     <span className={`w-5 h-5 rounded-md flex items-center justify-center text-xs flex-shrink-0 font-bold ${
-                      form.permissions.includes(p.key) ? "bg-teal-600 text-white" : "bg-slate-200 text-slate-400"
+                      form.permissions.includes(p.key) ? "bg-brand-600 text-white" : "bg-slate-200 text-slate-400"
                     }`}>
                       {form.permissions.includes(p.key) ? "✓" : ""}
                     </span>
@@ -261,7 +261,7 @@ export default function Users() {
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleSubmit}
-              className="flex-1 flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg font-semibold text-sm shadow-sm cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-lg font-semibold text-sm shadow-sm cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" /> {editId ? "Update User" : "Create User Account"}
             </button>
@@ -291,7 +291,7 @@ export default function Users() {
           </div>
           <button
             onClick={() => { setForm(emptyForm); setEditId(null); setView("register"); }}
-            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
+            className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
           >
             <Plus className="w-4.5 h-4.5" /> Register New User
           </button>
@@ -299,14 +299,14 @@ export default function Users() {
 
         {/* Quick Add Prompt Banner — shown if only 1 user exists */}
         {users.length <= 1 && (
-          <div className="bg-gradient-to-r from-teal-600 to-indigo-600 text-white rounded-xl p-6 mb-6 flex items-center justify-between shadow-lg">
+          <div className="bg-gradient-to-r from-brand-600 to-indigo-600 text-white rounded-xl p-6 mb-6 flex items-center justify-between shadow-lg">
             <div>
               <p className="font-bold text-lg mb-1">Set up your team</p>
-              <p className="text-teal-100 text-sm">You're the only user registered. Add staff members so they can log in and use the system with appropriate permissions.</p>
+              <p className="text-brand-100 text-sm">You're the only user registered. Add staff members so they can log in and use the system with appropriate permissions.</p>
             </div>
             <button
               onClick={() => { setForm(emptyForm); setEditId(null); setView("register"); }}
-              className="bg-white text-teal-600 px-6 py-2.5 rounded-lg font-semibold text-sm hover:shadow-lg transition shrink-0 ml-6 cursor-pointer flex items-center gap-2"
+              className="bg-white text-brand-600 px-6 py-2.5 rounded-lg font-semibold text-sm hover:shadow-lg transition shrink-0 ml-6 cursor-pointer flex items-center gap-2"
             >
               <Plus className="w-4 h-4" /> Add First Staff
             </button>
@@ -316,7 +316,7 @@ export default function Users() {
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[
-            { label: "Total Users", value: counts.total, icon: UsersIcon, borderColor: "border-l-teal-500", color: "bg-teal-50 text-teal-600" },
+            { label: "Total Users", value: counts.total, icon: UsersIcon, borderColor: "border-l-brand-500", color: "bg-brand-50 text-brand-600" },
             { label: "Admins",      value: counts.admin,  icon: ShieldCheck, borderColor: "border-l-purple-500", color: "bg-purple-50 text-purple-600" },
             { label: "Managers",    value: counts.manager, icon: Target, borderColor: "border-l-indigo-500", color: "bg-indigo-50 text-indigo-600" },
             { label: "Operators",   value: counts.staff,  icon: User, borderColor: "border-l-slate-500", color: "bg-slate-100 text-slate-600" },
@@ -356,7 +356,7 @@ export default function Users() {
                   key={r}
                   onClick={() => setFilterRole(r)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition cursor-pointer ${
-                    filterRole === r ? "bg-teal-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    filterRole === r ? "bg-brand-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}
                 >
                   {RIcon && <RIcon className="w-3.5 h-3.5" />}
@@ -381,7 +381,7 @@ export default function Users() {
                     <div className="flex items-center gap-3">
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold text-white ${
                         user.role === "admin"    ? "bg-purple-500" :
-                        user.role === "manager"  ? "bg-teal-500"   :
+                        user.role === "manager"  ? "bg-brand-500"   :
                         user.role === "accountant" ? "bg-orange-500" :
                         user.role === "billing_operator" ? "bg-green-500" :
                         "bg-slate-400"
@@ -409,7 +409,7 @@ export default function Users() {
                           {(user.permissions || []).slice(0, 3).map(p => {
                             const perm = ALL_PERMISSIONS.find(x => x.key === p);
                             return (
-                              <span key={p} className="bg-teal-50 text-teal-600 text-xs px-2 py-0.5 rounded-full border border-teal-100">
+                              <span key={p} className="bg-brand-50 text-brand-600 text-xs px-2 py-0.5 rounded-full border border-brand-100">
                                 {perm?.label || p}
                               </span>
                             );
@@ -430,7 +430,7 @@ export default function Users() {
 
                   <div className="flex gap-2 pt-3 border-t border-slate-200">
                     <button onClick={() => handleEdit(user)}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-teal-50 hover:bg-teal-100 text-teal-600 py-2 rounded-lg text-xs font-semibold transition cursor-pointer">
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-brand-50 hover:bg-brand-100 text-brand-600 py-2 rounded-lg text-xs font-semibold transition cursor-pointer">
                       <Pencil className="w-3.5 h-3.5" /> Edit
                     </button>
                     {user.id !== currentUser.id ? (
@@ -452,7 +452,7 @@ export default function Users() {
                   <UsersIcon className="w-12 h-12 text-slate-300" />
                 </div>
                 <p className="font-medium">No users found</p>
-                <p className="text-sm mt-1">Try changing the filter or <button onClick={() => { setForm(emptyForm); setView("register"); }} className="text-teal-600 underline cursor-pointer">register a new user</button>.</p>
+                <p className="text-sm mt-1">Try changing the filter or <button onClick={() => { setForm(emptyForm); setView("register"); }} className="text-brand-600 underline cursor-pointer">register a new user</button>.</p>
               </div>
             )}
           </div>

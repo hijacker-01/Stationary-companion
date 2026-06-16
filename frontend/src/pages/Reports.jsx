@@ -160,7 +160,7 @@ export default function Reports() {
                 onClick={() => setTab(t.key)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition cursor-pointer ${
                   tab === t.key
-                    ? "bg-teal-600 text-white shadow-sm"
+                    ? "bg-brand-600 text-white shadow-sm"
                     : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                 }`}
               >
@@ -192,7 +192,7 @@ export default function Reports() {
                   className="form-input py-1.5" />
               </div>
               <button onClick={fetchSales}
-                className="bg-teal-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-teal-700 cursor-pointer transition">
+                className="bg-brand-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-brand-700 cursor-pointer transition">
                 Apply Filter
               </button>
               <button onClick={() => { setDateFrom(""); setDateTo(""); setTimeout(fetchSales, 100); }}
@@ -210,7 +210,7 @@ export default function Reports() {
             {/* Summary Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <StatCard label="Total Revenue" value={`₹${sales.totalSales?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`} icon={TrendingUp} colorClass="bg-emerald-50" iconColorClass="text-emerald-600" />
-              <StatCard label="Total Invoices" value={sales.totalBills} icon={Receipt} colorClass="bg-teal-50" iconColorClass="text-teal-600" />
+              <StatCard label="Total Invoices" value={sales.totalBills} icon={Receipt} colorClass="bg-brand-50" iconColorClass="text-brand-600" />
               <StatCard label="Total GST collected" value={`₹${sales.totalGst?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`} icon={Landmark} colorClass="bg-purple-50" iconColorClass="text-purple-600" />
               <StatCard label="Trade Discount" value={`₹${sales.totalDiscount?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`} icon={Percent} colorClass="bg-rose-50" iconColorClass="text-rose-600" />
             </div>
@@ -256,7 +256,7 @@ export default function Reports() {
                 <tbody>
                   {sales.bills?.map(b => (
                     <tr key={b.id}>
-                      <td className="font-mono text-teal-600 font-bold text-xs">{b.billNo}</td>
+                      <td className="font-mono text-brand-600 font-bold text-xs">{b.billNo}</td>
                       <td className="font-semibold text-slate-900">{b.customerName}</td>
                       <td className="text-slate-600 font-medium text-xs">
                         {new Date(b.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
@@ -282,7 +282,7 @@ export default function Reports() {
           <div className="space-y-6 animate-in fade-in duration-200">
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard label="Total Unique Products" value={stock.totalItems} icon={Package} colorClass="bg-teal-50" iconColorClass="text-teal-600" />
+              <StatCard label="Total Unique Products" value={stock.totalItems} icon={Package} colorClass="bg-brand-50" iconColorClass="text-brand-600" />
               <StatCard label="Total Stock Valuation" value={`₹${stock.totalValue?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`} icon={TrendingUp} colorClass="bg-emerald-50" iconColorClass="text-emerald-600" />
               <StatCard label="Low Stock Products" value={stock.lowStock?.length} icon={AlertTriangle} colorClass="bg-amber-50" iconColorClass="text-amber-600" sub="Stock Quantity <= 10" />
               <StatCard label="Out of Stock Products" value={stock.outOfStock?.length} icon={AlertCircle} colorClass="bg-rose-50" iconColorClass="text-rose-600" sub="Need urgent replenishment" />
@@ -379,7 +379,7 @@ export default function Reports() {
               <StatCard label="Already Expired" value={expiry.expired} icon={X} colorClass="bg-rose-50" iconColorClass="text-rose-600" sub="Remove immediately from sale" />
               <StatCard label="Expiring in 7 Days" value={expiry.in7} icon={AlertTriangle} colorClass="bg-orange-50" iconColorClass="text-orange-600" />
               <StatCard label="Expiring in 30 Days" value={expiry.in30} icon={AlertCircle} colorClass="bg-amber-50" iconColorClass="text-amber-600" />
-              <StatCard label="Expiring in 90 Days" value={expiry.in90} icon={Calendar} colorClass="bg-teal-50" iconColorClass="text-teal-600" />
+              <StatCard label="Expiring in 90 Days" value={expiry.in90} icon={Calendar} colorClass="bg-brand-50" iconColorClass="text-brand-600" />
             </div>
 
             {/* Expiry Bar Chart */}
@@ -491,7 +491,7 @@ export default function Reports() {
         {tab === "outstanding" && outstanding && (
           <div className="space-y-6 animate-in fade-in duration-200">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <StatCard label="Total Receivables (Customers)" value={`₹${outstanding.totalCustomerOutstanding?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`} icon={ArrowDownLeft} colorClass="bg-teal-50" iconColorClass="text-teal-600" />
+              <StatCard label="Total Receivables (Customers)" value={`₹${outstanding.totalCustomerOutstanding?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`} icon={ArrowDownLeft} colorClass="bg-brand-50" iconColorClass="text-brand-600" />
               <StatCard label="Total Payables (Suppliers)" value={`₹${outstanding.totalSupplierOutstanding?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`} icon={ArrowUpRight} colorClass="bg-indigo-50" iconColorClass="text-indigo-600" />
             </div>
 
@@ -500,7 +500,7 @@ export default function Reports() {
               <div className="data-table-container">
                 <div className="px-6 py-4 border-b border-slate-200 bg-white flex justify-between items-center">
                   <h2 className="font-bold text-slate-800">Customer Balance Outstanding Aging</h2>
-                  <span className="text-xs bg-teal-50 border border-teal-100 text-teal-700 px-2.5 py-0.5 rounded-full font-bold uppercase">Receivables</span>
+                  <span className="text-xs bg-brand-50 border border-brand-100 text-brand-700 px-2.5 py-0.5 rounded-full font-bold uppercase">Receivables</span>
                 </div>
                 <div className="max-h-[400px] overflow-y-auto">
                   <table className="data-table">
@@ -658,9 +658,9 @@ export default function Reports() {
                   <tr key={idx}>
                     <td className="font-semibold text-slate-900">{item.name}</td>
                     <td className="text-center font-bold text-slate-700">{item.qty} units</td>
-                    <td className="text-center text-teal-600 font-bold">
-                      <span className="inline-flex items-center gap-1 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded text-[10px]">
-                        <Gift className="w-3 h-3 text-teal-500" />
+                    <td className="text-center text-brand-600 font-bold">
+                      <span className="inline-flex items-center gap-1 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded text-[10px]">
+                        <Gift className="w-3 h-3 text-brand-500" />
                         {item.schemeQty} Free Units
                       </span>
                     </td>
@@ -712,7 +712,7 @@ export default function Reports() {
               </div>
               <button
                 onClick={fetchGstData}
-                className="bg-teal-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-teal-700 cursor-pointer transition shadow-sm"
+                className="bg-brand-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-brand-700 cursor-pointer transition shadow-sm"
               >
                 Fetch Returns
               </button>
@@ -723,7 +723,7 @@ export default function Reports() {
               <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="font-extrabold text-slate-800 text-lg flex items-center gap-2">
-                    <Receipt className="w-5.5 h-5.5 text-teal-600" />
+                    <Receipt className="w-5.5 h-5.5 text-brand-600" />
                     GSTR-3B Consolidated Return Summary
                   </h2>
                   <span className="text-xs bg-indigo-50 border border-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-bold uppercase tracking-wider">
@@ -737,9 +737,9 @@ export default function Reports() {
                     <p className="text-3xl font-black text-emerald-800 mt-2">₹{gstr3bData.outward?.gst?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
                     <p className="text-xs text-slate-400 mt-1 font-semibold">Taxable Sales: ₹{gstr3bData.outward?.taxable?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
                   </div>
-                  <div className="border border-teal-100 bg-teal-50/30 rounded-xl p-5">
+                  <div className="border border-brand-100 bg-brand-50/30 rounded-xl p-5">
                     <p className="text-xs text-slate-500 uppercase font-bold tracking-wider">2. Eligible ITC (GSTR-2)</p>
-                    <p className="text-3xl font-black text-teal-800 mt-2">₹{gstr3bData.inward?.gst?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
+                    <p className="text-3xl font-black text-brand-800 mt-2">₹{gstr3bData.inward?.gst?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
                     <p className="text-xs text-slate-400 mt-1 font-semibold">Taxable Purchases: ₹{gstr3bData.inward?.taxable?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</p>
                   </div>
                   <div className="border border-rose-100 bg-rose-50/30 rounded-xl p-5">
@@ -774,7 +774,7 @@ export default function Reports() {
                     <tbody>
                       {gstr1Data?.b2c?.map((b, idx) => (
                         <tr key={idx}>
-                          <td className="font-mono text-teal-600 font-bold text-xs">{b.billNo}</td>
+                          <td className="font-mono text-brand-600 font-bold text-xs">{b.billNo}</td>
                           <td>
                             <span className="font-bold text-slate-900">{b.customerName}</span>
                           </td>
@@ -794,7 +794,7 @@ export default function Reports() {
               <div className="data-table-container">
                 <div className="px-6 py-4 border-b border-slate-200 bg-white flex justify-between items-center">
                   <h3 className="font-extrabold text-slate-800 text-sm">GSTR-2 Detail List (Purchases / Inward ITC)</h3>
-                  <span className="text-xs bg-teal-50 border border-teal-100 text-teal-700 px-2.5 py-0.5 rounded font-bold">
+                  <span className="text-xs bg-brand-50 border border-brand-100 text-brand-700 px-2.5 py-0.5 rounded font-bold">
                     ITC Claimed: ₹{gstr2Data?.totalGst?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
@@ -861,7 +861,7 @@ export default function Reports() {
                 {/* Gross Profit */}
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-4.5 flex justify-between items-center shadow-inner">
                   <span className="text-slate-800 font-extrabold text-lg">Gross Margin Profit</span>
-                  <span className="text-teal-700 font-black text-2xl">₹{pnlData.grossProfit?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                  <span className="text-brand-700 font-black text-2xl">₹{pnlData.grossProfit?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
                 </div>
 
                 {/* Expenses Section */}

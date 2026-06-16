@@ -29,7 +29,7 @@ export default function SalesmanPage() {
   const handleDelete = async (id) => { if (!confirm("Delete?")) return; await axios.delete(`/salesman/${id}`); fetch(); };
 
   const summaryCards = [
-    { label: "Total Salesmen", value: list.length, icon: Users, color: "bg-teal-50 text-teal-600", borderColor: "border-teal-500" },
+    { label: "Total Salesmen", value: list.length, icon: Users, color: "bg-brand-50 text-brand-600", borderColor: "border-brand-500" },
     { label: "Active", value: list.filter(s => s.isActive).length, icon: CheckCircle2, color: "bg-emerald-50 text-emerald-600", borderColor: "border-emerald-500" },
     { label: "Total Target", value: `₹${list.reduce((s, x) => s + (x.target || 0), 0).toLocaleString("en-IN")}`, icon: Target, color: "bg-purple-50 text-purple-600", borderColor: "border-purple-500" },
   ];
@@ -40,7 +40,7 @@ export default function SalesmanPage() {
       subtitle="Manage field representatives and area assignments"
       actions={
         <button onClick={() => { setForm(emptyForm); setEditId(null); setShowModal(true); }}
-          className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
+          className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
           <Plus className="w-4.5 h-4.5" /> Add Salesman
         </button>
       }
@@ -96,7 +96,7 @@ export default function SalesmanPage() {
                   </td>
                   <td>
                     <div className="flex gap-3">
-                      <button onClick={() => handleEdit(s)} className="text-teal-600 hover:text-teal-800 text-xs font-semibold cursor-pointer flex items-center gap-1">
+                      <button onClick={() => handleEdit(s)} className="text-brand-600 hover:text-brand-800 text-xs font-semibold cursor-pointer flex items-center gap-1">
                         <Pencil className="w-3 h-3" /> Edit
                       </button>
                       <button onClick={() => handleDelete(s.id)} className="text-rose-600 hover:text-rose-800 text-xs font-semibold cursor-pointer flex items-center gap-1">
@@ -150,7 +150,7 @@ export default function SalesmanPage() {
                 </div>
               </div>
               <div className="flex gap-3">
-                <button onClick={handleSubmit} className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
+                <button onClick={handleSubmit} className="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
                   {editId ? "Update" : "Create"}
                 </button>
                 <button onClick={() => setShowModal(false)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold cursor-pointer">

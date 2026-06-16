@@ -94,7 +94,7 @@ export default function ExpiryBox() {
                 key={c.key}
                 onClick={() => setFilter(filter === c.key ? "all" : c.key)}
                 className={`bg-white border-l-4 ${c.borderColor} border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between text-left cursor-pointer transition-all duration-150 ${
-                  filter === c.key ? "ring-2 ring-teal-400 ring-offset-1" : "hover:shadow-md"
+                  filter === c.key ? "ring-2 ring-brand-400 ring-offset-1" : "hover:shadow-md"
                 }`}
               >
                 <div>
@@ -134,7 +134,7 @@ export default function ExpiryBox() {
           </select>
           <button
             onClick={() => { setFilter("all"); setSearch(""); }}
-            className="text-sm text-teal-600 hover:underline font-semibold cursor-pointer"
+            className="text-sm text-brand-600 hover:underline font-semibold cursor-pointer"
           >
             Clear Filters
           </button>

@@ -144,7 +144,7 @@ export default function Customers() {
   const totalDue = customers.reduce((s, c) => s + (c.balance || 0), 0);
 
   const summaryCards = [
-    { label:"Total Customers", value: total, icon: Users, borderColor:"border-l-teal-500", color:"bg-teal-50 text-teal-600" },
+    { label:"Total Customers", value: total, icon: Users, borderColor:"border-l-brand-500", color:"bg-brand-50 text-brand-600" },
     { label:"Total Due", value:`₹${totalDue.toFixed(2)}`, icon: IndianRupee, borderColor:"border-l-red-500", color:"bg-red-50 text-red-600" },
     { label:"With Balance", value: customers.filter(c=>c.balance>0).length, icon: AlertTriangle, borderColor:"border-l-amber-500", color:"bg-amber-50 text-amber-600" },
     { label:"Clear Accounts", value: customers.filter(c=>c.balance<=0).length, icon: CheckCircle2, borderColor:"border-l-emerald-500", color:"bg-emerald-50 text-emerald-600" },
@@ -162,7 +162,7 @@ export default function Customers() {
       subtitle="Manage customers, credit and payment history"
       actions={
         <button onClick={() => { setForm(emptyCustomer); setEditId(null); setShowModal(true); }}
-          className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
+          className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
           <Plus className="w-4.5 h-4.5" /> Add Customer
         </button>
       }
@@ -194,7 +194,7 @@ export default function Customers() {
           </div>
           <div className="flex gap-2 items-center">
             <label className="flex items-center gap-2 text-sm text-slate-600 mr-4 cursor-pointer">
-              <input type="checkbox" checked={includeInactive} onChange={e => setIncludeInactive(e.target.checked)} className="rounded text-teal-600 focus:ring-teal-500" />
+              <input type="checkbox" checked={includeInactive} onChange={e => setIncludeInactive(e.target.checked)} className="rounded text-brand-600 focus:ring-brand-500" />
               Show Inactive
             </label>
             {filterTabs.map(f => {
@@ -202,7 +202,7 @@ export default function Customers() {
               return (
                 <button key={f.key} onClick={() => setFilterBalance(f.key)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition cursor-pointer ${
-                    filterBalance === f.key ? "bg-teal-600 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+                    filterBalance === f.key ? "bg-brand-600 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                   }`}>
                   <FIcon className="w-4 h-4" />
                   {f.label}
@@ -254,7 +254,7 @@ export default function Customers() {
 
               <div className="flex gap-2 pt-3 border-t border-slate-100">
                 <button onClick={() => fetchLedger(c)}
-                  className="flex-1 flex items-center justify-center gap-1.5 bg-teal-50 hover:bg-teal-100 text-teal-600 py-2 rounded-lg text-xs font-semibold cursor-pointer transition">
+                  className="flex-1 flex items-center justify-center gap-1.5 bg-brand-50 hover:bg-brand-100 text-brand-600 py-2 rounded-lg text-xs font-semibold cursor-pointer transition">
                   <BookOpen className="w-3.5 h-3.5" /> Ledger
                 </button>
                 <button onClick={() => { setActiveCustomer(c); setPayForm({...emptyPayment, customerId: c.id}); setShowPayment(true); }}
@@ -347,7 +347,7 @@ export default function Customers() {
                 </button>
                 <div className="flex gap-3">
                   <button onClick={handleSave}
-                    className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
+                    className="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
                     {editId?"Update":"Add"} Customer
                   </button>
                   <button onClick={() => setShowModal(false)}
@@ -392,7 +392,7 @@ export default function Customers() {
                       return (
                         <button key={m} onClick={() => setPayForm({ ...payForm, mode: m })}
                           className={`flex flex-col items-center justify-center py-2.5 rounded-lg text-xs font-bold border cursor-pointer transition-all duration-150 ${
-                            payForm.mode === m ? "bg-teal-50 border-teal-500 text-teal-700" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                            payForm.mode === m ? "bg-brand-50 border-brand-500 text-brand-700" : "border-slate-200 text-slate-600 hover:bg-slate-50"
                           }`}>
                           <MIcon className="w-4 h-4 mb-1" />
                           {m}
@@ -418,7 +418,7 @@ export default function Customers() {
               </div>
               <div className="flex gap-3 mt-6">
                 <button onClick={handlePayment}
-                  className="flex-1 flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
+                  className="flex-1 flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
                   <CheckCircle2 className="w-4 h-4" /> Collect ₹{payForm.amount || 0}
                 </button>
                 <button onClick={() => setShowPayment(false)}
@@ -437,9 +437,9 @@ export default function Customers() {
                 <div className="flex justify-between items-start mb-6">
                   <div>
                     <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
-                      <BookOpen className="w-5 h-5 text-teal-600" /> Customer Ledger
+                      <BookOpen className="w-5 h-5 text-brand-600" /> Customer Ledger
                     </h2>
-                    <p className="text-teal-600 font-semibold mt-1">{ledger.customer?.name}</p>
+                    <p className="text-brand-600 font-semibold mt-1">{ledger.customer?.name}</p>
                     <p className="text-slate-400 text-xs">{ledger.customer?.phone}</p>
                   </div>
                   <div className="text-right">
@@ -485,7 +485,7 @@ export default function Customers() {
                           <td>
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase ${
                               entry.type==="Payment" ? "bg-green-50 text-green-700 border-green-200" :
-                              entry.type==="Invoice" ? "bg-teal-50 text-teal-700 border-teal-200" :
+                              entry.type==="Invoice" ? "bg-brand-50 text-brand-700 border-brand-200" :
                               "bg-slate-50 text-slate-600 border-slate-200"
                             }`}>
                               {entry.type}
@@ -512,7 +512,7 @@ export default function Customers() {
 
                 <div className="flex gap-3 mt-6">
                   <button onClick={() => { setActiveCustomer(ledger.customer); setPayForm(emptyPayment); setShowPayment(true); }}
-                    className="flex-1 flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
+                    className="flex-1 flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
                     <IndianRupee className="w-4 h-4" /> Collect Payment
                   </button>
                   <button onClick={() => setShowLedger(false)}

@@ -37,7 +37,7 @@ const emptyItem = { name:"", batch:"", hsn:"", pack:"", category:"", qty:1, sche
 const STATUS_COLOR = {
   pending:   "bg-yellow-100 text-yellow-700 border-yellow-200",
   received:  "bg-green-100 text-green-700 border-green-200",
-  partial:   "bg-teal-100 text-teal-700 border-teal-200",
+  partial:   "bg-brand-100 text-brand-700 border-brand-200",
   cancelled: "bg-red-100 text-red-700 border-red-200",
 };
 
@@ -225,7 +225,7 @@ export default function Suppliers() {
   };
 
   const summaryCards = [
-    { label: "Total Suppliers", value: totalSuppliers, icon: Factory, color: "bg-teal-50 text-teal-600", borderColor: "border-teal-500" },
+    { label: "Total Suppliers", value: totalSuppliers, icon: Factory, color: "bg-brand-50 text-brand-600", borderColor: "border-brand-500" },
     { label: "Total Orders", value: orders.length, icon: ClipboardList, color: "bg-indigo-50 text-indigo-600", borderColor: "border-indigo-500" },
     { label: "Pending Orders", value: orders.filter(o=>o.status==="pending").length, icon: Clock, color: "bg-yellow-50 text-yellow-600", borderColor: "border-yellow-500" },
     { label: "Amount Due", value: `₹${orders.reduce((s,o)=>s+(o.balanceDue||0),0).toFixed(2)}`, icon: IndianRupee, color: "bg-rose-50 text-rose-600", borderColor: "border-rose-500" },
@@ -247,7 +247,7 @@ export default function Suppliers() {
             <Plus className="w-4.5 h-4.5" /> Add Supplier
           </button>
           <button onClick={() => { setShowPOModal(true); focusFirstField('.fixed.inset-0.z-50'); }}
-            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
+            className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
             <Plus className="w-4.5 h-4.5" /> New Purchase Order
           </button>
         </>
@@ -280,7 +280,7 @@ export default function Suppliers() {
               <button key={t.key} onClick={() => setTab(t.key)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition cursor-pointer ${
                   tab === t.key
-                    ? "bg-teal-600 text-white shadow-sm"
+                    ? "bg-brand-600 text-white shadow-sm"
                     : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-800"
                 }`}>
                 <Icon className="w-4.5 h-4.5" />
@@ -302,14 +302,14 @@ export default function Suppliers() {
                   className="flex-1 bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none" />
               </div>
               <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                <input type="checkbox" checked={includeInactive} onChange={e => setIncludeInactive(e.target.checked)} className="rounded text-teal-600 focus:ring-teal-500" />
+                <input type="checkbox" checked={includeInactive} onChange={e => setIncludeInactive(e.target.checked)} className="rounded text-brand-600 focus:ring-brand-500" />
                 Show Inactive
               </label>
               <span className="text-sm text-slate-400 ml-auto">{totalSuppliers} suppliers</span>
             </div>
             
             {isLoading ? (
-              <div className="flex justify-center items-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div></div>
+              <div className="flex justify-center items-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div></div>
             ) : suppliers.length === 0 ? (
               <EmptyState 
                 icon="Factory" 
@@ -324,7 +324,7 @@ export default function Suppliers() {
                   <div key={sup.id} className={`bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-150 ${!sup.isActive ? 'opacity-60' : ''}`}>
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 bg-teal-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                        <div className="w-11 h-11 bg-brand-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
                           {sup.name[0].toUpperCase()}
                         </div>
                         <div>
@@ -348,7 +348,7 @@ export default function Suppliers() {
                     </div>
                     <div className="flex gap-2 pt-3 border-t border-slate-200">
                       <button onClick={() => { setSupForm(sup); setEditSupId(sup.id); setShowSupModal(true); focusFirstField('.fixed.inset-0.z-50'); }}
-                        className="flex items-center justify-center bg-teal-50 hover:bg-teal-100 text-teal-600 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer">
+                        className="flex items-center justify-center bg-brand-50 hover:bg-brand-100 text-brand-600 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer">
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button onClick={() => handleDeleteSupplier(sup)}
@@ -412,7 +412,7 @@ export default function Suppliers() {
               <tbody>
                 {orders.map(o => (
                   <tr key={o.id}>
-                    <td className="font-mono text-teal-600 text-xs font-medium">{o.poNumber}</td>
+                    <td className="font-mono text-brand-600 text-xs font-medium">{o.poNumber}</td>
                     <td className="font-semibold text-slate-900">{o.supplierName}</td>
                     <td className="text-slate-500 text-xs">
                       {new Date(o.createdAt).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}
@@ -489,7 +489,7 @@ export default function Suppliers() {
                 </button>
                 <div className="flex gap-3">
                   <button onClick={handleSaveSupplier}
-                    className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
+                    className="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
                     {editSupId ? "Update" : "Add"} Supplier
                   </button>
                   <button onClick={() => setShowSupModal(false)}
@@ -611,7 +611,7 @@ export default function Suppliers() {
                                     if (f === "name") checkPOScheme(i, e.target.value, u[i].qty);
                                     if (f === "qty") checkPOScheme(i, u[i].name, e.target.value);
                                   }}
-                                  className="w-full border border-slate-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-teal-400" />
+                                  className="w-full border border-slate-200 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-brand-400" />
                               </td>
                             ))}
                             <td className="px-1 py-1">
@@ -678,7 +678,7 @@ export default function Suppliers() {
                 </table>
               </div>
               <button onClick={() => setPoItems([...poItems,{...emptyItem}])}
-                className="flex items-center gap-1 text-teal-600 text-sm hover:underline font-medium mb-6 cursor-pointer">
+                className="flex items-center gap-1 text-brand-600 text-sm hover:underline font-medium mb-6 cursor-pointer">
                 <Plus className="w-4 h-4" /> Add Row
               </button>
 
@@ -702,9 +702,9 @@ export default function Suppliers() {
 
               <div className="flex gap-3">
                 <button onClick={handleSavePO}
-                  className="flex-1 flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
+                  className="flex-1 flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
                   <ClipboardList className="w-4 h-4" /> Create Purchase Order
-                  <span className="text-xs text-teal-100">(Shift + Enter)</span>
+                  <span className="text-xs text-brand-100">(Shift + Enter)</span>
                 </button>
                 <button onClick={() => setShowPOModal(false)}
                   className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold cursor-pointer">
@@ -723,9 +723,9 @@ export default function Suppliers() {
                 <CheckCircle2 className="w-5 h-5 text-green-600" /> Mark Order Received
               </h2>
               <p className="text-sm text-slate-500 mb-6">
-                PO: <span className="font-mono text-teal-600">{activeOrder.poNumber}</span> from {activeOrder.supplierName}
+                PO: <span className="font-mono text-brand-600">{activeOrder.poNumber}</span> from {activeOrder.supplierName}
               </p>
-              <div className="bg-teal-50 rounded-xl p-4 mb-6 text-sm space-y-1">
+              <div className="bg-brand-50 rounded-xl p-4 mb-6 text-sm space-y-1">
                 <div className="flex justify-between"><span className="text-slate-600">Total Amount</span><span className="font-bold">₹{activeOrder.total}</span></div>
                 <div className="flex justify-between"><span className="text-slate-600">Items</span><span>{activeOrder.items?.length} items</span></div>
               </div>
@@ -738,7 +738,7 @@ export default function Suppliers() {
                   Balance due: ₹{(activeOrder.total - receiveAmount).toFixed(2)}
                 </p>
               </div>
-              <p className="text-xs text-teal-600 bg-teal-50 rounded-lg p-3 mb-4 flex items-center gap-2">
+              <p className="text-xs text-brand-600 bg-brand-50 rounded-lg p-3 mb-4 flex items-center gap-2">
                 <Package className="w-4 h-4" /> All items from this PO will be automatically added to your Inventory.
               </p>
               <div className="flex gap-3">

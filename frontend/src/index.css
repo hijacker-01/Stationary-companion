@@ -1,6 +1,18 @@
 @import "tailwindcss";
 
 @theme {
+  /* Brand navy palette — the app's formal accent (#1b4985 chrome). */
+  --color-brand-50: #eef3f9;
+  --color-brand-100: #d8e3f0;
+  --color-brand-200: #b3c7e1;
+  --color-brand-300: #85a4cd;
+  --color-brand-400: #5a82b8;
+  --color-brand-500: #2f5e9b;
+  --color-brand-600: #1b4985;
+  --color-brand-700: #163a6b;
+  --color-brand-800: #122e54;
+  --color-brand-900: #0e2440;
+
   --animate-blob: blob 7s infinite;
   --keyframes-blob: {
     0% {

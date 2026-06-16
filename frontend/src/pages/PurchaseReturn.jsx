@@ -57,7 +57,7 @@ export default function PurchaseReturn() {
           <button onClick={() => { setView("list"); setActiveReturn(null); }} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 font-semibold cursor-pointer">
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
-          <button onClick={() => window.print()} className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
+          <button onClick={() => window.print()} className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
             <Printer className="w-4 h-4" /> Print
           </button>
         </div>
@@ -185,7 +185,7 @@ export default function PurchaseReturn() {
                   </tbody>
                 </table>
               </div>
-              <button onClick={() => setReturnItems([...returnItems, { name: "", batch: "", qty: 1, selling_price: 0, gst: 12 }])} className="flex items-center gap-1.5 text-teal-600 hover:text-teal-800 text-sm font-semibold mt-3 cursor-pointer">
+              <button onClick={() => setReturnItems([...returnItems, { name: "", batch: "", qty: 1, selling_price: 0, gst: 12 }])} className="flex items-center gap-1.5 text-brand-600 hover:text-brand-800 text-sm font-semibold mt-3 cursor-pointer">
                 <Plus className="w-4 h-4" /> Add Row
               </button>
             </div>
@@ -222,7 +222,7 @@ export default function PurchaseReturn() {
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Purchase Returns</h1>
             <p className="text-sm text-slate-500 mt-1">Debit Notes for goods returned to suppliers</p>
           </div>
-          <button onClick={() => { setReturnItems([{ name: "", batch: "", qty: 1, selling_price: 0, gst: 12 }]); setSupplierName(""); setView("create") }} className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
+          <button onClick={() => { setReturnItems([{ name: "", batch: "", qty: 1, selling_price: 0, gst: 12 }]); setSupplierName(""); setView("create") }} className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer">
             <Plus className="w-4.5 h-4.5" /> New Return
           </button>
         </div>
@@ -248,7 +248,7 @@ export default function PurchaseReturn() {
                   <td className="font-bold text-red-600">₹{r.totalAmount}</td>
                   <td>
                     <div className="flex items-center gap-3">
-                      <button onClick={() => { setActiveReturn(r); setView("preview") }} className="text-teal-600 hover:text-teal-800 text-xs font-semibold cursor-pointer flex items-center gap-1">
+                      <button onClick={() => { setActiveReturn(r); setView("preview") }} className="text-brand-600 hover:text-brand-800 text-xs font-semibold cursor-pointer flex items-center gap-1">
                         <Eye className="w-3.5 h-3.5" /> View
                       </button>
                       <button onClick={() => handleDelete(r.id)} className="text-rose-600 hover:text-rose-800 text-xs font-semibold cursor-pointer flex items-center gap-1">

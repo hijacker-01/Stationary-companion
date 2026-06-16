@@ -53,7 +53,7 @@ export default function Expenses() {
       actions={
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
+          className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
         >
           <Plus className="w-4.5 h-4.5" /> Add Expense
         </button>
@@ -69,12 +69,12 @@ export default function Expenses() {
               <IndianRupee className="w-5 h-5" />
             </div>
           </div>
-          <div className="bg-white border-l-4 border-l-teal-500 border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between">
+          <div className="bg-white border-l-4 border-l-brand-500 border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-2xl font-bold text-slate-900">{expenses.length}</p>
               <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mt-1">Records</p>
             </div>
-            <div className="p-2.5 rounded-lg bg-teal-50 text-teal-600">
+            <div className="p-2.5 rounded-lg bg-brand-50 text-brand-600">
               <Receipt className="w-5 h-5" />
             </div>
           </div>
@@ -159,7 +159,7 @@ export default function Expenses() {
                   <textarea rows="2" value={form.note} onChange={e=>setForm({...form, note:e.target.value})} className="form-input" placeholder="Optional details..."></textarea>
                 </div>
                 <div className="flex gap-3 pt-4">
-                  <button type="submit" className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">Save Expense</button>
+                  <button type="submit" className="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">Save Expense</button>
                   <button type="button" onClick={()=>setShowModal(false)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold cursor-pointer">Cancel</button>
                 </div>
               </form>

@@ -98,7 +98,7 @@ export default function Vouchers() {
       actions={
         <button
           onClick={() => { setForm(emptyForm); setShowModal(true); focusFirstField('.fixed.inset-0.z-50'); }}
-          className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
+          className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
         >
           <Plus className="w-4.5 h-4.5" />
           Create Voucher
@@ -136,7 +136,7 @@ export default function Vouchers() {
             <tbody>
               {filtered.map(v => (
                 <tr key={v.id}>
-                  <td className="font-mono text-teal-600 font-bold text-xs">{v.voucherNo}</td>
+                  <td className="font-mono text-brand-600 font-bold text-xs">{v.voucherNo}</td>
                   <td className="text-slate-600 font-medium text-xs">
                     {new Date(v.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                   </td>
@@ -292,7 +292,7 @@ export default function Vouchers() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={handleCreateVoucher}
-                  className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer shadow transition"
+                  className="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer shadow transition"
                 >
                   Save Voucher
                 </button>

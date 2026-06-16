@@ -20,7 +20,7 @@ export default function ShortcutModal({ isOpen, onClose }) {
       <div className="bg-white rounded-xl shadow-2xl w-[400px] overflow-hidden">
         <div className="bg-slate-900 px-4 py-3 flex items-center justify-between text-white">
           <div className="flex items-center gap-2">
-            <Keyboard className="w-5 h-5 text-teal-400" />
+            <Keyboard className="w-5 h-5 text-brand-400" />
             <h2 className="font-bold">Keyboard Shortcuts</h2>
           </div>
           <button onClick={onClose} className="hover:bg-slate-800 p-1 rounded transition-colors text-slate-300 hover:text-white">

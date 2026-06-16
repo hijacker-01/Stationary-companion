@@ -108,7 +108,7 @@ export default function BarcodeGenerator() {
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                    <Tag className="w-5 h-5 text-teal-600" /> Barcode Label Generator
+                    <Tag className="w-5 h-5 text-brand-600" /> Barcode Label Generator
                   </h1>
                   <p className="text-sm text-slate-500 mt-1">
                     Search items, set label quantities, and print Code128 barcode labels.
@@ -116,7 +116,7 @@ export default function BarcodeGenerator() {
                 </div>
                 <button
                   onClick={handlePrint}
-                  className="flex items-center gap-2 px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors"
+                  className="flex items-center gap-2 px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors"
                 >
                   <Printer className="w-4 h-4" /> Print Labels ({labels.length})
                 </button>
@@ -137,13 +137,13 @@ export default function BarcodeGenerator() {
                       <button
                         key={item.id}
                         onClick={() => { addToQueue(item); setSearch(""); setResults([]); }}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-teal-50 flex items-center justify-between border-b border-slate-100 last:border-0"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-brand-50 flex items-center justify-between border-b border-slate-100 last:border-0"
                       >
                         <span className="font-medium text-slate-800">{item.name}</span>
                         <span className="text-xs text-slate-400">
                           {item.batch ? `Batch ${item.batch} · ` : ""}MRP ₹{fmt(item.mrp)}
                         </span>
-                        <Plus className="w-4 h-4 text-teal-500 ml-2" />
+                        <Plus className="w-4 h-4 text-brand-500 ml-2" />
                       </button>
                     ))}
                   </div>

@@ -105,7 +105,7 @@ export default function JournalVouchers() {
           </div>
           <button 
             onClick={() => setShowModal(true)} 
-            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
+            className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow transition cursor-pointer"
           >
             <Plus className="w-4.5 h-4.5" /> New JV Entry
           </button>
@@ -204,7 +204,7 @@ export default function JournalVouchers() {
                     Finish Voucher (Shift + Enter)
                   </button>
                   <div className="flex gap-3">
-                    <button type="submit" className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">Post Voucher</button>
+                    <button type="submit" className="flex-1 bg-brand-600 hover:bg-brand-700 text-white py-2.5 rounded-lg text-sm font-semibold cursor-pointer">Post Voucher</button>
                     <button type="button" onClick={()=>setShowModal(false)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold cursor-pointer">Cancel</button>
                   </div>
                 </div>

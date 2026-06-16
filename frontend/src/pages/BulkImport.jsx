@@ -128,12 +128,12 @@ export default function BulkImport() {
   return (
     <PageLayout
       maxWidth="max-w-5xl"
-      title={<span className="flex items-center gap-2 text-xl"><FileSpreadsheet className="w-5 h-5 text-teal-600" /> Bulk Import — Item Master</span>}
+      title={<span className="flex items-center gap-2 text-xl"><FileSpreadsheet className="w-5 h-5 text-brand-600" /> Bulk Import — Item Master</span>}
       subtitle="Upload a CSV to create or update many items at once. Matching is done on Name + Batch."
       actions={
               <button
                 onClick={downloadTemplate}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-teal-700 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-brand-700 bg-brand-50 border border-brand-200 rounded-lg hover:bg-brand-100 transition-colors"
               >
                 <Download className="w-4 h-4" /> Download CSV Template
               </button>
@@ -143,13 +143,13 @@ export default function BulkImport() {
             <div
               onDrop={onDrop}
               onDragOver={(e) => e.preventDefault()}
-              className="border-2 border-dashed border-slate-300 rounded-xl bg-white p-10 text-center hover:border-teal-400 transition-colors"
+              className="border-2 border-dashed border-slate-300 rounded-xl bg-white p-10 text-center hover:border-brand-400 transition-colors"
             >
               <UploadCloud className="w-10 h-10 text-slate-400 mx-auto mb-3" />
               <p className="text-sm text-slate-600 mb-3">
                 Drag & drop a CSV file here, or
               </p>
-              <label className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white text-sm font-semibold rounded-lg cursor-pointer hover:bg-teal-700 transition-colors">
+              <label className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-semibold rounded-lg cursor-pointer hover:bg-brand-700 transition-colors">
                 Choose File
                 <input
                   ref={fileInputRef}

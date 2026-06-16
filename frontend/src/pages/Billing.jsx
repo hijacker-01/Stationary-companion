@@ -1201,7 +1201,7 @@ export default function Billing() {
             </button>
             <button
               onClick={() => window.print()}
-              className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-md cursor-pointer transition"
+              className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-md cursor-pointer transition"
             >
               <Printer className="w-4.5 h-4.5" />
               Print / Save PDF
