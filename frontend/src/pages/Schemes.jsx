@@ -66,7 +66,7 @@ export default function Schemes() {
         <div className="bg-white border border-gray-300 p-1.5 flex items-center shadow-sm">
           <button 
             onClick={() => setShowForm(true)}
-            className="bg-blue-600 text-white px-3 py-1 flex items-center shadow hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-800"
+            className="bg-brand-600 text-white px-3 py-1 flex items-center shadow hover:bg-brand-700 focus:outline-none focus:ring-1 focus:ring-brand-800"
             tabIndex={1}
           >
             <Plus className="w-3 h-3 mr-1" /> New Scheme (F2)
@@ -122,7 +122,7 @@ export default function Schemes() {
           {/* Form Area */}
           {showForm && (
             <section className="w-1/3 bg-white border border-gray-300 shadow-sm flex flex-col">
-              <div className="bg-blue-800 text-white p-2 font-bold flex items-center justify-between">
+              <div className="bg-brand-800 text-white p-2 font-bold flex items-center justify-between">
                 <span>Create Scheme</span>
                 <button onClick={() => setShowForm(false)} className="hover:text-red-300" tabIndex={-1}>
                   <X className="w-4 h-4" />
@@ -135,7 +135,7 @@ export default function Schemes() {
                   <input 
                     type="text" 
                     value={name} onChange={e => setName(e.target.value)}
-                    className="border border-gray-400 p-1 focus:outline-none focus:border-blue-500 focus:bg-yellow-50"
+                    className="border border-gray-400 p-1 focus:outline-none focus:border-brand-500 focus:bg-yellow-50"
                     autoFocus
                     tabIndex={3}
                   />
@@ -145,7 +145,7 @@ export default function Schemes() {
                   <label className="font-semibold text-gray-700">Scheme Type</label>
                   <SmartSelect 
                     value={type} onChange={e => setType(e.target.value)}
-                    className="border border-gray-400 p-1 focus:outline-none focus:border-blue-500 focus:bg-yellow-50"
+                    className="border border-gray-400 p-1 focus:outline-none focus:border-brand-500 focus:bg-yellow-50"
                     tabIndex={4}
                     options={[
                       { value: 'buy_get', label: 'Buy X Get Y Free' },
@@ -160,7 +160,7 @@ export default function Schemes() {
                       <label className="font-semibold text-gray-700">Buy Qty</label>
                       <input 
                         type="number" value={buyQty} onChange={e => setBuyQty(e.target.value)}
-                        className="border border-gray-400 p-1 focus:outline-none focus:border-blue-500 focus:bg-yellow-50"
+                        className="border border-gray-400 p-1 focus:outline-none focus:border-brand-500 focus:bg-yellow-50"
                         tabIndex={5}
                       />
                     </div>
@@ -168,7 +168,7 @@ export default function Schemes() {
                       <label className="font-semibold text-gray-700">Free Qty</label>
                       <input 
                         type="number" value={freeQty} onChange={e => setFreeQty(e.target.value)}
-                        className="border border-gray-400 p-1 focus:outline-none focus:border-blue-500 focus:bg-yellow-50"
+                        className="border border-gray-400 p-1 focus:outline-none focus:border-brand-500 focus:bg-yellow-50"
                         tabIndex={6}
                       />
                     </div>
@@ -178,14 +178,14 @@ export default function Schemes() {
                     <label className="font-semibold text-gray-700">Discount %</label>
                     <input 
                       type="number" value={discount} onChange={e => setDiscount(e.target.value)}
-                      className="border border-gray-400 p-1 focus:outline-none focus:border-blue-500 focus:bg-yellow-50"
+                      className="border border-gray-400 p-1 focus:outline-none focus:border-brand-500 focus:bg-yellow-50"
                       tabIndex={5}
                     />
                   </div>
                 )}
 
                 <div className="flex items-center gap-2 mt-2 cursor-pointer" onClick={() => setActive(!active)}>
-                  {active ? <CheckSquare className="w-4 h-4 text-blue-600"/> : <Square className="w-4 h-4 text-gray-400"/>}
+                  {active ? <CheckSquare className="w-4 h-4 text-brand-600"/> : <Square className="w-4 h-4 text-gray-400"/>}
                   <span className="font-semibold">Is Active</span>
                 </div>
               </div>
@@ -201,7 +201,7 @@ export default function Schemes() {
                 <button 
                   onClick={handleSave}
                   onKeyDown={e => handleKeyDown(e, handleSave)}
-                  className="px-4 py-1 border border-blue-700 bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-900 flex items-center"
+                  className="px-4 py-1 border border-brand-700 bg-brand-600 text-white hover:bg-brand-700 focus:outline-none focus:ring-1 focus:ring-brand-900 flex items-center"
                   tabIndex={7}
                 >
                   <Save className="w-3 h-3 mr-1" /> Save

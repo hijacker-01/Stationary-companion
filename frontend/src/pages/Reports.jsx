@@ -201,7 +201,7 @@ export default function Reports() {
               </button>
               <div className="ml-auto">
                 <button onClick={exportSalesToCSV}
-                  className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 cursor-pointer transition">
+                  className="flex items-center gap-2 bg-brand-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-brand-700 cursor-pointer transition">
                   <Download className="w-4 h-4" /> Export CSV
                 </button>
               </div>
@@ -492,7 +492,7 @@ export default function Reports() {
           <div className="space-y-6 animate-in fade-in duration-200">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <StatCard label="Total Receivables (Customers)" value={`₹${outstanding.totalCustomerOutstanding?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`} icon={ArrowDownLeft} colorClass="bg-brand-50" iconColorClass="text-brand-600" />
-              <StatCard label="Total Payables (Suppliers)" value={`₹${outstanding.totalSupplierOutstanding?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`} icon={ArrowUpRight} colorClass="bg-indigo-50" iconColorClass="text-indigo-600" />
+              <StatCard label="Total Payables (Suppliers)" value={`₹${outstanding.totalSupplierOutstanding?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`} icon={ArrowUpRight} colorClass="bg-brand-50" iconColorClass="text-brand-600" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -543,7 +543,7 @@ export default function Reports() {
               <div className="data-table-container">
                 <div className="px-6 py-4 border-b border-slate-200 bg-white flex justify-between items-center">
                   <h2 className="font-bold text-slate-800">Supplier Outstanding Payables</h2>
-                  <span className="text-xs bg-indigo-50 border border-indigo-100 text-indigo-700 px-2.5 py-0.5 rounded-full font-bold uppercase">Payables</span>
+                  <span className="text-xs bg-brand-50 border border-brand-100 text-brand-700 px-2.5 py-0.5 rounded-full font-bold uppercase">Payables</span>
                 </div>
                 <div className="max-h-[400px] overflow-y-auto">
                   <table className="data-table">
@@ -561,7 +561,7 @@ export default function Reports() {
                             <span className="font-semibold text-slate-900">{s.name}</span>
                             {s.phone && <p className="text-[10px] font-mono text-slate-400 mt-0.5">{s.phone}</p>}
                           </td>
-                          <td className="text-right font-extrabold text-indigo-600">₹{s.outstanding?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                          <td className="text-right font-extrabold text-brand-600">₹{s.outstanding?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
                           <td className="text-center">
                             <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
                               s.days > 90 ? "bg-red-50 text-red-700 border-red-200" :
@@ -726,7 +726,7 @@ export default function Reports() {
                     <Receipt className="w-5.5 h-5.5 text-brand-600" />
                     GSTR-3B Consolidated Return Summary
                   </h2>
-                  <span className="text-xs bg-indigo-50 border border-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-bold uppercase tracking-wider">
+                  <span className="text-xs bg-brand-50 border border-brand-100 text-brand-700 px-3 py-1 rounded-full font-bold uppercase tracking-wider">
                     Filing Period: {gstr3bData.period}
                   </span>
                 </div>
@@ -811,12 +811,12 @@ export default function Reports() {
                     <tbody>
                       {gstr2Data?.list?.map((p, idx) => (
                         <tr key={idx}>
-                          <td className="font-mono text-indigo-600 font-bold text-xs">{p.poNumber}</td>
+                          <td className="font-mono text-brand-600 font-bold text-xs">{p.poNumber}</td>
                           <td>
                             <span className="font-bold text-slate-900">{p.supplierName}</span>
                           </td>
                           <td className="text-right text-slate-600">₹{p.taxableValue?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-                          <td className="text-right text-indigo-600 font-extrabold">₹{p.gstAmount?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                          <td className="text-right text-brand-600 font-extrabold">₹{p.gstAmount?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
                         </tr>
                       ))}
                       {!gstr2Data?.list?.length && (
@@ -867,7 +867,7 @@ export default function Reports() {
                 {/* Expenses Section */}
                 <div className="flex justify-between items-center px-4 pt-4 border-t border-slate-100">
                   <span className="text-slate-600 font-bold text-base flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-indigo-500" />
+                    <Activity className="w-5 h-5 text-brand-500" />
                     Total Operating Expenses
                   </span>
                   <span className="text-rose-600 font-black text-xl">- ₹{pnlData.expenses?.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>

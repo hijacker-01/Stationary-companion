@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
@@ -22,6 +22,10 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
+  const billsBtnRef           = useRef(null);
+
+  // Default the keyboard selection to the Bills action on load.
+  useEffect(() => { billsBtnRef.current?.focus(); }, []);
 
   useEffect(() => {
     axios.get("/dashboard")
@@ -299,6 +303,7 @@ export default function Dashboard() {
             {rightActions.map((action, i) => (
               <button
                 key={i}
+                ref={i === 0 ? billsBtnRef : null}
                 onClick={action.action ? action.action : () => navigate(action.to)}
                 className={`w-full py-2 px-3 text-center border-b border-gray-300 transition-colors shadow-sm focus:outline-none focus:bg-[#1b4985] focus:text-white
                   ${action.ai ? 'bg-[#f3e5f5] text-[#4a148c] font-extrabold hover:bg-[#e1bee7]' : 'bg-[#f4f4f4] text-gray-800 font-medium hover:bg-white'}
