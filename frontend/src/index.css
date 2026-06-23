@@ -63,3 +63,13 @@
   box-shadow: 0 0 8px rgba(27, 73, 133, 0.4) !important;
   transition: all 0.1s ease-in-out;
 }
+
+/* Readability: bump the base font so all rem-based text (text-xs/sm/base…)
+   scales up app-wide, and lift the tiniest fixed ERP label sizes so dense
+   screens stay easy to read. Keeps layouts intact (proportional bump). */
+html {
+  font-size: 17px;
+}
+.text-\[9px\]  { font-size: 11px !important; }
+.text-\[10px\] { font-size: 12px !important; }
+.text-\[11px\] { font-size: 13px !important; }
