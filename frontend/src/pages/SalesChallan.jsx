@@ -20,6 +20,7 @@ import {
 import { useConfirm } from "../hooks/useConfirm";
 import SmartSelect from "../components/SmartSelect";
 import { useDocumentKeyboard } from "../hooks/useDocumentKeyboard";
+import PartyHistoryModal from "../components/PartyHistoryModal";
 
 const token = () => localStorage.getItem("token");
 const headers = () => ({ Authorization: `Bearer ${token()}` });
@@ -136,6 +137,19 @@ export default function SalesChallan() {
   const fetchCustomers = () => axios.get("/customers").then((res) => setCustomers(res.data?.data || res.data?.rows || res.data?.items || res.data || []));
   const fetchSalesmen = () => axios.get("/salesman").then((res) => setSalesmen(res.data?.data || res.data?.rows || res.data?.items || res.data || []));
   const fetchSettings = () => axios.get("/settings").then((res) => setSettings(res.data || {}));
+
+  const [partyHistory, setPartyHistory] = useState(null);
+  const showPartyHistory = async (cust) => {
+    if (!cust?.id) { setTimeout(() => document.getElementById('search-product-0')?.focus(), 50); return; }
+    setPartyHistory({ loading: true, customer: cust, entries: [], balance: cust.balance || 0 });
+    try {
+      const res = await axios.get(`/customers/${cust.id}/ledger`);
+      setPartyHistory({ loading: false, customer: res.data?.customer || cust, entries: res.data?.entries || [], balance: res.data?.finalBalance ?? cust.balance ?? 0 });
+    } catch {
+      setPartyHistory({ loading: false, customer: cust, entries: [], balance: cust.balance || 0, error: true });
+    }
+  };
+  const closePartyHistory = () => { setPartyHistory(null); setTimeout(() => document.getElementById('search-product-0')?.focus(), 50); };
 
   const handleCustomerSelect = (name) => {
     const found = customers.find((c) => c.name.toLowerCase() === name.toLowerCase());
@@ -658,7 +672,7 @@ export default function SalesChallan() {
                 <p className="text-[11px] uppercase tracking-widest text-[#1b4985] mb-2 font-black border-b border-gray-100 pb-1">Customer [F3]</p>
                 <input id="search-customer" type="text" list="customer-list" value={customer.name}
                   onChange={(e) => handleCustomerSelect(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); document.getElementById('search-product-0')?.focus(); } }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); const found = customers.find(c => c.name.toLowerCase() === (customer.name || '').toLowerCase()); if (found) showPartyHistory(found); else document.getElementById('search-product-0')?.focus(); } }}
                   className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm font-black bg-yellow-50 focus:outline-none focus:border-[#1b4985] mb-2" placeholder="Search..." />
                 <datalist id="customer-list">{customers.map(c => <option key={c.id} value={c.name} />)}</datalist>
                 <div className="flex justify-between font-bold mt-1"><span className="text-gray-500">Phone:</span><span className="text-gray-900">{customer.phone || '—'}</span></div>
@@ -719,6 +733,13 @@ export default function SalesChallan() {
               <span className="text-gray-500 font-bold bg-white px-3 py-1 rounded border border-gray-200">Last Bill: {bills[0]?.billNo || '—'}</span>
             </div>
           </div>
+
+          <PartyHistoryModal
+            data={partyHistory}
+            label="Party"
+            onOk={closePartyHistory}
+            onCancel={() => { setPartyHistory(null); setTimeout(() => document.getElementById('search-customer')?.focus(), 50); }}
+          />
 
           {/* Debtors Modal */}
           {showDebtorsModal && (

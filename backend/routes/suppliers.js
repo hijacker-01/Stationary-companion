@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Supplier = require("../models/Supplier");
 const PurchaseOrder = require("../models/PurchaseOrder");
+const Payment = require("../models/Payment");
 const Item = require("../models/Item");
 const { protect, requirePermission } = require("../middleware/auth");
 const { branchWhere } = require("../middleware/branchScope");
@@ -141,6 +142,49 @@ router.get("/orders/:id", protect, async (req, res) => {
     const order = await PurchaseOrder.findOne({ where: branchWhere(req, { id: req.params.id }) });
     if (!order) return res.status(404).json({ error: "Order not found" });
     res.json(order);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Supplier ledger / history — previous purchases + payments + running balance.
+// Mirrors the customer ledger shape so the Party History popup can reuse it.
+router.get("/:id/ledger", protect, async (req, res) => {
+  try {
+    const supplier = await Supplier.findOne({ where: branchWhere(req, { id: req.params.id }) });
+    if (!supplier) return res.status(404).json({ error: "Supplier not found" });
+
+    const purchases = await PurchaseOrder.findAll({
+      where: branchWhere(req, { supplierId: req.params.id }),
+      order: [["createdAt", "ASC"]],
+    });
+    const payments = await Payment.findAll({
+      where: { type: "supplier", partyId: req.params.id },
+      order: [["createdAt", "ASC"]],
+    });
+
+    const entries = [];
+    let runningBalance = supplier.openingBalance || 0;
+    if (supplier.openingBalance) {
+      entries.push({ date: supplier.createdAt, type: "Opening Balance", ref: "—", debit: supplier.openingBalance, credit: 0, balance: runningBalance });
+    }
+
+    const events = [
+      ...purchases.map((p) => ({ date: p.receivedDate || p.createdAt, type: "purchase", data: p })),
+      ...payments.map((p) => ({ date: p.createdAt, type: "payment", data: p })),
+    ].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    events.forEach((ev) => {
+      if (ev.type === "purchase") {
+        runningBalance += ev.data.total;
+        entries.push({ date: ev.data.receivedDate || ev.data.createdAt, type: "Invoice", ref: ev.data.poNumber, debit: ev.data.total, credit: 0, balance: runningBalance });
+      } else {
+        runningBalance -= ev.data.amount;
+        entries.push({ date: ev.data.createdAt, type: "Payment", ref: ev.data.reference || "—", debit: 0, credit: ev.data.amount, balance: runningBalance });
+      }
+    });
+
+    res.json({ customer: supplier, entries, finalBalance: runningBalance });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

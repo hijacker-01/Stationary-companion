@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import axios from "../api/axios";
 import Sidebar from "../components/Sidebar";
 import SmartSelect from "../components/SmartSelect";
+import PartyHistoryModal from "../components/PartyHistoryModal";
 import { focusFirstField } from "../utils/focusHelpers";
 import { Upload, FileText, CheckCircle2, AlertCircle, Plus, Trash2, Wand2 } from "lucide-react";
 
@@ -28,6 +29,7 @@ export default function PurchaseBills() {
   // Product-search dropdown state (mirrors the sales bill).
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [dropdownIndex, setDropdownIndex] = useState(0);
+  const [partyHistory, setPartyHistory] = useState(null);
 
   const handleSubmitRef = useRef(null);
 
@@ -63,7 +65,22 @@ export default function PurchaseBills() {
     const id = e.target.value;
     const s = suppliers.find(sup => sup.id === parseInt(id));
     setForm(f => ({ ...f, supplierId: id, supplierName: s?.name || "" }));
+    if (s) showSupplierHistory(s);
   };
+
+  // Supplier History: on selecting a supplier, show their balance + previous
+  // purchases (mirrors the sales-side Party History).
+  const showSupplierHistory = async (sup) => {
+    if (!sup?.id) return;
+    setPartyHistory({ loading: true, customer: sup, entries: [], balance: sup.balance || 0 });
+    try {
+      const res = await axios.get(`/suppliers/${sup.id}/ledger`);
+      setPartyHistory({ loading: false, customer: res.data?.customer || sup, entries: res.data?.entries || [], balance: res.data?.finalBalance ?? sup.balance ?? 0 });
+    } catch {
+      setPartyHistory({ loading: false, customer: sup, entries: [], balance: sup.balance || 0, error: true });
+    }
+  };
+  const closeSupplierHistory = () => { setPartyHistory(null); setTimeout(() => document.getElementById('pb-invoice')?.focus(), 50); };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -191,6 +208,12 @@ export default function PurchaseBills() {
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
       <Sidebar />
+      <PartyHistoryModal
+        data={partyHistory}
+        label="Supplier"
+        onOk={closeSupplierHistory}
+        onCancel={() => setPartyHistory(null)}
+      />
       <main className="flex-1 overflow-y-auto">
         <div className="p-8 pb-32 max-w-6xl mx-auto">
 
@@ -244,7 +267,7 @@ export default function PurchaseBills() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Invoice Number</label>
-                  <input type="text" required value={form.invoiceNo} onChange={e=>setForm({...form, invoiceNo:e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-400 font-mono" placeholder="INV-..." />
+                  <input id="pb-invoice" type="text" required value={form.invoiceNo} onChange={e=>setForm({...form, invoiceNo:e.target.value})} className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-400 font-mono" placeholder="INV-..." />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Bill Date</label>

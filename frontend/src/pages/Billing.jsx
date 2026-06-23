@@ -4,6 +4,7 @@ import Sidebar from "../components/Sidebar";
 // Lazy-loaded: pulls in html5-qrcode (~250KB), only needed when the scan modal opens.
 const BarcodeScannerModal = lazy(() => import("../components/BarcodeScannerModal"));
 import SmartSelect from "../components/SmartSelect";
+import PartyHistoryModal from "../components/PartyHistoryModal";
 import {
   Plus,
   Printer,
@@ -71,6 +72,7 @@ export default function Billing() {
   const [allSchemes, setAllSchemes] = useState([]);
   const [settings, setSettings] = useState({});
   const [customers, setCustomers] = useState([]);
+  const [partyHistory, setPartyHistory] = useState(null); // { loading, customer, entries, balance, error } | null
   const [salesmen, setSalesmen] = useState([]);
   const [selectedSalesman, setSelectedSalesman] = useState({
     id: "",
@@ -222,6 +224,29 @@ export default function Billing() {
         name,
       }));
     }
+  };
+
+  // Party History: on selecting an existing customer, show their balance +
+  // previous bills (mirrors real MARG). New/typed names skip straight to date.
+  const showPartyHistory = async (cust) => {
+    if (!cust?.id) { setTimeout(() => document.getElementById('bill-date')?.focus(), 50); return; }
+    setPartyHistory({ loading: true, customer: cust, entries: [], balance: cust.balance || 0 });
+    try {
+      const res = await axios.get(`/customers/${cust.id}/ledger`);
+      setPartyHistory({
+        loading: false,
+        customer: res.data?.customer || cust,
+        entries: res.data?.entries || [],
+        balance: res.data?.finalBalance ?? cust.balance ?? 0,
+      });
+    } catch {
+      setPartyHistory({ loading: false, customer: cust, entries: [], balance: cust.balance || 0, error: true });
+    }
+  };
+  // OK / Enter → continue into the bill (date → items).
+  const closePartyHistory = () => {
+    setPartyHistory(null);
+    setTimeout(() => document.getElementById('bill-date')?.focus(), 50);
   };
 
   const fetchSettings = () =>
@@ -767,6 +792,12 @@ export default function Billing() {
             <BarcodeScannerModal onClose={() => setShowScanner(false)} onScan={handleBarcodeScan} />
           </Suspense>
         )}
+        <PartyHistoryModal
+          data={partyHistory}
+          label="Party"
+          onOk={closePartyHistory}
+          onCancel={() => { setPartyHistory(null); setTimeout(() => document.getElementById('search-customer')?.focus(), 50); }}
+        />
         <main className="flex-1 overflow-y-hidden max-h-screen flex flex-col p-1 gap-1">
           {/* TOP HEADER SECTION */}
           <div className="flex bg-[#1b4985] border border-white text-white p-1 shrink-0 gap-2">
@@ -798,14 +829,17 @@ export default function Billing() {
                           } else if (e.key === 'Enter') {
                             e.preventDefault();
                             e.stopPropagation();
-                            if (filtered[dropdownIndex]) {
-                              handleCustomerSelect(filtered[dropdownIndex].name);
+                            const chosen = filtered[dropdownIndex];
+                            if (chosen) {
+                              handleCustomerSelect(chosen.name);
+                              setActiveDropdown(null);
+                              // Flow: customer → Party History → date → first item
+                              showPartyHistory(chosen);
                             } else {
                               handleCustomerSelect(e.target.value);
+                              setActiveDropdown(null);
+                              setTimeout(() => { document.getElementById('bill-date')?.focus(); }, 50);
                             }
-                            setActiveDropdown(null);
-                            // Flow: customer → date → first item
-                            setTimeout(() => { document.getElementById('bill-date')?.focus(); }, 50);
                           } else if (e.key === 'Escape') {
                             e.preventDefault();
                             setActiveDropdown(null);
@@ -818,7 +852,7 @@ export default function Billing() {
                     {activeDropdown === 'customer' && (
                       <ul className="absolute left-0 top-full mt-0.5 w-[300px] bg-white border border-gray-400 shadow-xl z-50 max-h-48 overflow-y-auto">
                         {customers.filter(c => !customer.name || c.name.toLowerCase().includes(customer.name.toLowerCase())).map((c, idx) => (
-                          <li key={c.id || c.name} className={`px-2 py-1 cursor-pointer text-xs text-black border-b border-gray-100 last:border-0 ${dropdownIndex === idx ? 'bg-blue-200' : 'hover:bg-blue-50'}`} onMouseDown={(e) => { e.preventDefault(); handleCustomerSelect(c.name); setActiveDropdown(null); setTimeout(() => document.getElementById('bill-date')?.focus(), 50); }}>
+                          <li key={c.id || c.name} className={`px-2 py-1 cursor-pointer text-xs text-black border-b border-gray-100 last:border-0 ${dropdownIndex === idx ? 'bg-blue-200' : 'hover:bg-blue-50'}`} onMouseDown={(e) => { e.preventDefault(); handleCustomerSelect(c.name); setActiveDropdown(null); showPartyHistory(c); }}>
                             <div className="font-bold">{c.name}</div>
                             <div className="text-[10px] text-gray-500">{c.phone || c.address || 'No details'}</div>
                           </li>
