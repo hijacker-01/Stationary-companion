@@ -117,13 +117,6 @@ export function useTableNav() {
       } else if (e.key === 'End' && e.ctrlKey) {
         e.preventDefault();
         focusCell(rows.length - 1, colIndex);
-      } else if (e.key === 'Escape') {
-        if (active.tagName === 'INPUT' || active.tagName === 'SELECT') {
-          e.preventDefault();
-          active.blur();
-          if(!currentCell.hasAttribute('tabindex')) currentCell.setAttribute('tabindex', '-1');
-          currentCell.focus();
-        }
       } else if (e.key === 'Enter') {
         // If focused on the cell itself (not an input), try to focus input inside to "edit"
         if (active === currentCell) {

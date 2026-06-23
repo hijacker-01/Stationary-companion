@@ -100,9 +100,10 @@ export default function SalesChallan() {
       if (e.key === "F8") { e.preventDefault(); setShowDebtorsModal(true); }
       if (e.key === "F10") { e.preventDefault(); handleSaveBillRef.current?.(); }
       if (e.key === "Escape") {
+        if (e.defaultPrevented) return; // useEscReverse / dropdown already handled it
         if (showDebtorsModal) { e.preventDefault(); setShowDebtorsModal(false); return; }
-        // Step back to the list from create/preview; on the list let the global
-        // handler navigate to the previous page.
+        // Boundary: from the first input, step the view back to the list; on the
+        // list let the global handler navigate to the previous page.
         if (view !== "list") { e.preventDefault(); resetForm(); return; }
       }
     };

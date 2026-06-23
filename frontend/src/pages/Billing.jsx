@@ -104,9 +104,12 @@ export default function Billing() {
         setShowScanner(true);
       }
       if (e.key === 'Escape') {
-        // Esc steps one view back: preview -> create -> list. Only claim the
-        // event (preventDefault) when we actually step back, so on the list
-        // view the global handler can navigate to the previous page.
+        // Boundary step only: useEscReverse handles reversing through inputs and
+        // claims the event when it does. If it (or a dropdown close) already
+        // handled this Esc, bail. Otherwise we're at the first input, so step
+        // the view back: preview -> create -> list. preventDefault only when we
+        // actually step, so on the list the global handler goes back a page.
+        if (e.defaultPrevented) return;
         setShowScanner(false);
         if (view === 'preview') { e.preventDefault(); setView('create'); return; }
         if (view === 'create') { e.preventDefault(); resetForm(); return; }
