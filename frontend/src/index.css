@@ -64,12 +64,13 @@
   transition: all 0.1s ease-in-out;
 }
 
-/* Readability: bump the base font so all rem-based text (text-xs/sm/base…)
-   scales up app-wide, and lift the tiniest fixed ERP label sizes so dense
-   screens stay easy to read. Keeps layouts intact (proportional bump). */
+/* Readability: large base font (~22px target) so all rem-based text and spacing
+   scale up app-wide like a zoom. Tiniest fixed ERP label sizes lifted to keep
+   pace. Dense screens may scroll more — that's the accepted tradeoff. */
 html {
-  font-size: 17px;
+  font-size: 22px;
 }
-.text-\[9px\]  { font-size: 11px !important; }
-.text-\[10px\] { font-size: 12px !important; }
-.text-\[11px\] { font-size: 13px !important; }
+.text-\[9px\]  { font-size: 14px !important; }
+.text-\[10px\] { font-size: 15px !important; }
+.text-\[11px\] { font-size: 16px !important; }
+.text-\[12px\] { font-size: 17px !important; }
