@@ -104,8 +104,12 @@ export default function Billing() {
         setShowScanner(true);
       }
       if (e.key === 'Escape') {
+        // Esc steps one view back: preview -> create -> list. Only claim the
+        // event (preventDefault) when we actually step back, so on the list
+        // view the global handler can navigate to the previous page.
         setShowScanner(false);
-        if (view === 'create') resetForm();
+        if (view === 'preview') { e.preventDefault(); setView('create'); return; }
+        if (view === 'create') { e.preventDefault(); resetForm(); return; }
       }
       if (e.key === 'F2') {
         e.preventDefault();

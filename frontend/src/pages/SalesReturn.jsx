@@ -29,6 +29,18 @@ export default function SalesReturn() {
   useEffect(() => { fetchReturns(); fetchBills(); }, []);
   useDocumentKeyboard({ view, onFinish: () => handleSubmit(), onPrint: () => window.print() });
 
+  // Esc steps one view back to the list; on the list the global handler goes
+  // back a page. Skips when a modal is open (the global handler closes that).
+  useEffect(() => {
+    const onEsc = (e) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      if (document.querySelector('.fixed.inset-0, [role="dialog"]')) return;
+      if (view !== "list") { e.preventDefault(); setView("list"); }
+    };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [view]);
+
   const handleSelectBill = (bill) => {
     setSelectedBill(bill);
     setReturnItems((bill.items || []).map(it => ({ ...it, returnQty: 0, selected: false })));

@@ -25,6 +25,18 @@ export default function PurchaseReturn() {
   useEffect(() => { fetchReturns(); fetchItems(); fetchSuppliers(); }, []);
   useDocumentKeyboard({ view, onFinish: () => handleSubmit(), onPrint: () => window.print() });
 
+  // Esc steps one view back to the list; on the list the global handler goes
+  // back a page. Skips when a modal is open (the global handler closes that).
+  useEffect(() => {
+    const onEsc = (e) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      if (document.querySelector('.fixed.inset-0, [role="dialog"]')) return;
+      if (view !== "list") { e.preventDefault(); setView("list"); }
+    };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [view]);
+
   const handleItemSelect = (idx, searchStr) => {
     const [namePart, batchPart] = searchStr.split(" | Batch: ");
     const found = items.find(i => i.name === namePart?.trim() && (batchPart ? i.batch === batchPart.trim() : true));

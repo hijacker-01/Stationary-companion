@@ -22,24 +22,33 @@ export function useKeyboardNav() {
       const active = document.activeElement;
       const isInput = active && (active.tagName === "INPUT" || active.tagName === "SELECT" || active.tagName === "TEXTAREA");
 
-      // 1. ESCAPE LOGIC (Close modals or navigate back)
+      // 1. ESCAPE LOGIC — "go one step back" everywhere.
       if (e.key === "Escape") {
         if (e.defaultPrevented) return; // Allow other hooks like useTableNav to intercept
-        
+
+        // Step 1: an open modal/dialog is the closest "step back" — close it.
         window.dispatchEvent(new Event("close-modals"));
         const modal = document.querySelector('.fixed.inset-0, [role="dialog"]');
-        
         if (modal) {
-          const closeBtn = Array.from(modal.querySelectorAll('button')).find(b => 
-            b.textContent.toLowerCase().includes('cancel') || 
+          const closeBtn = Array.from(modal.querySelectorAll('button')).find(b =>
+            b.textContent.toLowerCase().includes('cancel') ||
             b.textContent.toLowerCase().includes('close') ||
             b.innerHTML.includes('lucide-x')
           );
           if (closeBtn) closeBtn.click();
-        } else if (location.pathname !== "/dashboard" && location.pathname !== "/") {
-          // Classic Marg ERP: ESC goes back to main menu
-          navigate("/dashboard");
+          return;
         }
+
+        // Step 2: give the current page a chance to step its own sub-view back
+        // (e.g. a bill's preview -> create -> list). Those handlers run after
+        // this one and call preventDefault. If none claims the ESC, move one
+        // step back in history — so Esc is a universal "go back" key.
+        setTimeout(() => {
+          if (e.defaultPrevented) return;
+          if (location.pathname !== "/dashboard" && location.pathname !== "/") {
+            navigate(-1);
+          }
+        }, 0);
         return;
       }
 
