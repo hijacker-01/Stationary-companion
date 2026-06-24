@@ -188,8 +188,9 @@ export default function SalesChallan() {
       setPartyHistory({ loading: false, customer: cust, entries: [], balance: 0 });
     }
   };
-  // Step 3 → 4: into product entry.
-  const proceedToBilling = () => { setStep(4); setTimeout(() => document.getElementById('search-product-0')?.focus(), 80); };
+  // Step 3 → 4: into bill entry. The step-4 effect focuses Date first, so the
+  // user captures Date → Type → products one by one.
+  const proceedToBilling = () => setStep(4);
 
   const handleCustomerSelect = (name) => {
     const found = customers.find((c) => c.name.toLowerCase() === name.toLowerCase());
@@ -495,6 +496,12 @@ export default function SalesChallan() {
     );
     const hp = partyList[partyIndex] || null;
     const now = new Date();
+    // Preview challan number shown during entry (real one is assigned on save).
+    const nextChallanNo = (() => {
+      const nums = bills.map((b) => { const m = String(b.billNo || "").match(/(\d+)\s*$/); return m ? parseInt(m[1], 10) : 0; });
+      const max = nums.length ? Math.max(...nums) : 703;
+      return "CA" + String(max + 1).padStart(6, "0");
+    })();
     const ph = partyHistory || {};
     const phInvoices = (ph.entries || []).filter((e) => e.type === "Invoice");
     const lastSale = phInvoices.length ? phInvoices[phInvoices.length - 1].date : null;
@@ -593,7 +600,7 @@ export default function SalesChallan() {
               {s.label}
             </button>
           ))}
-          <span className="ml-auto text-sm text-slate-400">Challan <span className="font-bold text-[#1b4985]">{activeBill?.billNo || "NEW"}</span></span>
+          <span className="ml-auto text-sm text-slate-400">Challan <span className="font-bold text-[#1b4985]">{activeBill?.billNo || nextChallanNo}</span></span>
         </div>
 
         {/* Content */}
@@ -648,7 +655,7 @@ export default function SalesChallan() {
                         else if (e.key === "ArrowUp") { e.preventDefault(); setPartyIndex((p) => Math.max(p - 1, 0)); }
                         else if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); if (hp) selectParty(hp); }
                       }}
-                      placeholder="Type to search party…" autoComplete="off"
+                      placeholder="Type to search party…" autoComplete="off" aria-expanded="true"
                       className="flex-1 bg-transparent outline-none text-lg" />
                   </div>
                   <span className="text-sm text-slate-400">{partyList.length} matches</span>
@@ -757,11 +764,11 @@ export default function SalesChallan() {
                   <div className="flex items-center gap-6">
                     <div>
                       <div className="text-xs font-semibold text-slate-400 uppercase">Challan No.</div>
-                      <div className="text-[#1b4985] font-bold">{activeBill?.billNo || "NEW"}</div>
+                      <div className="text-[#1b4985] font-bold">{activeBill?.billNo || nextChallanNo}</div>
                     </div>
                     <div>
                       <div className="text-xs font-semibold text-slate-400 uppercase">Date</div>
-                      <input id="bill-date-input" type="date" value={billDate}
+                      <input id="bill-date-input" type="date" value={billDate} aria-expanded="true"
                         onChange={(e) => setBillDate(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); document.getElementById("bill-type-input")?.focus(); } }}
                         className="font-bold text-slate-800 bg-transparent outline-none border-b border-transparent focus:border-[#1b4985]" />
@@ -769,7 +776,7 @@ export default function SalesChallan() {
                     <div>
                       <div className="text-xs font-semibold text-slate-400 uppercase">Type</div>
                       <div className="flex items-center gap-1.5">
-                        <select id="bill-type-input" value={billType}
+                        <select id="bill-type-input" value={billType} aria-expanded="true"
                           onChange={(e) => setBillType(e.target.value)}
                           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); document.getElementById("search-product-0")?.focus(); } }}
                           className={`font-bold rounded px-2 py-0.5 outline-none cursor-pointer ${billType === "Cash" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
