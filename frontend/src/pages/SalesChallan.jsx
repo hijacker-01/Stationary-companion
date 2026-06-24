@@ -126,11 +126,15 @@ export default function SalesChallan() {
     }
   }, [view]);
 
-  // Focus the right control as the wizard advances.
+  // Focus the right control as the wizard advances, so Enter always advances
+  // the flow without the user having to click first ("default selection").
   useEffect(() => {
     if (view !== 'create') return;
-    if (step === 2) setTimeout(() => document.getElementById('party-search')?.focus(), 60);
-    if (step === 4) setTimeout(() => document.getElementById('search-product-0')?.focus(), 60);
+    const focusId = (id) => setTimeout(() => document.getElementById(id)?.focus(), 60);
+    if (step === 1) focusId('select-party-btn');   // Enter → Select Party
+    if (step === 2) focusId('party-search');        // type/↑↓/Enter → pick party
+    if (step === 3) focusId('proceed-billing');     // Enter → Proceed to Billing
+    if (step === 4) focusId('search-product-0');    // Enter through product rows
   }, [view, step]);
 
   // Shift+Enter to finish/save, Enter on preview to print
@@ -531,7 +535,7 @@ export default function SalesChallan() {
                     <div className="text-sm font-semibold text-slate-400 uppercase tracking-wide">Party Name</div>
                     <div className={`text-xl font-bold ${customer.name ? "text-slate-900" : "text-slate-300"}`}>{customer.name || "No party selected"}</div>
                   </div>
-                  <button onClick={() => setStep(2)} className="flex items-center gap-2 bg-[#1b4985] hover:bg-[#163a6b] text-white px-5 py-2.5 rounded-lg font-semibold cursor-pointer">
+                  <button id="select-party-btn" onClick={() => setStep(2)} className="flex items-center gap-2 bg-[#1b4985] hover:bg-[#163a6b] text-white px-5 py-2.5 rounded-lg font-semibold cursor-pointer">
                     <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">?</span> Select Party
                   </button>
                 </div>

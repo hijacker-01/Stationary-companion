@@ -64,13 +64,12 @@
   transition: all 0.1s ease-in-out;
 }
 
-/* Readability: large base font (~22px target) so all rem-based text and spacing
-   scale up app-wide like a zoom. Tiniest fixed ERP label sizes lifted to keep
-   pace. Dense screens may scroll more — that's the accepted tradeoff. */
+/* Readability: 18px base font app-wide so all rem-based text and spacing scale
+   up like a zoom. Tiniest fixed ERP label sizes lifted to keep pace. */
 html {
-  font-size: 22px;
+  font-size: 18px;
 }
-.text-\[9px\]  { font-size: 14px !important; }
-.text-\[10px\] { font-size: 15px !important; }
-.text-\[11px\] { font-size: 16px !important; }
-.text-\[12px\] { font-size: 17px !important; }
+.text-\[9px\]  { font-size: 12px !important; }
+.text-\[10px\] { font-size: 13px !important; }
+.text-\[11px\] { font-size: 14px !important; }
+.text-\[12px\] { font-size: 15px !important; }
