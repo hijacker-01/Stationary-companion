@@ -40,18 +40,20 @@ export function useFocusMemory() {
       }
 
       // If nothing restored, default-focus the page's FIRST interactive control
-      // in the main content — first input/select/textarea, else first option
-      // button — so every page/feature starts ready for Enter/arrow navigation.
-      // Only fall back to the header bar if main has nothing focusable.
+      // in the MAIN content (left-/top-most), so every page starts ready for
+      // typing / arrows / Enter. Priority: a dropdown (if the page has one) →
+      // first text field → first option button. NEVER the left sidebar or the
+      // top bar — focusing chrome there is logically wrong for data entry.
       if (!restored) {
         const main = document.querySelector("main") || document.body;
         const inMain = (sel) =>
           Array.from(main.querySelectorAll(sel)).find(
             (el) => el.offsetParent !== null && !el.closest('header, nav, aside, [data-section="sidebar"], [data-section="right-sidebar"], [role="dialog"]')
           );
-        const firstField = inMain('input:not([disabled]):not([type="hidden"]):not([readonly]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), textarea:not([disabled]):not([tabindex="-1"])');
+        const dropdown = inMain('[data-smart-select] input:not([disabled]), [role="combobox"]:not([disabled]), select:not([disabled]):not([tabindex="-1"])');
+        const firstField = inMain('input:not([disabled]):not([type="hidden"]):not([readonly]):not([tabindex="-1"]), textarea:not([disabled]):not([tabindex="-1"])');
         const firstOption = inMain('button:not([disabled]):not([tabindex="-1"]), [role="button"]:not([tabindex="-1"]), [role="tab"]:not([tabindex="-1"]), a[href]:not([tabindex="-1"]), [data-option]:not([tabindex="-1"])');
-        const target = firstField || firstOption || document.querySelector('header button, [data-section="header"] button');
+        const target = dropdown || firstField || firstOption; // never header/sidebar
         if (target && !target.closest('[role="dialog"]')) {
           target.focus();
           if (target.tagName === "INPUT") { try { target.select(); } catch (_) { /* date/number */ } }

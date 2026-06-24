@@ -79,44 +79,9 @@ export function useKeyboardNav() {
         }
       }
 
-      // 3. MACRO SPATIAL NAVIGATION (Left/Right Arrows outside inputs)
-      if (!isInput && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
-        // Wait a tick to see if another hook (like useFormNav for buttons) prevented default
-        setTimeout(() => {
-          if (e.defaultPrevented) return;
-          
-          const leftNav = document.querySelector('nav[data-section="sidebar"]');
-          const rightNav = document.querySelector('aside[data-section="right-sidebar"]');
-          const main = document.querySelector('main');
-          
-          const activeAfter = document.activeElement;
-          const isInLeft = activeAfter === leftNav || leftNav?.contains(activeAfter);
-          const isInRight = activeAfter === rightNav || rightNav?.contains(activeAfter);
-          const isInMain = activeAfter === main || main?.contains(activeAfter) || activeAfter.tagName === 'BODY';
-
-          if (e.key === "ArrowRight") {
-            // From main to right nav
-            if (isInMain && rightNav) {
-              const firstBtn = rightNav.querySelector('button');
-              if (firstBtn) firstBtn.focus();
-              else rightNav.focus();
-            } else if (isInLeft && main) {
-              // From left nav to main
-              main.setAttribute('tabindex', '-1');
-              main.focus();
-            }
-          } else if (e.key === "ArrowLeft") {
-            if (isInRight && main) {
-              // From right nav to main
-              main.setAttribute('tabindex', '-1');
-              main.focus();
-            } else if (isInMain && leftNav) {
-              // From main to left nav
-              leftNav.focus();
-            }
-          }
-        }, 0);
-      }
+      // (Removed macro Left/Right spatial nav: arrows must never jump focus into
+      // the left sidebar or right rail. Option-to-option arrow movement inside
+      // the page content is handled by useArrowOptionNav.)
     };
 
     window.addEventListener("keydown", handleKeyDown);
