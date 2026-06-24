@@ -56,15 +56,24 @@ export function useArrowOptionNav() {
 
       const visible = (el) => el.offsetParent !== null && !el.closest(CHROME);
 
-      // Find the nearest ancestor group that holds 2+ visible stops (options or
-      // dropdowns). Stops include dropdowns so they're part of the arrow cycle.
       let opts = [];
-      let node = active.closest("[data-option-group]") || active.parentElement;
-      while (node) {
-        const found = Array.from(node.querySelectorAll(STOP)).filter(visible);
-        if (found.length >= 2) { opts = found; break; }
-        if (node.tagName === "MAIN" || node === document.body) break;
-        node = node.parentElement;
+      const explicitGroup = active.closest("[data-option-group]");
+      if (explicitGroup) {
+        // Explicit group: navigate the marked [data-option] members in DOM order
+        // (lets a page define an exact flow across non-adjacent controls), else
+        // fall back to all stops within the group.
+        const marked = Array.from(explicitGroup.querySelectorAll("[data-option]")).filter(visible);
+        opts = marked.length >= 2 ? marked : Array.from(explicitGroup.querySelectorAll(STOP)).filter(visible);
+      } else {
+        // Otherwise: nearest ancestor that holds 2+ visible stops (options or
+        // dropdowns). Stops include dropdowns so they're part of the cycle.
+        let node = active.parentElement;
+        while (node) {
+          const found = Array.from(node.querySelectorAll(STOP)).filter(visible);
+          if (found.length >= 2) { opts = found; break; }
+          if (node.tagName === "MAIN" || node === document.body) break;
+          node = node.parentElement;
+        }
       }
       const idx = opts.indexOf(active);
       if (idx === -1 || opts.length < 2) return;
