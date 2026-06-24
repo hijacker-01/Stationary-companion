@@ -39,18 +39,22 @@ export function useFocusMemory() {
         }
       }
 
-      // If nothing restored, default to the top bar (header)
+      // If nothing restored, default-focus the page's FIRST interactive control
+      // in the main content — first input/select/textarea, else first option
+      // button — so every page/feature starts ready for Enter/arrow navigation.
+      // Only fall back to the header bar if main has nothing focusable.
       if (!restored) {
-        const topBarBtn = document.querySelector('header button, [data-section="header"] button');
-        if (topBarBtn && !topBarBtn.closest('[role="dialog"]')) {
-          topBarBtn.focus();
-        } else {
-          // Fallback to first input
-          const firstInput = document.querySelector('input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])');
-          if (firstInput && !firstInput.closest('[role="dialog"]')) { 
-            firstInput.focus();
-            if (firstInput.tagName === 'INPUT') firstInput.select();
-          }
+        const main = document.querySelector("main") || document.body;
+        const inMain = (sel) =>
+          Array.from(main.querySelectorAll(sel)).find(
+            (el) => el.offsetParent !== null && !el.closest('header, nav, aside, [data-section="sidebar"], [data-section="right-sidebar"], [role="dialog"]')
+          );
+        const firstField = inMain('input:not([disabled]):not([type="hidden"]):not([readonly]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), textarea:not([disabled]):not([tabindex="-1"])');
+        const firstOption = inMain('button:not([disabled]):not([tabindex="-1"]), [role="button"]:not([tabindex="-1"]), [role="tab"]:not([tabindex="-1"]), a[href]:not([tabindex="-1"]), [data-option]:not([tabindex="-1"])');
+        const target = firstField || firstOption || document.querySelector('header button, [data-section="header"] button');
+        if (target && !target.closest('[role="dialog"]')) {
+          target.focus();
+          if (target.tagName === "INPUT") { try { target.select(); } catch (_) { /* date/number */ } }
         }
       }
     }, 150); // slight delay to allow React to render elements

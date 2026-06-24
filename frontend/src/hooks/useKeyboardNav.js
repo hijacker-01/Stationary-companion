@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEscReverse } from "./useEscReverse";
+import { useArrowOptionNav } from "./useArrowOptionNav";
 import { useHistoryStack } from "./useHistoryStack";
 import { useTableNav } from "./useTableNav";
 import { useFormNav } from "./useFormNav";
@@ -14,6 +15,7 @@ export function useKeyboardNav() {
   // Initialize sub-hooks. useEscReverse is first so its capture-phase Esc
   // handler runs before the forward Enter-nav (table/form) hooks.
   useEscReverse();
+  useArrowOptionNav();
   useHistoryStack();
   useTableNav();
   useFormNav();
