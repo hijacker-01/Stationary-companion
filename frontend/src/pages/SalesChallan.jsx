@@ -513,7 +513,7 @@ export default function SalesChallan() {
     ];
     const dmy = (d) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
-    const ProductRow = ({ row, i }) => {
+    const renderProductRow = (row, i) => {
       const searchVal = row.searchStr !== undefined ? row.searchStr : row.name;
       const filtered = items.filter((it) => !searchVal || it.name.toLowerCase().includes(searchVal.toLowerCase()));
       return (
@@ -565,7 +565,7 @@ export default function SalesChallan() {
       );
     };
 
-    const GridHeader = () => (
+    const gridHeader = () => (
       <div className="grid grid-cols-[44px_2fr_1fr_1.2fr_0.8fr_0.8fr_1fr_0.8fr_1.2fr] bg-[#1b4985] text-white text-sm font-semibold">
         <div className="px-2 py-2.5">#</div><div className="px-2 py-2.5">PRODUCT</div><div className="px-2 py-2.5">PACK</div><div className="px-2 py-2.5">BATCH</div>
         <div className="px-1 py-2.5 text-right">QTY</div><div className="px-1 py-2.5 text-right">FREE</div><div className="px-1 py-2.5 text-right">RATE</div>
@@ -574,8 +574,8 @@ export default function SalesChallan() {
     );
 
     return (
-      // zoom 1.125 → ~18px scale on the entry wizard, while the rest of the app stays 16px.
-      <div className="flex h-screen flex-col bg-slate-100 font-sans overflow-hidden" style={{ zoom: 1.125 }}>
+      // zoom 0.9375 → ~15px scale on the entry wizard, while the rest of the app stays 16px.
+      <div className="flex h-screen flex-col bg-slate-100 font-sans overflow-hidden" style={{ zoom: 0.9375 }}>
         {/* Top bar */}
         <div className="bg-[#1b4985] text-white px-6 py-3 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
@@ -620,7 +620,7 @@ export default function SalesChallan() {
                   </button>
                 </div>
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <GridHeader />
+                  {gridHeader()}
                   <div className="px-4 py-3 text-[#1b4985] bg-blue-50/60 text-sm">Select a party to begin adding products…</div>
                 </div>
               </div>
@@ -792,8 +792,8 @@ export default function SalesChallan() {
 
                 {/* Product grid */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <GridHeader />
-                  {rows.map((row, i) => <ProductRow key={i} row={row} i={i} />)}
+                  {gridHeader()}
+                  {rows.map((row, i) => renderProductRow(row, i))}
                 </div>
 
                 {/* Selected line + totals */}
