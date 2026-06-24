@@ -40,20 +40,20 @@ export function useFocusMemory() {
       }
 
       // If nothing restored, default-focus the page's FIRST interactive control
-      // in the MAIN content (left-/top-most), so every page starts ready for
-      // typing / arrows / Enter. Priority: a dropdown (if the page has one) →
-      // first text field → first option button. NEVER the left sidebar or the
-      // top bar — focusing chrome there is logically wrong for data entry.
+      // in the MAIN content (the left-/top-most field, dropdown, or option, in
+      // DOM order), so every page starts ready for typing / arrows / Enter.
+      // NEVER the left sidebar or the top bar. A dropdown isn't prioritised for
+      // default focus — it just owns the arrow keys once focus reaches it.
       if (!restored) {
         const main = document.querySelector("main") || document.body;
         const inMain = (sel) =>
           Array.from(main.querySelectorAll(sel)).find(
             (el) => el.offsetParent !== null && !el.closest('header, nav, aside, [data-section="sidebar"], [data-section="right-sidebar"], [role="dialog"]')
           );
-        const dropdown = inMain('[data-smart-select] input:not([disabled]), [role="combobox"]:not([disabled]), select:not([disabled]):not([tabindex="-1"])');
-        const firstField = inMain('input:not([disabled]):not([type="hidden"]):not([readonly]):not([tabindex="-1"]), textarea:not([disabled]):not([tabindex="-1"])');
+        // First field/dropdown in DOM order; else first option button.
+        const firstField = inMain('input:not([disabled]):not([type="hidden"]):not([readonly]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), textarea:not([disabled]):not([tabindex="-1"]), [data-smart-select] input:not([disabled]), [role="combobox"]:not([disabled])');
         const firstOption = inMain('button:not([disabled]):not([tabindex="-1"]), [role="button"]:not([tabindex="-1"]), [role="tab"]:not([tabindex="-1"]), a[href]:not([tabindex="-1"]), [data-option]:not([tabindex="-1"])');
-        const target = dropdown || firstField || firstOption; // never header/sidebar
+        const target = firstField || firstOption; // never header/sidebar
         if (target && !target.closest('[role="dialog"]')) {
           target.focus();
           if (target.tagName === "INPUT") { try { target.select(); } catch (_) { /* date/number */ } }
