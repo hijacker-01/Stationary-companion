@@ -206,11 +206,15 @@ export default function PurchaseBills() {
                   <div className="text-xl font-bold text-slate-300">No supplier selected</div>
                 </div>
                 <div className="flex gap-2">
-                  <button type="button" tabIndex={-1} onClick={() => fileInputRef.current?.click()} disabled={extracting}
-                    className="flex items-center gap-2 bg-brand-50 border border-brand-200 text-brand-700 hover:bg-brand-100 px-4 py-2.5 rounded-lg font-semibold">
+                  {/* Step 1 only: ←/→ toggles focus between OCR and Select Supplier. */}
+                  <button type="button" id="ocr-btn" onClick={() => fileInputRef.current?.click()} disabled={extracting}
+                    onKeyDown={(e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); document.getElementById('select-supplier-btn')?.focus(); } }}
+                    className="flex items-center gap-2 bg-brand-50 border border-brand-200 text-brand-700 hover:bg-brand-100 px-4 py-2.5 rounded-lg font-semibold focus:ring-2 focus:ring-brand-500">
                     {extracting ? <Wand2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} {extracting ? "Extracting…" : "Upload Bill (OCR)"}
                   </button>
-                  <button id="select-supplier-btn" onClick={() => setStep(2)} className="flex items-center gap-2 bg-[#1b4985] hover:bg-[#163a6b] text-white px-5 py-2.5 rounded-lg font-semibold cursor-pointer">
+                  <button id="select-supplier-btn" onClick={() => setStep(2)}
+                    onKeyDown={(e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); document.getElementById('ocr-btn')?.focus(); } }}
+                    className="flex items-center gap-2 bg-[#1b4985] hover:bg-[#163a6b] text-white px-5 py-2.5 rounded-lg font-semibold cursor-pointer">
                     <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">?</span> Select Supplier
                   </button>
                 </div>
