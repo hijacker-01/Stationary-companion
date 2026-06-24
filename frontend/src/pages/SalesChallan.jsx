@@ -69,6 +69,10 @@ export default function SalesChallan() {
   const [activeRowIndex, setActiveRowIndex] = useState(0);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [dropdownIndex, setDropdownIndex] = useState(0);
+  // Wizard: 1 New · 2 Select Party · 3 Party Status · 4 Bill Entry
+  const [step, setStep] = useState(1);
+  const [partySearch, setPartySearch] = useState("");
+  const [partyIndex, setPartyIndex] = useState(0);
   const [listFilter, setListFilter] = useState("All");
   const [showDebtorsModal, setShowDebtorsModal] = useState(false);
   const [debtorsConfig, setDebtorsConfig] = useState({
@@ -93,30 +97,42 @@ export default function SalesChallan() {
     const handleKeyDown = (e) => {
       if (e.key === 'F2') {
         e.preventDefault();
-        if (view === 'list') setView('create');
-        else if (view === 'create') document.getElementById('search-product-0')?.focus();
+        if (view === 'list') { setView('create'); setStep(1); }
+        else if (view === 'create') setStep(1);
       }
       if (view !== "create") return;
-      if (e.key === "F3") { e.preventDefault(); document.getElementById('search-customer')?.focus(); }
+      if (e.key === "F3") { e.preventDefault(); setStep(2); }
       if (e.key === "F8") { e.preventDefault(); setShowDebtorsModal(true); }
       if (e.key === "F10") { e.preventDefault(); handleSaveBillRef.current?.(); }
       if (e.key === "Escape") {
         if (e.defaultPrevented) return; // useEscReverse / dropdown already handled it
         if (showDebtorsModal) { e.preventDefault(); setShowDebtorsModal(false); return; }
-        // Boundary: from the first input, step the view back to the list; on the
-        // list let the global handler navigate to the previous page.
-        if (view !== "list") { e.preventDefault(); resetForm(); return; }
+        if (partyHistory) return; // popup owns its own Esc
+        // Wizard: step one back (4→3→2→1); from step 1 leave to the list.
+        e.preventDefault();
+        if (step > 1) setStep((s) => s - 1);
+        else resetForm();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [view, showDebtorsModal]);
+  }, [view, showDebtorsModal, step, partyHistory]);
 
+  // Reset the wizard to step 1 whenever the create view opens.
   useEffect(() => {
     if (view === 'create') {
-      focusFirstField('#search-customer, [placeholder="Search..."]');
+      setStep(1);
+      setPartySearch("");
+      setPartyIndex(0);
     }
   }, [view]);
+
+  // Focus the right control as the wizard advances.
+  useEffect(() => {
+    if (view !== 'create') return;
+    if (step === 2) setTimeout(() => document.getElementById('party-search')?.focus(), 60);
+    if (step === 4) setTimeout(() => document.getElementById('search-product-0')?.focus(), 60);
+  }, [view, step]);
 
   // Shift+Enter to finish/save, Enter on preview to print
   useDocumentKeyboard({
@@ -150,6 +166,24 @@ export default function SalesChallan() {
     }
   };
   const closePartyHistory = () => { setPartyHistory(null); setTimeout(() => document.getElementById('search-product-0')?.focus(), 50); };
+
+  // ── Wizard helpers ──
+  // Select a party (step 2 → 3): set the customer and load their status/history.
+  const selectParty = (cust) => {
+    if (!cust) return;
+    handleCustomerSelect(cust.name);
+    setStep(3);
+    if (cust.id) {
+      setPartyHistory({ loading: true, customer: cust, entries: [], balance: cust.balance || 0 });
+      axios.get(`/customers/${cust.id}/ledger`)
+        .then((res) => setPartyHistory({ loading: false, customer: res.data?.customer || cust, entries: res.data?.entries || [], balance: res.data?.finalBalance ?? cust.balance ?? 0 }))
+        .catch(() => setPartyHistory({ loading: false, customer: cust, entries: [], balance: cust.balance || 0, error: true }));
+    } else {
+      setPartyHistory({ loading: false, customer: cust, entries: [], balance: 0 });
+    }
+  };
+  // Step 3 → 4: into product entry.
+  const proceedToBilling = () => { setStep(4); setTimeout(() => document.getElementById('search-product-0')?.focus(), 80); };
 
   const handleCustomerSelect = (name) => {
     const found = customers.find((c) => c.name.toLowerCase() === name.toLowerCase());
@@ -438,357 +472,301 @@ export default function SalesChallan() {
   );
 
   // ── CREATE VIEW ──
-  if (view === "create") return (
-    <div className="flex h-screen bg-[#e5e5e5] font-sans">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
-        <main className="flex-1 flex flex-col overflow-hidden bg-gray-50 relative">
+  // ── CREATE VIEW (4-step wizard: New → Select Party → Party Status → Bill Entry) ──
+  if (view === "create") {
+    const q = partySearch.trim().toLowerCase();
+    const partyList = customers.filter((c) =>
+      !q || c.name.toLowerCase().includes(q) || (c.address || "").toLowerCase().includes(q) || (c.phone || "").includes(q)
+    );
+    const hp = partyList[partyIndex] || null;
+    const now = new Date();
+    const ph = partyHistory || {};
+    const phInvoices = (ph.entries || []).filter((e) => e.type === "Invoice");
+    const lastSale = phInvoices.length ? phInvoices[phInvoices.length - 1].date : null;
+    const wsteps = [
+      { n: 1, label: "New" },
+      { n: 2, label: "Select Party" },
+      { n: 3, label: "Party Status" },
+      { n: 4, label: "Bill Entry" },
+    ];
 
-          {/* Title Bar */}
-          <div className="bg-[#1b4985] text-white px-6 py-2.5 flex items-center justify-between shadow-md flex-shrink-0">
+    return (
+      <div className="flex h-screen flex-col bg-slate-100 font-sans overflow-hidden">
+        {/* Top bar */}
+        <div className="bg-[#1b4985] text-white px-6 py-3 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white text-[#1b4985] rounded-lg flex items-center justify-center font-extrabold text-lg">S</div>
             <div>
-              <h1 className="text-base font-bold tracking-wide">SALE ENTRY — {new Date().toLocaleDateString('en-GB')}</h1>
-              <p className="text-[11px] text-blue-200 opacity-80">SALE ENTRY</p>
+              <div className="font-bold leading-tight">Subhash Medicose</div>
+              <div className="text-xs text-blue-200">Sale Challan Entry · Silver-2</div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs bg-white/10 px-3 py-1 rounded">USER: ADMIN</span>
-              <button onClick={() => setShowDebtorsModal(true)}
-                className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded transition-colors font-semibold">F8 Change</button>
-            </div>
+            <span className="ml-2 bg-white/15 text-xs font-semibold px-2 py-1 rounded">FY 2026-2027</span>
           </div>
-
-          {/* Filter Strip */}
-          <div className="bg-white border-b border-gray-200 px-6 py-2 flex items-center gap-5 text-xs shadow-sm flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <label className="text-gray-500 font-medium">From</label>
-              <input type="date" value={filters.dateFrom} onChange={e => setFilters(p => ({...p, dateFrom: e.target.value}))}
-                className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1b4985]" />
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-gray-500 font-medium">To</label>
-              <input type="date" value={filters.dateTo} onChange={e => setFilters(p => ({...p, dateTo: e.target.value}))}
-                className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1b4985]" />
-            </div>
-            <div className="h-4 w-px bg-gray-300" />
-            <div className="flex items-center gap-2">
-              <label className="text-gray-500 font-medium">Godown</label>
-              <SmartSelect
-                value={filters.godown || 'MAIN GODOWN'}
-                onChange={e => setFilters(p => ({...p, godown: e.target.value}))}
-                className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1b4985]"
-                options={[
-                  { value: 'MAIN GODOWN', label: 'MAIN GODOWN' },
-                  { value: 'WAREHOUSE 2', label: 'WAREHOUSE 2' }
-                ]}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-gray-500 font-medium">Group</label>
-              <SmartSelect
-                value={filters.group || 'ALL GROUP'}
-                onChange={e => setFilters(p => ({...p, group: e.target.value}))}
-                className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1b4985]"
-                options={[
-                  { value: 'ALL GROUP', label: 'ALL GROUP' }
-                ]}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-gray-500 font-medium">Category</label>
-              <SmartSelect
-                value={filters.category || 'ALL CATEGORY'}
-                onChange={e => setFilters(p => ({...p, category: e.target.value}))}
-                className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1b4985]"
-                options={[
-                  { value: 'ALL CATEGORY', label: 'ALL CATEGORY' }
-                ]}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-gray-500 font-medium">Item</label>
-              <SmartSelect
-                value={filters.item || 'ALL ITEMS'}
-                onChange={e => setFilters(p => ({...p, item: e.target.value}))}
-                className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-[#1b4985]"
-                options={[
-                  { value: 'ALL ITEMS', label: 'ALL ITEMS' }
-                ]}
-              />
-            </div>
+          <div className="text-right text-xs leading-tight">
+            <div className="font-bold">{now.toLocaleDateString("en-GB", { weekday: "short" })} · {now.toLocaleDateString("en-GB")}</div>
+            <div className="text-blue-200">{now.toLocaleTimeString("en-GB")}</div>
           </div>
+        </div>
 
-          {/* Product Grid */}
-          <div className="flex-1 overflow-auto">
-            <table className="w-full text-sm font-semibold border-collapse">
-              <thead className="bg-[#1b4985] text-white sticky top-0 z-10">
-                <tr>
-                  <th className="w-8 py-2 px-2 text-center border-r border-blue-800">#</th>
-                  <th className="py-2 px-2 text-left border-r border-blue-800">PRODUCT [F2]</th>
-                  <th className="py-2 px-2 text-center border-r border-blue-800 w-20">PACK</th>
-                  <th className="py-2 px-2 text-center border-r border-blue-800 w-32">BATCH</th>
-                  <th className="py-2 px-2 text-right border-r border-blue-800 w-20">QTY</th>
-                  <th className="py-2 px-2 text-right border-r border-blue-800 w-20 text-green-300">FREE</th>
-                  <th className="py-2 px-2 text-right border-r border-blue-800 w-24">RATE</th>
-                  <th className="py-2 px-2 text-right border-r border-blue-800 w-20">DIS%</th>
-                  <th className="py-2 px-2 text-right w-32 font-bold">AMOUNT</th>
-                  <th className="w-8 py-2 px-2 text-center">X</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, i) => (
-                  <tr key={i} onFocusCapture={() => setActiveRowIndex(i)} onClick={() => setActiveRowIndex(i)} className="border-b border-gray-200 hover:bg-blue-50/30 transition-colors">
-                    <td className="py-1.5 px-2 text-center text-gray-400 font-medium">{i+1}</td>
-                    <td className="py-1.5 px-2 border-r border-gray-100 relative">
-                      <input id={`search-product-${i}`}
-                        value={row.searchStr !== undefined ? row.searchStr : row.name}
-                        onChange={(e) => handleItemSelect(i, e.target.value)}
-                        onFocus={() => { setActiveDropdown(`item-${i}`); setDropdownIndex(0); }}
-                        onBlur={() => setTimeout(() => setActiveDropdown(prev => prev === `item-${i}` ? null : prev), 200)}
-                        aria-expanded={activeDropdown === `item-${i}` ? 'true' : 'false'}
-                        onKeyDown={(e) => {
-                          if (activeDropdown === `item-${i}`) {
-                            const s = row.searchStr !== undefined ? row.searchStr : row.name;
-                            const filtered = items.filter(it => !s || it.name.toLowerCase().includes(s.toLowerCase()));
-                            if (e.key === 'ArrowDown') {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setDropdownIndex(prev => Math.min(prev + 1, filtered.length - 1));
-                            } else if (e.key === 'ArrowUp') {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setDropdownIndex(prev => Math.max(prev - 1, 0));
-                            } else if (e.key === 'Enter') {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              if (filtered[dropdownIndex]) {
-                                const it = filtered[dropdownIndex];
-                                handleItemSelect(i, `${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`);
-                              } else {
-                                handleItemSelect(i, e.target.value);
-                              }
-                              setActiveDropdown(null);
-                              setTimeout(() => {
-                                const el = document.getElementById(`search-product-${i}`);
-                                if (el) advanceFocusFrom(el);
-                              }, 0);
-                            } else if (e.key === 'Escape') {
-                              e.preventDefault();
-                              setActiveDropdown(null);
-                            }
-                          }
-                        }}
-                        className="w-full bg-transparent outline-none font-bold text-gray-800 uppercase placeholder:text-gray-300"
-                        placeholder="Search product..." />
-                      {activeDropdown === `item-${i}` && (
-                        <ul className="absolute left-0 top-full mt-0.5 w-[400px] bg-white border border-gray-400 shadow-xl z-50 max-h-48 overflow-y-auto">
-                          {items.filter(it => !(row.searchStr !== undefined ? row.searchStr : row.name) || it.name.toLowerCase().includes((row.searchStr !== undefined ? row.searchStr : row.name).toLowerCase())).map((it, idx) => (
-                            <li key={it.id || idx} className={`px-2 py-1 cursor-pointer text-xs text-black border-b border-gray-100 last:border-0 ${dropdownIndex === idx ? 'bg-blue-200' : 'hover:bg-blue-50'}`}
-                              onMouseDown={() => {
-                                handleItemSelect(i, `${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`);
-                                setTimeout(() => {
-                                  const el = document.getElementById(`search-product-${i}`);
-                                  if (el) advanceFocusFrom(el);
-                                }, 0);
-                              }}>
-                              <div className="flex justify-between font-bold"><span>{it.name}</span><span className="text-green-700">₹{it.selling_price || it.mrp || 0}</span></div>
-                              <div className="flex justify-between text-[10px] text-gray-500"><span>Batch: {it.batch || '-'}</span><span>Stock: {it.stock_qty || 0}</span></div>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </td>
-                    <td className="py-1.5 px-2 text-center text-gray-500 border-r border-gray-100">{row.unit || 'STRIP'}</td>
-                    <td className="py-1.5 px-2 text-center font-mono font-bold text-gray-700 border-r border-gray-100">{row.batch}</td>
-                    <td className="py-1.5 px-2 border-r border-gray-100 bg-yellow-50/50">
-                      <input type="number" min="1" value={row.qty} onChange={e => handleRowChange(i, "qty", e.target.value)}
-                        className="w-full text-right bg-transparent outline-none font-bold text-gray-800" />
-                    </td>
-                    <td className="py-1.5 px-2 border-r border-gray-100 bg-green-50/30">
-                      <input type="number" min="0" value={row.schemeQty} onChange={e => handleRowChange(i, "schemeQty", e.target.value)}
-                        className="w-full text-right bg-transparent outline-none font-bold text-green-700" />
-                    </td>
-                    <td className="py-1.5 px-2 border-r border-gray-100">
-                      <input type="number" value={row.selling_price} onChange={e => handleRowChange(i, "selling_price", e.target.value)}
-                        className="w-full text-right bg-transparent outline-none font-bold text-gray-800" />
-                    </td>
-                    <td className="py-1.5 px-2 border-r border-gray-100 text-center">
-                      <SmartSelect 
-                        value={row.gst} 
-                        onChange={e => handleRowChange(i, "gst", e.target.value)}
-                        className="bg-transparent outline-none font-bold text-gray-700 w-full text-center cursor-pointer"
-                        options={GST_RATES.map(r => ({ value: r, label: `${r}%` }))}
-                      />
-                    </td>
-                    <td className="py-1.5 px-2 text-right font-bold text-gray-900 bg-gray-50/50">₹{fmt(row.amount)}</td>
-                    <td className="py-1.5 px-2 text-center">
-                      {rows.length > 1 && <button onClick={() => removeRow(i)} className="text-red-400 font-bold hover:text-red-600">×</button>}
-                    </td>
-                  </tr>
-                ))}
-                {/* Add Row */}
-                <tr className="border-b border-gray-200">
-                  <td colSpan={10} className="py-1 px-2">
-                    <button onClick={addRow} className="text-[10px] font-bold text-[#1b4985] hover:text-blue-700 flex items-center gap-1">
-                      <Plus className="w-3 h-3" /> Add Item
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        {/* Step tabs */}
+        <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-2 shrink-0">
+          {wsteps.map((s) => (
+            <button key={s.n} onClick={() => { if (s.n <= step || customer.name) setStep(s.n); }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold cursor-pointer ${step === s.n ? "bg-[#1b4985] text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step === s.n ? "bg-white text-[#1b4985]" : "bg-slate-300 text-white"}`}>{s.n}</span>
+              {s.label}
+            </button>
+          ))}
+          <span className="ml-auto text-sm text-slate-400">Challan <span className="font-bold text-[#1b4985]">{activeBill?.billNo || "NEW"}</span></span>
+        </div>
 
-          {/* Quick Info Bar for Active Row */}
-          <div className="bg-yellow-50 border-t border-yellow-200 px-4 py-2 flex items-center gap-6 text-[11px] text-yellow-800 font-bold shrink-0 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-            <span className="flex items-center gap-1 bg-yellow-100 px-2 py-1 rounded text-yellow-900"><AlertCircle className="w-3.5 h-3.5" /> F5 - Apply Scheme</span>
-            <span className="flex items-center gap-1"><span className="text-yellow-600/70 font-medium">Margin:</span> 12.5%</span>
-            <span className="flex items-center gap-1"><span className="text-yellow-600/70 font-medium">PTR:</span> ₹45.00</span>
-            <span className="flex items-center gap-1"><span className="text-yellow-600/70 font-medium">PTS:</span> ₹52.00</span>
-            <span className="flex items-center gap-1"><span className="text-yellow-600/70 font-medium">Location:</span> RACK-A-12</span>
-            {rowSchemes[activeRowIndex] && rowSchemes[activeRowIndex].length > 0 && (
-              <div className="ml-auto text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded flex items-center gap-1">
-                <Package className="w-3.5 h-3.5"/> Scheme Active: {rowSchemes[activeRowIndex][0]?.min_qty}+{rowSchemes[activeRowIndex][0]?.free_qty} Free
-              </div>
-            )}
-          </div>
-
-          {/* Bottom Panel: Item Info + Totals */}
-          <div className="bg-white border-t-2 border-[#1b4985] flex-shrink-0">
-            <div className="grid grid-cols-5 divide-x divide-gray-200 text-sm">
-
-              {/* Item Info */}
-              <div className="px-5 py-4">
-                <p className="text-[11px] uppercase tracking-widest text-[#1b4985] mb-2 font-black border-b border-gray-100 pb-1">Item Info</p>
-                <div className="space-y-1">
-                  <div className="flex justify-between font-bold"><span className="text-gray-500">Item:</span><span className="text-gray-900 truncate ml-1">{activeRowData.name || '—'}</span></div>
-                  <div className="flex justify-between font-bold"><span className="text-gray-500">Batch:</span><span className="text-gray-900">{activeRowData.batch || '—'}</span></div>
-                  <div className="flex justify-between font-bold"><span className="text-gray-500">Stock:</span><span className={` ${(activeRowData.availableQty || 0) < 10 ? 'text-red-600' : 'text-green-700'}`}>{activeRowData.availableQty ?? '—'}</span></div>
-                  <div className="flex justify-between font-bold"><span className="text-gray-500">MRP:</span><span className="text-gray-900">₹{fmt(activeRowData.mrp)}</span></div>
-                </div>
-              </div>
-
-              {/* Customer */}
-              <div className="px-5 py-4">
-                <p className="text-[11px] uppercase tracking-widest text-[#1b4985] mb-2 font-black border-b border-gray-100 pb-1">Customer [F3]</p>
-                <input id="search-customer" type="text" list="customer-list" value={customer.name}
-                  onChange={(e) => handleCustomerSelect(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); const found = customers.find(c => c.name.toLowerCase() === (customer.name || '').toLowerCase()); if (found) showPartyHistory(found); else document.getElementById('search-product-0')?.focus(); } }}
-                  className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm font-black bg-yellow-50 focus:outline-none focus:border-[#1b4985] mb-2" placeholder="Search..." />
-                <datalist id="customer-list">{customers.map(c => <option key={c.id} value={c.name} />)}</datalist>
-                <div className="flex justify-between font-bold mt-1"><span className="text-gray-500">Phone:</span><span className="text-gray-900">{customer.phone || '—'}</span></div>
-                <div className="flex justify-between font-bold mt-1"><span className="text-gray-500">GSTIN:</span><span className="text-gray-900 text-[11px]">{customer.gstNumber || '—'}</span></div>
-              </div>
-
-              {/* GST Summary */}
-              <div className="px-5 py-4">
-                <p className="text-[11px] uppercase tracking-widest text-[#1b4985] mb-2 font-black border-b border-gray-100 pb-1">GST</p>
-                <div className="flex justify-between py-1 font-bold"><span className="text-gray-500">Taxable:</span><span className="text-gray-900">₹{fmt(grossAmount)}</span></div>
-                <div className="flex justify-between py-1 font-bold"><span className="text-gray-500">SGST:</span><span className="text-gray-900">₹{fmt(sgstAmount)}</span></div>
-                <div className="flex justify-between py-1 font-bold"><span className="text-gray-500">CGST:</span><span className="text-gray-900">₹{fmt(cgstAmount)}</span></div>
-              </div>
-
-              {/* Value / Discount */}
-              <div className="px-5 py-4">
-                <p className="text-[11px] uppercase tracking-widest text-[#1b4985] mb-2 font-black border-b border-gray-100 pb-1">Value</p>
-                <div className="flex justify-between py-1 font-bold"><span className="text-gray-500">Items/Qty:</span><span className="text-gray-900">{rows.length} | {totalQty} + {totalFree}F</span></div>
-                <div className="flex justify-between py-1 font-bold items-center"><span className="text-gray-500">Discount:</span>
-                  <input type="number" value={discount} onChange={e => setDiscount(e.target.value)}
-                    className="w-20 text-right font-black text-red-600 bg-red-50 border border-red-200 outline-none px-1 py-0.5 rounded" />
-                </div>
-                <div className="flex justify-between py-1 font-bold"><span className="text-gray-500">Round Off:</span><span className="text-gray-900">₹{roundOff}</span></div>
-              </div>
-
-              {/* Grand Total */}
-              <div className="px-5 py-4 bg-green-50 flex flex-col justify-center">
-                <p className="text-[12px] uppercase tracking-widest text-green-700 mb-1 font-black border-b border-green-200 pb-1">GRAND TOTAL</p>
-                <div className="text-4xl font-black text-green-700 mt-1 mb-2 tracking-tighter">₹{grandTotal.toLocaleString('en-IN')}</div>
-                <div className="mt-auto flex gap-2 flex-col">
-                  <button
-                    onClick={handleSaveBill}
-                    tabIndex={-1}
-                    className="w-full bg-emerald-600 text-white font-black text-[13px] px-3 py-2.5 rounded hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    ✓ Finish Challan
-                    <span className="text-[10px] font-normal opacity-90 ml-auto">Shift + Enter</span>
-                  </button>
-                  <button onClick={handleSaveBill}
-                    className="w-full bg-[#1b4985] text-white font-black text-[13px] px-3 py-2.5 rounded hover:bg-blue-800 transition-colors flex items-center justify-center gap-2">
-                    <Check className="w-4 h-4" /> Save Bill [F10]
+        {/* Content */}
+        <div className="flex-1 overflow-auto p-6" data-form-scope>
+          {/* STEP 1 (New) + STEP 4 (Bill Entry) share the bill canvas */}
+          {(step === 1 || step === 4) && (
+            <div className="flex gap-6">
+              <div className="flex-1 flex flex-col gap-4 min-w-0">
+                {/* Party name card */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-slate-400 uppercase tracking-wide">Party Name</div>
+                    <div className={`text-xl font-bold ${customer.name ? "text-slate-900" : "text-slate-300"}`}>{customer.name || "No party selected"}</div>
+                  </div>
+                  <button onClick={() => setStep(2)} className="flex items-center gap-2 bg-[#1b4985] hover:bg-[#163a6b] text-white px-5 py-2.5 rounded-lg font-semibold cursor-pointer">
+                    <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">?</span> Select Party
                   </button>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Shortcut Bar */}
-          <div className="bg-gray-100 border-t border-gray-200 px-6 py-2.5 flex items-center gap-6 text-xs text-gray-600 font-bold flex-shrink-0 shadow-inner">
-            <span><span className="text-[#1b4985] font-black mr-1">Alt+F1</span> Others</span>
-            <span><span className="text-[#1b4985] font-black mr-1">F3</span> Edit</span>
-            <span><span className="text-red-600 font-black mr-1">Enter</span> Register</span>
-            <span><span className="text-[#1b4985] font-black mr-1">F3</span> Bank Reco</span>
-            <span><span className="text-[#1b4985] font-black mr-1">F10</span> Filter</span>
-            <span><span className="text-[#1b4985] font-black mr-1">F8</span> PDC Issue</span>
-            <span><span className="text-red-600 font-black mr-1">Ctrl+F1</span> Summary</span>
-            <div className="ml-auto flex items-center gap-3">
-              <span className="text-gray-500 font-bold bg-white px-3 py-1 rounded border border-gray-200">Last Bill: {bills[0]?.billNo || '—'}</span>
-            </div>
-          </div>
-
-          <PartyHistoryModal
-            data={partyHistory}
-            label="Party"
-            onOk={closePartyHistory}
-            onCancel={() => { setPartyHistory(null); setTimeout(() => document.getElementById('search-customer')?.focus(), 50); }}
-          />
-
-          {/* Debtors Modal */}
-          {showDebtorsModal && (
-            <div className="absolute inset-0 bg-black/30 z-50 flex items-center justify-center" onClick={() => setShowDebtorsModal(false)}>
-              <div className="bg-white rounded-lg shadow-2xl border border-gray-300 w-[380px]" onClick={e => e.stopPropagation()}>
-                <div className="bg-[#1b4985] text-white px-4 py-2 rounded-t-lg flex items-center justify-between">
-                  <span className="text-sm font-bold">DEBTORS: WHOLE</span>
-                  <button onClick={() => setShowDebtorsModal(false)}><X className="w-4 h-4" /></button>
+                {/* Product grid */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="grid grid-cols-[2fr_1fr_1.2fr_0.8fr_0.8fr_1fr_0.8fr_1.2fr] bg-[#1b4985] text-white text-sm font-semibold">
+                    <div className="px-4 py-2.5">PRODUCT</div><div className="px-2 py-2.5">PACK</div><div className="px-2 py-2.5">BATCH</div>
+                    <div className="px-2 py-2.5 text-right">QTY</div><div className="px-2 py-2.5 text-right">FREE</div><div className="px-2 py-2.5 text-right">RATE</div>
+                    <div className="px-2 py-2.5 text-right">GST %</div><div className="px-2 py-2.5 text-right">AMOUNT</div>
+                  </div>
+                  {step === 1 ? (
+                    <div className="px-4 py-3 text-[#1b4985] bg-blue-50/60 text-sm">Select a party to begin adding products…</div>
+                  ) : (
+                    rows.map((row, i) => {
+                      const searchVal = row.searchStr !== undefined ? row.searchStr : row.name;
+                      const filtered = items.filter((it) => !searchVal || it.name.toLowerCase().includes(searchVal.toLowerCase()));
+                      return (
+                        <div key={i} data-billrow className="grid grid-cols-[2fr_1fr_1.2fr_0.8fr_0.8fr_1fr_0.8fr_1.2fr] items-center border-b border-slate-100 hover:bg-slate-50 text-base" onFocus={() => setActiveRowIndex(i)}>
+                          <div className="px-2 py-1.5 relative">
+                            <input id={`search-product-${i}`} value={searchVal}
+                              onChange={(e) => { handleItemSelect(i, e.target.value); setActiveDropdown(`item-${i}`); setDropdownIndex(0); }}
+                              onFocus={() => { setActiveRowIndex(i); setActiveDropdown(`item-${i}`); setDropdownIndex(0); }}
+                              onBlur={() => setTimeout(() => setActiveDropdown((prev) => prev === `item-${i}` ? null : prev), 200)}
+                              aria-expanded={activeDropdown === `item-${i}` ? "true" : "false"}
+                              onKeyDown={(e) => {
+                                if (activeDropdown !== `item-${i}`) return;
+                                if (e.key === "ArrowDown") { e.preventDefault(); e.stopPropagation(); setDropdownIndex((p) => Math.min(p + 1, filtered.length - 1)); }
+                                else if (e.key === "ArrowUp") { e.preventDefault(); e.stopPropagation(); setDropdownIndex((p) => Math.max(p - 1, 0)); }
+                                else if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault(); e.stopPropagation();
+                                  const it = filtered[dropdownIndex];
+                                  if (it) handleItemSelect(i, `${it.name}${it.batch ? " | Batch: " + it.batch : ""}`);
+                                  else if ((searchVal || "").trim()) handleItemSelect(i, searchVal);
+                                  else { setActiveDropdown(null); return; }
+                                  setActiveDropdown(null);
+                                  if (i === rows.length - 1) setTimeout(() => addRow(), 0);
+                                  setTimeout(() => { const tr = e.target.closest("[data-billrow]"); tr?.querySelector("input[data-qty]")?.focus(); }, 50);
+                                } else if (e.key === "Escape") { e.preventDefault(); setActiveDropdown(null); }
+                              }}
+                              placeholder={i === rows.length - 1 ? "Type to add item…" : ""}
+                              className="w-full bg-transparent outline-none font-semibold" />
+                            {activeDropdown === `item-${i}` && filtered.length > 0 && (
+                              <ul className="absolute left-2 top-full mt-0.5 w-[440px] bg-white border border-gray-300 shadow-xl z-50 max-h-56 overflow-auto">
+                                {filtered.map((it, di) => (
+                                  <li key={it.id || di} className={`px-3 py-1.5 cursor-pointer text-sm border-b border-gray-100 ${di === dropdownIndex ? "bg-blue-100" : "hover:bg-blue-50"}`}
+                                    onMouseDown={(e) => { e.preventDefault(); handleItemSelect(i, `${it.name}${it.batch ? " | Batch: " + it.batch : ""}`); setActiveDropdown(null); if (i === rows.length - 1) setTimeout(() => addRow(), 0); }}>
+                                    <div className="flex justify-between font-semibold"><span>{it.name}</span><span className="text-emerald-700">₹{it.selling_price || it.mrp || 0}</span></div>
+                                    <div className="flex justify-between text-xs text-gray-500"><span>Batch {it.batch || "-"}</span><span>Stock {it.stock_qty || 0}</span></div>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                          <div className="px-2 py-1.5 text-slate-600">{row.pack || "—"}</div>
+                          <div className="px-2 py-1.5 text-slate-600">{row.batch || "—"}</div>
+                          <div className="px-1 py-1.5"><input data-qty type="number" min="1" value={row.qty} onChange={(e) => handleRowChange(i, "qty", e.target.value)} className="w-full text-right bg-transparent outline-none font-bold" /></div>
+                          <div className="px-1 py-1.5"><input type="number" min="0" value={row.schemeQty} onChange={(e) => handleRowChange(i, "schemeQty", e.target.value)} className="w-full text-right bg-transparent outline-none text-emerald-700 font-bold" /></div>
+                          <div className="px-1 py-1.5"><input type="number" value={row.selling_price} onChange={(e) => handleRowChange(i, "selling_price", e.target.value)} className="w-full text-right bg-transparent outline-none" /></div>
+                          <div className="px-1 py-1.5"><input type="number" value={row.gst} onChange={(e) => handleRowChange(i, "gst", e.target.value)} className="w-full text-right bg-transparent outline-none" /></div>
+                          <div className="px-2 py-1.5 text-right font-bold">{row.name ? fmt(row.amount) : ""}</div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
-                <div className="p-4 space-y-2.5 text-xs">
-                  {[
-                    { label: 'As On Date', key: 'asOnDate', type: 'date' },
-                    { label: 'Series', key: 'series', type: 'text' },
-                    { label: 'Negative Amount', key: 'negativeAmount', type: 'select', options: ['No', 'Yes'] },
-                    { label: 'P.D.Cheque', key: 'pdCheque', type: 'select', options: ['With', 'Without'] },
-                    { label: 'W/o Repl./Adv.', key: 'woRepl', type: 'select', options: ['T-All', 'T-Yes', 'T-No'] },
-                    { label: 'Load Cash', key: 'loadCash', type: 'select', options: ['No', 'Yes'] },
-                    { label: 'Party Category', key: 'partyCategory', type: 'select', options: ['All', 'Retail', 'Wholesale'] },
-                    { label: 'Remark', key: 'remark', type: 'text' },
-                    { label: 'More Options', key: 'moreOptions', type: 'select', options: ['No', 'Yes'] },
-                  ].map(field => (
-                    <div key={field.key} className="flex items-center justify-between">
-                      <label className="text-gray-600 font-medium w-36">{field.label}</label>
-                      {field.type === 'select' ? (
-                        <SmartSelect value={debtorsConfig[field.key]} onChange={e => setDebtorsConfig(p => ({...p, [field.key]: e.target.value}))}
-                          className="border border-gray-300 rounded px-2 py-1 text-xs flex-1 ml-2 focus:outline-none focus:border-[#1b4985]"
-                          options={field.options.map(o => ({ value: o, label: o }))}
-                        />
-                      ) : (
-                        <input type={field.type} value={debtorsConfig[field.key]} onChange={e => setDebtorsConfig(p => ({...p, [field.key]: e.target.value}))}
-                          className="border border-gray-300 rounded px-2 py-1 text-xs flex-1 ml-2 focus:outline-none focus:border-[#1b4985]" />
-                      )}
+
+                {/* Selected line + totals */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                    <div className="text-sm font-semibold text-slate-400 uppercase mb-2">Selected Line</div>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between"><span className="text-slate-500">Item</span><span className="font-semibold">{activeRowData.name || "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Batch</span><span className="font-semibold">{activeRowData.batch || "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Expiry</span><span className="font-semibold">{activeRowData.expiry ? new Date(activeRowData.expiry).toLocaleDateString("en-GB") : "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Stock</span><span className="font-semibold">{activeRowData.availableQty ?? "—"}</span></div>
                     </div>
-                  ))}
+                  </div>
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                    <div className="space-y-1.5 text-sm">
+                      <div className="flex justify-between"><span className="text-slate-500">Value of Goods</span><span className="font-semibold">{fmt(grossAmount)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Discount</span><span className="font-semibold">{fmt(discount)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">GST</span><span className="font-semibold">{fmt(sgstAmount + cgstAmount)}</span></div>
+                      <div className="border-t pt-2 flex justify-between items-center"><span className="font-bold text-[#1b4985]">CHALLAN VALUE</span><span className="text-3xl font-extrabold text-[#1b4985]">{fmt(grandTotal)}</span></div>
+                    </div>
+                    {step === 4 && (
+                      <button onClick={() => handleSaveBillRef.current?.()} className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-bold cursor-pointer">Finish Challan (Shift + Enter)</button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-200">
-                  <button onClick={() => setShowDebtorsModal(false)}
-                    className="px-4 py-1.5 bg-[#1b4985] text-white text-xs font-bold rounded hover:bg-blue-800 transition-colors">Ok</button>
-                  <button onClick={() => setShowDebtorsModal(false)}
-                    className="px-4 py-1.5 bg-gray-200 text-gray-700 text-xs font-bold rounded hover:bg-gray-300 transition-colors">Cancel</button>
+              </div>
+
+              {/* Right info panel */}
+              <div className="w-72 shrink-0">
+                <div className="bg-[#0e2440] text-white rounded-xl p-5">
+                  <div className="font-bold text-blue-200 uppercase text-sm mb-2">{step === 4 ? "Bill Entry" : "New Challan"}</div>
+                  <p className="text-sm text-blue-100/80 mb-4">{step === 4 ? "Type a product, Enter to move across, Shift+Enter to finish." : "Date is set to today. Press ? or use the button to pick a party from your ledgers, then start scanning products."}</p>
+                  <div className="space-y-2 text-sm border-t border-white/10 pt-3">
+                    <div className="flex justify-between"><span className="text-blue-300">Date</span><span>{now.toLocaleDateString("en-GB")}</span></div>
+                    <div className="flex justify-between"><span className="text-blue-300">Series</span><span>Credit Sale</span></div>
+                    <div className="flex justify-between"><span className="text-blue-300">Counter</span><span>Main</span></div>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-        </main>
+          {/* STEP 2 — Select Party */}
+          {step === 2 && (
+            <div className="flex gap-6">
+              <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-w-0">
+                <div className="px-5 py-3 flex items-center justify-between border-b border-slate-200">
+                  <span className="font-bold text-slate-800">Select Ledger / Party</span>
+                  <span className="text-sm text-slate-400">Top Ordering · A→Z</span>
+                </div>
+                <div className="px-5 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="text-[#1b4985] font-bold">?&gt;&gt;</span>
+                    <input id="party-search" value={partySearch}
+                      onChange={(e) => { setPartySearch(e.target.value); setPartyIndex(0); }}
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowDown") { e.preventDefault(); setPartyIndex((p) => Math.min(p + 1, partyList.length - 1)); }
+                        else if (e.key === "ArrowUp") { e.preventDefault(); setPartyIndex((p) => Math.max(p - 1, 0)); }
+                        else if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); if (hp) selectParty(hp); }
+                      }}
+                      placeholder="Type to search party…" autoComplete="off"
+                      className="flex-1 bg-transparent outline-none text-lg" />
+                  </div>
+                  <span className="text-sm text-slate-400">{partyList.length} matches</span>
+                </div>
+                <div className="flex-1 overflow-auto">
+                  <div className="grid grid-cols-[2fr_1.2fr_1fr] bg-slate-100 text-slate-500 text-sm font-semibold sticky top-0">
+                    <div className="px-5 py-2">PARTY NAME</div><div className="px-2 py-2">STATION</div><div className="px-2 py-2 text-right">BALANCE</div>
+                  </div>
+                  {partyList.map((c, i) => (
+                    <div key={c.id || i} onClick={() => setPartyIndex(i)} onDoubleClick={() => selectParty(c)}
+                      className={`grid grid-cols-[2fr_1.2fr_1fr] items-center cursor-pointer border-b border-slate-50 ${i === partyIndex ? "bg-blue-50 border-l-4 border-l-[#1b4985]" : "hover:bg-slate-50 border-l-4 border-l-transparent"}`}>
+                      <div className={`px-5 py-2.5 ${i === partyIndex ? "font-bold text-[#1b4985]" : "text-slate-800"}`}>{c.name}</div>
+                      <div className="px-2 py-2.5 text-slate-500">{c.address || "—"}</div>
+                      <div className="px-2 py-2.5 text-right">{c.balance ? <span className={`font-bold ${c.balance > 0 ? "text-red-600" : "text-emerald-700"}`}>{fmt(Math.abs(c.balance))} <span className="text-xs">{c.balance > 0 ? "Dr" : "Cr"}</span></span> : ""}</div>
+                    </div>
+                  ))}
+                  {partyList.length === 0 && <div className="px-5 py-10 text-center text-slate-400">No matching parties.</div>}
+                </div>
+              </div>
+
+              {/* Highlighted party panel */}
+              <div className="w-80 shrink-0">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="bg-[#1b4985] text-white px-4 py-2.5 font-bold">Highlighted Party</div>
+                  {hp ? (
+                    <div className="p-4">
+                      <div className="text-lg font-bold text-slate-900 mb-2">{hp.name}</div>
+                      <div className="flex gap-2 mb-3">
+                        <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Debtor</span>
+                        <span className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded">{hp.gstNumber ? "Registered" : "Unregistered"}</span>
+                      </div>
+                      <div className="space-y-1.5 text-sm">
+                        <div className="flex justify-between"><span className="text-slate-400">Address</span><span className="font-semibold">{hp.address || "—"}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-400">Phone</span><span className="font-semibold">{hp.phone || "—"}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-400">Balance</span><span className="font-semibold">{fmt(hp.balance)}</span></div>
+                      </div>
+                      <button onClick={() => selectParty(hp)} className="w-full mt-4 bg-[#1b4985] hover:bg-[#163a6b] text-white py-2.5 rounded-lg font-bold cursor-pointer">Select Party →</button>
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center text-slate-400 text-sm">Type to find a party.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3 — Party Status */}
+          {step === 3 && (
+            <div className="flex gap-6">
+              <div className="flex-1 space-y-4 min-w-0">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-slate-400 uppercase">Party Name</div>
+                    <div className="text-2xl font-bold text-slate-900">{customer.name}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold bg-emerald-100 text-emerald-700 px-3 py-1 rounded">R Credit</span>
+                    <span className="text-sm font-semibold text-slate-600">{now.toLocaleDateString("en-GB")}</span>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="bg-[#1b4985] text-white px-5 py-2.5 font-bold">Party History</div>
+                  <div className="grid grid-cols-2">
+                    <div className="p-5 space-y-2 text-sm border-r border-slate-100">
+                      {[["Sale (Annual)", "0"], ["Sale (Month)", "0"], ["Credit Limit", fmt(ph.customer?.creditLimit)], ["Balance", fmt(ph.balance)], ["Last Receipt", "—"], ["Last Sale", lastSale ? new Date(lastSale).toLocaleDateString("en-GB") : "—"], ["P.D.C.", "Nil"], ["Collection Days", "All Days"]].map(([k, v]) => (
+                        <div key={k} className="flex justify-between"><span className="text-slate-500">{k}</span><span className="font-bold text-slate-800">{v}</span></div>
+                      ))}
+                    </div>
+                    <div className="p-5">
+                      <div className="grid grid-cols-4 text-xs font-semibold text-slate-400 border-b border-slate-200 pb-2"><span>BILL</span><span>DATE</span><span className="text-right">AMOUNT</span><span className="text-right">DAYS</span></div>
+                      {phInvoices.length ? phInvoices.slice().reverse().slice(0, 8).map((e, i) => (
+                        <div key={i} className="grid grid-cols-4 text-sm py-1.5 border-b border-slate-50"><span className="font-mono">{e.ref}</span><span>{new Date(e.date).toLocaleDateString("en-GB")}</span><span className="text-right font-semibold">{fmt(e.debit)}</span><span className="text-right">—</span></div>
+                      )) : <div className="py-10 text-center text-slate-400">No outstanding bills</div>}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <button id="proceed-billing" onClick={proceedToBilling} className="bg-[#1b4985] hover:bg-[#163a6b] text-white px-6 py-3 rounded-lg font-bold cursor-pointer">Proceed to Billing →</button>
+                </div>
+              </div>
+              {/* Customer status panel */}
+              <div className="w-80 shrink-0">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="bg-[#1b4985] text-white px-4 py-2.5 font-bold">Customer Status</div>
+                  <div className="p-4">
+                    <div className="text-lg font-bold text-slate-900 mb-2">{customer.name}</div>
+                    <div className="space-y-1.5 text-sm">
+                      <div className="flex justify-between"><span className="text-slate-400">Mobile</span><span className="font-semibold">{customer.phone || "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">Type</span><span className="font-semibold">Manual Indicate</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">Outstanding</span><span className="font-bold">{fmt(ph.balance)}</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* F-key bar */}
+        <div className="bg-white border-t border-slate-200 px-6 py-2 flex items-center gap-3 text-sm text-slate-500 shrink-0">
+          {[["F2", "New"], ["F3", "Edit"], ["F4", "Ledger"], ["F6", "PDC"], ["F7", "All"], ["F8", "O/S"], ["F10", "Balance"], ["?", "Search"], ["Alt+S", "Filter"]].map(([k, l]) => (
+            <span key={k}><span className="font-bold text-[#1b4985] bg-slate-100 px-1.5 py-0.5 rounded">{k}</span> {l}</span>
+          ))}
+          <span className="ml-auto">Esc <span className="text-slate-400">= step back</span></span>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   // ── PREVIEW VIEW ──
   if (view === "preview" && activeBill) {
