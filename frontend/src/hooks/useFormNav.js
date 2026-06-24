@@ -16,6 +16,10 @@ export function useFormNav() {
 
     const handleKeyDown = (e) => {
       if (e.key !== 'Enter') return;
+      // Shift+Enter is reserved app-wide for "finish/save" (useDocumentKeyboard
+      // and the per-form save handlers). Esc now handles reverse navigation, so
+      // don't hijack Shift+Enter for backward field movement.
+      if (e.shiftKey) return;
 
       const active = document.activeElement;
       if (!active) return;
