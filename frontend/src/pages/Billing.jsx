@@ -45,10 +45,13 @@ const emptyRow = {
   selling_price: "",
   mrp: "",
   gst: 12,
+  disc: 0,
   amount: 0,
   availableQty: null,
   availableSchemeQty: null,
 };
+
+const fmt = (v) => Number(v || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function Billing() {
   const [bills, setBills] = useState([]);
@@ -92,49 +95,56 @@ export default function Billing() {
   const [showScanner, setShowScanner] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [dropdownIndex, setDropdownIndex] = useState(0);
+  // Wizard: 1 New · 2 Select Party · 3 Party Status · 4 Bill Entry
+  const [step, setStep] = useState(1);
+  const [partySearch, setPartySearch] = useState("");
+  const [partyIndex, setPartyIndex] = useState(0);
+  const [billDate, setBillDate] = useState(new Date().toISOString().slice(0, 10));
+  const [billType, setBillType] = useState("Cash"); // Cash | Credit
+  const [activeRowIndex, setActiveRowIndex] = useState(0);
   const { confirm, ConfirmModalComponent } = useConfirm();
   const handleSaveBillRef = useRef(null);
 
   // Keep handleSaveBillRef always pointing at the latest handleSaveBill
   useEffect(() => { handleSaveBillRef.current = handleSaveBill; });
 
-  // F-key listener for create view
+  // F-key + wizard navigation for create view
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'F4') {
-        e.preventDefault();
-        setShowScanner(true);
-      }
-      if (e.key === 'Escape') {
-        // Boundary step only: useEscReverse handles reversing through inputs and
-        // claims the event when it does. If it (or a dropdown close) already
-        // handled this Esc, bail. Otherwise we're at the first input, so step
-        // the view back: preview -> create -> list. preventDefault only when we
-        // actually step, so on the list the global handler goes back a page.
-        if (e.defaultPrevented) return;
-        setShowScanner(false);
-        if (view === 'preview') { e.preventDefault(); setView('create'); return; }
-        if (view === 'create') { e.preventDefault(); resetForm(); return; }
-      }
+      if (e.key === 'F4') { e.preventDefault(); setShowScanner(true); }
       if (e.key === 'F2') {
         e.preventDefault();
-        if (view === 'list') setView('create');
-        else if (view === 'create') document.getElementById('search-product-0')?.focus();
+        if (view === 'list') { setView('create'); setStep(1); }
+        else if (view === 'create') setStep(1);
       }
       if (view !== "create") return;
-      if (e.key === "F3") { e.preventDefault(); document.getElementById('search-customer')?.focus(); }
+      if (e.key === "F3") { e.preventDefault(); setStep(2); }
       if (e.key === "F10") { e.preventDefault(); handleSaveBillRef.current?.(); }
+      if (e.key === 'Escape') {
+        if (e.defaultPrevented) return; // useEscReverse / dropdown already handled it
+        if (showScanner) { e.preventDefault(); setShowScanner(false); return; }
+        // Wizard: step one back (4→3→2→1); from step 1 leave to the list.
+        e.preventDefault();
+        if (step > 1) setStep((s) => s - 1);
+        else resetForm();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [view]);
+  }, [view, step, showScanner]);
 
-  // Auto-focus customer name when entering create view
+  // Reset wizard to step 1 when entering create; focus each step's control.
   useEffect(() => {
-    if (view === 'create') {
-      focusFirstField('#search-customer, [placeholder="Search Customer..."]');
-    }
+    if (view === 'create') { setStep(1); setPartySearch(""); setPartyIndex(0); }
   }, [view]);
+  useEffect(() => {
+    if (view !== 'create') return;
+    const focusId = (id) => setTimeout(() => document.getElementById(id)?.focus(), 60);
+    if (step === 1) focusId('select-party-btn');
+    if (step === 2) focusId('party-search');
+    if (step === 3) focusId('proceed-billing');
+    if (step === 4) focusId('bill-date-input');
+  }, [view, step]);
 
   // Shift+Enter finishes/saves the bill from anywhere in the create view.
   // Capture phase so it isn't pre-empted by the global Enter-navigation hooks.
@@ -249,6 +259,22 @@ export default function Billing() {
     setTimeout(() => document.getElementById('bill-date')?.focus(), 50);
   };
 
+  // ── Wizard helpers ──
+  const selectParty = (cust) => {
+    if (!cust) return;
+    handleCustomerSelect(cust.name);
+    setStep(3);
+    if (cust.id) {
+      setPartyHistory({ loading: true, customer: cust, entries: [], balance: cust.balance || 0 });
+      axios.get(`/customers/${cust.id}/ledger`)
+        .then((res) => setPartyHistory({ loading: false, customer: res.data?.customer || cust, entries: res.data?.entries || [], balance: res.data?.finalBalance ?? cust.balance ?? 0 }))
+        .catch(() => setPartyHistory({ loading: false, customer: cust, entries: [], balance: cust.balance || 0, error: true }));
+    } else {
+      setPartyHistory({ loading: false, customer: cust, entries: [], balance: 0 });
+    }
+  };
+  const proceedToBilling = () => { setStep(4); setTimeout(() => document.getElementById('bill-date-input')?.focus(), 80); };
+
   const fetchSettings = () =>
     axios
       .get("/settings")
@@ -335,7 +361,7 @@ export default function Billing() {
         amount: calculateAmount(
           found.selling_price || found.mrp,
           updated[index].qty,
-          updated[index].gst,
+          updated[index].disc,
         ),
       };
       checkScheme(index, found.name, updated[index].qty);
@@ -349,15 +375,16 @@ export default function Billing() {
     setRows(updated);
   };
 
-  const calculateAmount = (mrp, qty, _gst) => {
-    const base = parseFloat(mrp || 0) * parseInt(qty || 1);
-    return parseFloat(base.toFixed(2));
+  // Line amount = rate × qty, less DIS%. GST applied on the taxable total.
+  const calculateAmount = (rate, qty, disc) => {
+    const base = parseFloat(rate || 0) * parseInt(qty || 1);
+    return parseFloat((base * (1 - (parseFloat(disc || 0) / 100))).toFixed(2));
   };
 
   const handleRowChange = (index, field, value) => {
     // Coerce numeric fields so they aren't stored as strings
     if (field === 'qty' || field === 'schemeQty') value = parseInt(value) || 0;
-    if (field === 'gst') value = parseFloat(value) || 0;
+    if (field === 'gst' || field === 'disc') value = parseFloat(value) || 0;
     if (field === 'selling_price' || field === 'mrp') value = parseFloat(value) || 0;
 
     const updated = [...rows];
@@ -365,7 +392,7 @@ export default function Billing() {
     updated[index].amount = calculateAmount(
       field === "selling_price" ? value : updated[index].selling_price,
       field === "qty" ? value : updated[index].qty,
-      field === "gst" ? value : updated[index].gst,
+      field === "disc" ? value : updated[index].disc,
     );
     setRows(updated);
     // Re-check scheme if qty changed
@@ -374,7 +401,7 @@ export default function Billing() {
     }
   };
 
-  const addRow = () => setRows([...rows, { ...emptyRow }]);
+  const addRow = () => setRows((prev) => [...prev, { ...emptyRow }]);
   const removeRow = (i) => {
     setRows(rows.filter((_, idx) => idx !== i));
     setRowSchemes((prev) => {
@@ -389,18 +416,21 @@ export default function Billing() {
     });
   };
 
-  const subtotal = rows.reduce(
-    (s, r) =>
-      s + parseFloat(r.selling_price || r.mrp || 0) * parseInt(r.qty || 1),
-    0,
-  );
-  const gstAmount = rows.reduce((s, r) => {
-    const base =
-      parseFloat(r.selling_price || r.mrp || 0) * parseInt(r.qty || 1);
-    return s + (base * r.gst) / 100;
-  }, 0);
-
-  const total = subtotal + gstAmount - parseFloat(discount || 0);
+  // ── Computed totals (match the bill-entry layout) ──
+  const mrpValue = rows.reduce((s, r) => s + parseFloat(r.mrp || 0) * parseInt(r.qty || 0), 0);
+  const grossBeforeDisc = rows.reduce((s, r) => s + parseFloat(r.selling_price || r.mrp || 0) * parseInt(r.qty || 0), 0);
+  const valueOfGoods = rows.reduce((s, r) => s + parseFloat(r.amount || 0), 0); // taxable, after DIS%
+  const discountAmt = grossBeforeDisc - valueOfGoods;
+  const gstAmt = rows.reduce((s, r) => s + parseFloat(r.amount || 0) * parseFloat(r.gst || 0) / 100, 0);
+  const sgstAmount = gstAmt / 2;
+  const cgstAmount = gstAmt / 2;
+  const preRound = valueOfGoods + gstAmt;
+  const challanValue = Math.round(preRound);
+  const roundOff = (challanValue - preRound).toFixed(2);
+  const totalQty = rows.reduce((s, r) => s + parseInt(r.qty || 0), 0);
+  const totalFree = rows.reduce((s, r) => s + parseInt(r.schemeQty || 0), 0);
+  const avgGstPct = valueOfGoods > 0 ? Math.round((gstAmt / valueOfGoods) * 100) : 0;
+  const activeRowData = rows[activeRowIndex] || rows[0] || {};
 
   const handleSaveBill = async () => {
     if (!customer.name) return 
@@ -424,7 +454,7 @@ export default function Billing() {
       customerDl: customer.dlNumber,
       customerGst: customer.gstNumber,
       dueDate: customer.dueDate || null,
-      date: customer.date || null,
+      date: billDate || customer.date || null,
       transportDetails: customer.transportDetails,
       salesmanId: selectedSalesman.id || null,
       salesmanName: selectedSalesman.name || "",
@@ -432,17 +462,18 @@ export default function Billing() {
         ...r,
         qty: parseInt(r.qty) || 1,
         schemeQty: parseInt(r.schemeQty) || 0,
-        discount: parseFloat(r.discount) || 0,
+        disc: parseFloat(r.disc) || 0,
+        discount: parseFloat(r.disc) || 0,
         gst: parseFloat(r.gst) || 0,
         amount: parseFloat(r.amount) || 0,
         mrp: parseFloat(r.mrp) || 0,
         selling_price: parseFloat(r.selling_price) || 0,
       })),
-      subtotal: parseFloat(subtotal.toFixed(2)) || 0,
-      gstAmount: parseFloat(gstAmount.toFixed(2)) || 0,
-      discount: parseFloat(parseFloat(discount || 0).toFixed(2)) || 0,
-      total: parseFloat(total.toFixed(2)) || 0,
-      paymentMode,
+      subtotal: parseFloat(valueOfGoods.toFixed(2)) || 0,
+      gstAmount: parseFloat(gstAmt.toFixed(2)) || 0,
+      discount: parseFloat(discountAmt.toFixed(2)) || 0,
+      total: challanValue,
+      paymentMode: billType.toLowerCase() === "cash" ? "cash" : "credit",
       status: "paid",
     };
 
@@ -501,6 +532,8 @@ export default function Billing() {
     setActiveBill(null);
     setRowSchemes({});
     setView("list");
+    setStep(1); setPartySearch(""); setPartyIndex(0);
+    setBillDate(new Date().toISOString().slice(0, 10)); setBillType("Cash");
   };
 
   // ── LIST VIEW ──
@@ -750,400 +783,377 @@ export default function Billing() {
   }
 
   // ── CREATE VIEW ──
+  // ── CREATE VIEW (4-step wizard: New → Select Party → Party Status → Bill Entry) ──
   if (view === "create") {
-    // Advanced GST Computation Engine
-    const totals = rows.reduce((acc, r) => {
-       const amount = parseFloat(r.amount || 0);
-       const gstRate = parseFloat(r.gst || 0);
-       const gstValue = amount * (gstRate / 100);
-       acc.gross += amount;
-       acc.totalGst += gstValue;
-       if (gstRate === 5) acc.gst5 += gstValue;
-       else if (gstRate === 12) acc.gst12 += gstValue;
-       else if (gstRate === 18) acc.gst18 += gstValue;
-       else if (gstRate === 28) acc.gst28 += gstValue;
-       else if (gstRate === 0) acc.gst0 += gstValue;
-       return acc;
-    }, { gross: 0, totalGst: 0, gst5: 0, gst12: 0, gst18: 0, gst28: 0, gst0: 0 });
+    const q = partySearch.trim().toLowerCase();
+    const partyList = customers.filter((c) =>
+      !q || c.name.toLowerCase().includes(q) || (c.address || "").toLowerCase().includes(q) || (c.phone || "").includes(q)
+    );
+    const hp = partyList[partyIndex] || null;
+    const now = new Date();
+    const ph = partyHistory || {};
+    const phInvoices = (ph.entries || []).filter((e) => e.type === "Invoice");
+    const lastSale = phInvoices.length ? phInvoices[phInvoices.length - 1].date : null;
+    const wsteps = [
+      { n: 1, label: "New" },
+      { n: 2, label: "Select Party" },
+      { n: 3, label: "Party Status" },
+      { n: 4, label: "Bill Entry" },
+    ];
+    const dmy = (d) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
 
-    const finalAmount = totals.gross - parseFloat(discount || 0) + totals.totalGst;
-    const grandTotal = Math.round(finalAmount);
-    const totalQty = rows.reduce((sum, r) => sum + parseInt(r.qty || 0), 0);
-    const totalFree = rows.reduce((sum, r) => sum + parseInt(r.schemeQty || 0), 0);
+    const ProductRow = ({ row, i }) => {
+      const searchVal = row.searchStr !== undefined ? row.searchStr : row.name;
+      const filtered = items.filter((it) => !searchVal || it.name.toLowerCase().includes(searchVal.toLowerCase()));
+      return (
+        <div key={i} data-billrow className="grid grid-cols-[44px_2fr_1fr_1.2fr_0.8fr_0.8fr_1fr_0.8fr_1.2fr] items-center border-b border-slate-100 hover:bg-blue-50/40 text-base" onFocus={() => setActiveRowIndex(i)}>
+          <div className="px-2 py-1.5 text-slate-400 font-mono">{String(i + 1).padStart(2, "0")}</div>
+          <div className="px-2 py-1.5 relative">
+            <input id={`search-product-${i}`} value={searchVal}
+              onChange={(e) => { handleItemSelect(i, e.target.value); setActiveDropdown(`item-${i}`); setDropdownIndex(0); }}
+              onFocus={() => { setActiveRowIndex(i); setActiveDropdown(`item-${i}`); setDropdownIndex(0); }}
+              onBlur={() => setTimeout(() => setActiveDropdown((prev) => prev === `item-${i}` ? null : prev), 200)}
+              aria-expanded={activeDropdown === `item-${i}` ? "true" : "false"}
+              onKeyDown={(e) => {
+                if (activeDropdown !== `item-${i}`) return;
+                if (e.key === "ArrowDown") { e.preventDefault(); e.stopPropagation(); setDropdownIndex((p) => Math.min(p + 1, filtered.length - 1)); }
+                else if (e.key === "ArrowUp") { e.preventDefault(); e.stopPropagation(); setDropdownIndex((p) => Math.max(p - 1, 0)); }
+                else if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault(); e.stopPropagation();
+                  const it = filtered[dropdownIndex];
+                  if (it) handleItemSelect(i, `${it.name}${it.batch ? " | Batch: " + it.batch : ""}`);
+                  else if ((searchVal || "").trim()) handleItemSelect(i, searchVal);
+                  else { setActiveDropdown(null); return; }
+                  setActiveDropdown(null);
+                  if (i === rows.length - 1) setTimeout(() => addRow(), 0);
+                  setTimeout(() => { const tr = e.target.closest("[data-billrow]"); tr?.querySelector("input[data-qty]")?.focus(); }, 50);
+                } else if (e.key === "Escape") { e.preventDefault(); setActiveDropdown(null); }
+              }}
+              placeholder={i === rows.length - 1 ? "Type to add item…" : ""}
+              className="w-full bg-transparent outline-none font-semibold" />
+            {activeDropdown === `item-${i}` && filtered.length > 0 && (
+              <ul className="absolute left-2 top-full mt-0.5 w-[440px] bg-white border border-gray-300 shadow-xl z-50 max-h-56 overflow-auto">
+                {filtered.map((it, di) => (
+                  <li key={it.id || di} className={`px-3 py-1.5 cursor-pointer text-sm border-b border-gray-100 ${di === dropdownIndex ? "bg-blue-100" : "hover:bg-blue-50"}`}
+                    onMouseDown={(e) => { e.preventDefault(); handleItemSelect(i, `${it.name}${it.batch ? " | Batch: " + it.batch : ""}`); setActiveDropdown(null); if (i === rows.length - 1) setTimeout(() => addRow(), 0); }}>
+                    <div className="flex justify-between font-semibold"><span>{it.name}</span><span className="text-emerald-700">₹{it.selling_price || it.mrp || 0}</span></div>
+                    <div className="flex justify-between text-xs text-gray-500"><span>Batch {it.batch || "-"}</span><span>Stock {it.stock_qty || 0}</span></div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="px-2 py-1.5 text-slate-600">{row.pack || "—"}</div>
+          <div className="px-2 py-1.5 text-slate-600 font-mono">{row.batch || "—"}</div>
+          <div className="px-1 py-1.5"><input data-qty type="number" min="1" value={row.qty} onChange={(e) => handleRowChange(i, "qty", e.target.value)} className="w-full text-right bg-transparent outline-none font-bold" /></div>
+          <div className="px-1 py-1.5"><input type="number" min="0" value={row.schemeQty} onChange={(e) => handleRowChange(i, "schemeQty", e.target.value)} className="w-full text-right bg-transparent outline-none text-emerald-700 font-bold" /></div>
+          <div className="px-1 py-1.5"><input type="number" value={row.selling_price} onChange={(e) => handleRowChange(i, "selling_price", e.target.value)} className="w-full text-right bg-transparent outline-none" /></div>
+          <div className="px-1 py-1.5"><input type="number" value={row.disc} onChange={(e) => handleRowChange(i, "disc", e.target.value)} className="w-full text-right bg-transparent outline-none" /></div>
+          <div className="px-2 py-1.5 text-right font-bold">{row.name ? fmt(row.amount) : ""}</div>
+        </div>
+      );
+    };
 
-    const activeCustomerData = customers.find(c => c.name.toLowerCase() === (customer?.name || "").toLowerCase()) || {};
-    
-    // Fill empty rows for visual structure
-    const MIN_ROWS = 15;
-    const emptyRowsCount = Math.max(0, MIN_ROWS - rows.length);
-    const emptyRows = Array.from({ length: emptyRowsCount });
-
-    // Auto-spawn new row when the last row has data
-    const lastRow = rows[rows.length - 1];
-    if (lastRow && lastRow.name) {
-      setTimeout(() => setRows([...rows, { ...emptyRow }]), 0);
-    }
+    const GridHeader = () => (
+      <div className="grid grid-cols-[44px_2fr_1fr_1.2fr_0.8fr_0.8fr_1fr_0.8fr_1.2fr] bg-[#1b4985] text-white text-sm font-semibold">
+        <div className="px-2 py-2.5">#</div><div className="px-2 py-2.5">PRODUCT</div><div className="px-2 py-2.5">PACK</div><div className="px-2 py-2.5">BATCH</div>
+        <div className="px-1 py-2.5 text-right">QTY</div><div className="px-1 py-2.5 text-right">FREE</div><div className="px-1 py-2.5 text-right">RATE</div>
+        <div className="px-1 py-2.5 text-right">DIS %</div><div className="px-2 py-2.5 text-right">AMOUNT</div>
+      </div>
+    );
 
     return (
-      <div className="flex min-h-screen bg-[#1b4985] font-sans text-xs">
-        <Sidebar />
-        {showScanner && (
-          <Suspense fallback={null}>
-            <BarcodeScannerModal onClose={() => setShowScanner(false)} onScan={handleBarcodeScan} />
-          </Suspense>
-        )}
-        <PartyHistoryModal
-          data={partyHistory}
-          label="Party"
-          onOk={closePartyHistory}
-          onCancel={() => { setPartyHistory(null); setTimeout(() => document.getElementById('search-customer')?.focus(), 50); }}
-        />
-        <main className="flex-1 overflow-y-hidden max-h-screen flex flex-col p-1 gap-1">
-          {/* TOP HEADER SECTION */}
-          <div className="flex bg-[#1b4985] border border-white text-white p-1 shrink-0 gap-2">
-            
-            {/* Column 1: Customer Details */}
-            <div className="w-[32%] border border-slate-500 p-1">
-              <h3 className="font-bold border-b border-slate-500 pb-1 mb-1">Customer Details</h3>
-              <div className="grid grid-cols-[100px_1fr] gap-y-1 items-center">
-                <label className="text-[10px]">Customer Name</label>
-                <div className="relative w-full">
-                    <input 
-                      id="search-customer"
-                      value={customer.name} 
-                      onChange={e => handleCustomerSelect(e.target.value)} 
-                      onFocus={() => { setActiveDropdown('customer'); setDropdownIndex(0); }}
-                      onBlur={() => setTimeout(() => setActiveDropdown(prev => prev === 'customer' ? null : prev), 200)}
-                      aria-expanded={activeDropdown === 'customer' ? 'true' : 'false'}
+      <div className="flex h-screen flex-col bg-slate-100 font-sans overflow-hidden">
+        {/* Top bar */}
+        <div className="bg-[#1b4985] text-white px-6 py-3 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white text-[#1b4985] rounded-lg flex items-center justify-center font-extrabold text-lg">S</div>
+            <div>
+              <div className="font-bold leading-tight">Subhash Medicose</div>
+              <div className="text-xs text-blue-200">Cash / Credit Bill · Silver-2</div>
+            </div>
+            <span className="ml-2 bg-white/15 text-xs font-semibold px-2 py-1 rounded">FY 2026-2027</span>
+          </div>
+          <div className="text-right text-xs leading-tight">
+            <div className="font-bold">{now.toLocaleDateString("en-GB", { weekday: "short" })} · {now.toLocaleDateString("en-GB")}</div>
+            <div className="text-blue-200">{now.toLocaleTimeString("en-GB")}</div>
+          </div>
+        </div>
+
+        {/* Step tabs */}
+        <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-2 shrink-0">
+          {wsteps.map((s) => (
+            <button key={s.n} onClick={() => { if (s.n <= step || customer.name) setStep(s.n); }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold cursor-pointer ${step === s.n ? "bg-[#1b4985] text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step === s.n ? "bg-white text-[#1b4985]" : "bg-slate-300 text-white"}`}>{s.n}</span>
+              {s.label}
+            </button>
+          ))}
+          <span className="ml-auto text-sm text-slate-400">Bill <span className="font-bold text-[#1b4985]">{activeBill?.billNo || "NEW"}</span></span>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-auto p-6" data-form-scope>
+          {/* STEP 1 — New */}
+          {step === 1 && (
+            <div className="flex gap-6">
+              <div className="flex-1 flex flex-col gap-4 min-w-0">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-slate-400 uppercase tracking-wide">Party Name</div>
+                    <div className="text-xl font-bold text-slate-300">No party selected</div>
+                  </div>
+                  <button id="select-party-btn" onClick={() => setStep(2)} className="flex items-center gap-2 bg-[#1b4985] hover:bg-[#163a6b] text-white px-5 py-2.5 rounded-lg font-semibold cursor-pointer">
+                    <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">?</span> Select Party
+                  </button>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <GridHeader />
+                  <div className="px-4 py-3 text-[#1b4985] bg-blue-50/60 text-sm">Select a party to begin adding products…</div>
+                </div>
+              </div>
+              <div className="w-72 shrink-0">
+                <div className="bg-[#0e2440] text-white rounded-xl p-5">
+                  <div className="font-bold text-blue-200 uppercase text-sm mb-2">New Bill</div>
+                  <p className="text-sm text-blue-100/80 mb-4">Press Enter or use the button to pick a party from your ledgers, then capture date &amp; type and start scanning products.</p>
+                  <div className="space-y-2 text-sm border-t border-white/10 pt-3">
+                    <div className="flex justify-between"><span className="text-blue-300">Date</span><span>{dmy(billDate)}</span></div>
+                    <div className="flex justify-between"><span className="text-blue-300">Series</span><span>Credit Sale</span></div>
+                    <div className="flex justify-between"><span className="text-blue-300">Counter</span><span>Main</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2 — Select Party */}
+          {step === 2 && (
+            <div className="flex gap-6">
+              <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-w-0">
+                <div className="px-5 py-3 flex items-center justify-between border-b border-slate-200">
+                  <span className="font-bold text-slate-800">Select Ledger / Party</span>
+                  <span className="text-sm text-slate-400">Top Ordering · A→Z</span>
+                </div>
+                <div className="px-5 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="text-[#1b4985] font-bold">?&gt;&gt;</span>
+                    <input id="party-search" value={partySearch}
+                      onChange={(e) => { setPartySearch(e.target.value); setPartyIndex(0); }}
                       onKeyDown={(e) => {
-                        if (activeDropdown === 'customer') {
-                          const filtered = customers.filter(c => !customer.name || c.name.toLowerCase().includes(customer.name.toLowerCase()));
-                          if (e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setDropdownIndex(prev => Math.min(prev + 1, filtered.length - 1));
-                          } else if (e.key === 'ArrowUp') {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setDropdownIndex(prev => Math.max(prev - 1, 0));
-                          } else if (e.key === 'Enter') {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            const chosen = filtered[dropdownIndex];
-                            if (chosen) {
-                              handleCustomerSelect(chosen.name);
-                              setActiveDropdown(null);
-                              // Flow: customer → Party History → date → first item
-                              showPartyHistory(chosen);
-                            } else {
-                              handleCustomerSelect(e.target.value);
-                              setActiveDropdown(null);
-                              setTimeout(() => { document.getElementById('bill-date')?.focus(); }, 50);
-                            }
-                          } else if (e.key === 'Escape') {
-                            e.preventDefault();
-                            setActiveDropdown(null);
-                          }
-                        }
+                        if (e.key === "ArrowDown") { e.preventDefault(); setPartyIndex((p) => Math.min(p + 1, partyList.length - 1)); }
+                        else if (e.key === "ArrowUp") { e.preventDefault(); setPartyIndex((p) => Math.max(p - 1, 0)); }
+                        else if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); if (hp) selectParty(hp); }
                       }}
-                      className="bg-white text-black px-1 py-0.5 outline-none w-full font-bold" 
-                      placeholder="Search Customer..." 
-                    />
-                    {activeDropdown === 'customer' && (
-                      <ul className="absolute left-0 top-full mt-0.5 w-[300px] bg-white border border-gray-400 shadow-xl z-50 max-h-48 overflow-y-auto">
-                        {customers.filter(c => !customer.name || c.name.toLowerCase().includes(customer.name.toLowerCase())).map((c, idx) => (
-                          <li key={c.id || c.name} className={`px-2 py-1 cursor-pointer text-xs text-black border-b border-gray-100 last:border-0 ${dropdownIndex === idx ? 'bg-blue-200' : 'hover:bg-blue-50'}`} onMouseDown={(e) => { e.preventDefault(); handleCustomerSelect(c.name); setActiveDropdown(null); showPartyHistory(c); }}>
-                            <div className="font-bold">{c.name}</div>
-                            <div className="text-[10px] text-gray-500">{c.phone || c.address || 'No details'}</div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                      placeholder="Type to search party…" autoComplete="off"
+                      className="flex-1 bg-transparent outline-none text-lg" />
                   </div>
-                
-                <label className="text-[10px]">Customer ID</label>
-                <input value={activeCustomerData.id || ""} readOnly className="bg-[#e6f0fa] text-black px-1 py-0.5 outline-none w-full" />
-                
-                <label className="text-[10px]">Address</label>
-                <input value={activeCustomerData.address || ""} readOnly className="bg-[#e6f0fa] text-black px-1 py-0.5 outline-none w-full h-8" />
-                
-                <label className="text-[10px]">Phone Contact</label>
-                <input value={activeCustomerData.phone || ""} readOnly className="bg-[#e6f0fa] text-black px-1 py-0.5 outline-none w-full" />
-                
-                <label className="text-[10px]">GST Number</label>
-                <input value={activeCustomerData.gstNumber || ""} readOnly className="bg-[#e6f0fa] text-black px-1 py-0.5 outline-none w-full" />
-                
-                <label className="text-[10px]">DL Number</label>
-                <input value={activeCustomerData.dlNumber || ""} readOnly className="bg-[#e6f0fa] text-black px-1 py-0.5 outline-none w-full" />
-              </div>
-            </div>
-
-            {/* Column 2: Shop Details */}
-            <div className="w-[38%] border border-slate-500 p-1">
-              <h3 className="font-bold border-b border-slate-500 pb-1 mb-1">Transaction Details</h3>
-              <div className="grid grid-cols-[90px_1fr] gap-y-1">
-                <label className="text-[10px] mt-0.5">Salesman</label>
-                <SmartSelect 
-                  value={selectedSalesman.name} 
-                  onChange={e => {
-                    const found = salesmen.find(s => s.name === e.target.value);
-                    setSelectedSalesman(found ? { id: found.id, name: found.name } : { id: '', name: '' });
-                  }} 
-                  className="bg-white text-black px-1 py-0.5 outline-none w-full font-bold"
-                  options={[
-                    { value: '', label: 'Direct/None' },
-                    ...salesmen.map(s => ({ value: s.name, label: s.name }))
-                  ]}
-                />
-                
-                <label className="text-[10px] mt-0.5">Available Schemes</label>
-                <select size="4" className="bg-[#e6f0fa] text-black px-1 py-0.5 outline-none w-full text-[10px]">
-                  {allSchemes.length > 0 ? allSchemes.map((s, idx) => <option key={idx} disabled>{s.name} (Buy {s.buy_qty} Get {s.free_qty})</option>) : <option disabled>No Active Schemes</option>}
-                </select>
-                
-                <label className="text-[10px] mt-1">Payment Mode</label>
-                <SmartSelect 
-                  value={paymentMode} 
-                  onChange={e => setPaymentMode(e.target.value)} 
-                  className="bg-white text-black px-1 py-0.5 outline-none w-full mt-1 font-bold"
-                  options={[
-                    { value: 'cash', label: 'Cash' },
-                    { value: 'upi', label: 'UPI' },
-                    { value: 'card', label: 'Card' },
-                    { value: 'credit', label: 'Credit' }
-                  ]}
-                />
-                
-                <label className="text-[10px] mt-0.5">Transport</label>
-                <input value={customer.transportDetails} onChange={e => setCustomer({...customer, transportDetails: e.target.value})} className="bg-white text-black px-1 py-0.5 outline-none w-full mt-0.5" />
-                
-                <label className="text-[10px] mt-0.5">Due Date</label>
-                <input type="date" value={customer.dueDate} onChange={e => setCustomer({...customer, dueDate: e.target.value})} className="bg-white text-black px-1 py-0.5 outline-none w-full mt-0.5" />
-              </div>
-            </div>
-
-            {/* Column 3: Key Info */}
-            <div className="flex-1 border border-slate-500 p-1 flex flex-col justify-between">
-              <div>
-                <h3 className="font-bold border-b border-slate-500 pb-1 mb-1">Key Info</h3>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-[10px]">Date</span>
-                  <input
-                    id="bill-date"
-                    type="date"
-                    value={customer.date}
-                    onChange={e => setCustomer({ ...customer, date: e.target.value })}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('search-product-0')?.focus(); } }}
-                    className="bg-white text-black px-1 py-0.5 outline-none w-28 text-right"
-                  />
+                  <span className="text-sm text-slate-400">{partyList.length} matches</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[10px] w-20 leading-tight">Current Dues<br/>Pending</span>
-                  <div className="w-24 bg-[#cc0000] text-white text-center text-[10px] font-bold py-1 border border-slate-600">
-                      <div>₹{(activeCustomerData.openingBalance || 0).toFixed(2)}</div>
+                <div className="flex-1 overflow-auto">
+                  <div className="grid grid-cols-[2fr_1.2fr_1fr] bg-slate-100 text-slate-500 text-sm font-semibold sticky top-0">
+                    <div className="px-5 py-2">PARTY NAME</div><div className="px-2 py-2">STATION</div><div className="px-2 py-2 text-right">BALANCE</div>
+                  </div>
+                  {partyList.map((c, i) => (
+                    <div key={c.id || i} onClick={() => setPartyIndex(i)} onDoubleClick={() => selectParty(c)}
+                      className={`grid grid-cols-[2fr_1.2fr_1fr] items-center cursor-pointer border-b border-slate-50 ${i === partyIndex ? "bg-blue-50 border-l-4 border-l-[#1b4985]" : "hover:bg-slate-50 border-l-4 border-l-transparent"}`}>
+                      <div className={`px-5 py-2.5 ${i === partyIndex ? "font-bold text-[#1b4985]" : "text-slate-800"}`}>{c.name}</div>
+                      <div className="px-2 py-2.5 text-slate-500">{c.address || "—"}</div>
+                      <div className="px-2 py-2.5 text-right">{c.balance ? <span className={`font-bold ${c.balance > 0 ? "text-red-600" : "text-emerald-700"}`}>{fmt(Math.abs(c.balance))} <span className="text-xs">{c.balance > 0 ? "Dr" : "Cr"}</span></span> : ""}</div>
+                    </div>
+                  ))}
+                  {partyList.length === 0 && <div className="px-5 py-10 text-center text-slate-400">No matching parties.</div>}
+                </div>
+              </div>
+              <div className="w-80 shrink-0">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="bg-[#1b4985] text-white px-4 py-2.5 font-bold">Highlighted Party</div>
+                  {hp ? (
+                    <div className="p-4">
+                      <div className="text-lg font-bold text-slate-900 mb-2">{hp.name}</div>
+                      <div className="flex gap-2 mb-3">
+                        <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Debtor</span>
+                        <span className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded">{hp.gstNumber ? "Registered" : "Unregistered"}</span>
+                      </div>
+                      <div className="space-y-1.5 text-sm">
+                        <div className="flex justify-between"><span className="text-slate-400">Address</span><span className="font-semibold">{hp.address || "—"}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-400">Phone</span><span className="font-semibold">{hp.phone || "—"}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-400">Balance</span><span className="font-semibold">{fmt(hp.balance)}</span></div>
+                      </div>
+                      <button onClick={() => selectParty(hp)} className="w-full mt-4 bg-[#1b4985] hover:bg-[#163a6b] text-white py-2.5 rounded-lg font-bold cursor-pointer">Select Party →</button>
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center text-slate-400 text-sm">Type to find a party.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3 — Party Status */}
+          {step === 3 && (
+            <div className="flex gap-6">
+              <div className="flex-1 space-y-4 min-w-0">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-slate-400 uppercase">Party Name</div>
+                    <div className="text-2xl font-bold text-slate-900">{customer.name}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold bg-emerald-100 text-emerald-700 px-3 py-1 rounded">R Credit</span>
+                    <span className="text-sm font-semibold text-slate-600">{now.toLocaleDateString("en-GB")}</span>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="bg-[#1b4985] text-white px-5 py-2.5 font-bold">Party History</div>
+                  <div className="grid grid-cols-2">
+                    <div className="p-5 space-y-2 text-sm border-r border-slate-100">
+                      {[["Sale (Annual)", "0"], ["Sale (Month)", "0"], ["Credit Limit", fmt(ph.customer?.creditLimit)], ["Balance", fmt(ph.balance)], ["Last Receipt", "—"], ["Last Sale", lastSale ? dmy(lastSale) : "—"], ["P.D.C.", "Nil"], ["Collection Days", "All Days"]].map(([k, v]) => (
+                        <div key={k} className="flex justify-between"><span className="text-slate-500">{k}</span><span className="font-bold text-slate-800">{v}</span></div>
+                      ))}
+                    </div>
+                    <div className="p-5">
+                      <div className="grid grid-cols-4 text-xs font-semibold text-slate-400 border-b border-slate-200 pb-2"><span>BILL</span><span>DATE</span><span className="text-right">AMOUNT</span><span className="text-right">DAYS</span></div>
+                      {phInvoices.length ? phInvoices.slice().reverse().slice(0, 8).map((e, i) => (
+                        <div key={i} className="grid grid-cols-4 text-sm py-1.5 border-b border-slate-50"><span className="font-mono">{e.ref}</span><span>{dmy(e.date)}</span><span className="text-right font-semibold">{fmt(e.debit)}</span><span className="text-right">—</span></div>
+                      )) : <div className="py-10 text-center text-slate-400">No outstanding bills</div>}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <button id="proceed-billing" onClick={proceedToBilling} className="bg-[#1b4985] hover:bg-[#163a6b] text-white px-6 py-3 rounded-lg font-bold cursor-pointer">Proceed to Billing →</button>
+                </div>
+              </div>
+              <div className="w-80 shrink-0">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="bg-[#1b4985] text-white px-4 py-2.5 font-bold">Customer Status</div>
+                  <div className="p-4">
+                    <div className="text-lg font-bold text-slate-900 mb-2">{customer.name}</div>
+                    <div className="space-y-1.5 text-sm">
+                      <div className="flex justify-between"><span className="text-slate-400">Mobile</span><span className="font-semibold">{customer.phone || "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">Type</span><span className="font-semibold">Manual Indicate</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">Outstanding</span><span className="font-bold">{fmt(ph.balance)}</span></div>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="flex gap-4 items-center">
-                <button
-                  onClick={() => setShowScanner(true)}
-                  tabIndex={-1}
-                  className="bg-blue-600 text-white px-4 py-1.5 rounded flex items-center font-bold text-xs hover:bg-blue-700"
-                >
-                  [F4] Scan Barcode
-                </button>
+            </div>
+          )}
+
+          {/* STEP 4 — Bill Entry */}
+          {step === 4 && (
+            <div className="flex gap-6">
+              <div className="flex-1 flex flex-col gap-4 min-w-0">
+                {/* Party header with date + type */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-start justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-slate-400 uppercase tracking-wide">Party Name</div>
+                    <div className="text-2xl font-bold text-slate-900">{customer.name || "—"}</div>
+                    <div className="text-sm text-slate-500 mt-0.5">{[customer.address, customer.gstNumber, customer.phone ? "M-" + customer.phone : ""].filter(Boolean).join(" · ")}</div>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <div>
+                      <div className="text-xs font-semibold text-slate-400 uppercase">Bill No.</div>
+                      <div className="text-[#1b4985] font-bold">{activeBill?.billNo || "NEW"}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-slate-400 uppercase">Date</div>
+                      <input id="bill-date-input" type="date" value={billDate}
+                        onChange={(e) => setBillDate(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); document.getElementById("bill-type-input")?.focus(); } }}
+                        className="font-bold text-slate-800 bg-transparent outline-none border-b border-transparent focus:border-[#1b4985]" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-slate-400 uppercase">Type</div>
+                      <div className="flex items-center gap-1.5">
+                        <select id="bill-type-input" value={billType}
+                          onChange={(e) => setBillType(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); document.getElementById("search-product-0")?.focus(); } }}
+                          className={`font-bold rounded px-2 py-0.5 outline-none cursor-pointer ${billType === "Cash" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
+                          <option value="Credit">Credit</option>
+                          <option value="Cash">Cash</option>
+                        </select>
+                        <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded">Local</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Product grid */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <GridHeader />
+                  {rows.map((row, i) => <ProductRow key={i} row={row} i={i} />)}
+                </div>
+
+                {/* Selected line + totals */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                    <div className="text-sm font-semibold text-slate-400 uppercase mb-2">Selected Line</div>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between"><span className="text-slate-500">Item</span><span className="font-semibold">{activeRowData.name || "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Batch</span><span className="font-semibold font-mono">{activeRowData.batch || "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Expiry</span><span className="font-semibold">{activeRowData.expiry ? dmy(activeRowData.expiry) : "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Stock</span><span className="font-semibold">{activeRowData.availableQty != null ? `${activeRowData.availableQty} units` : "—"}</span></div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                    <div className="space-y-1.5 text-sm">
+                      <div className="flex justify-between"><span className="text-slate-500">MRP Value</span><span className="font-semibold">{fmt(mrpValue)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Value of Goods</span><span className="font-semibold">{fmt(valueOfGoods)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Discount</span><span className="font-semibold text-red-600">- {fmt(discountAmt)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">GST @ {avgGstPct}%</span><span className="font-semibold">{fmt(gstAmt)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Round Off</span><span className="font-semibold">{roundOff}</span></div>
+                      <div className="border-t pt-2 flex justify-between items-center"><span className="font-bold text-[#1b4985]">BILL VALUE</span><span className="text-3xl font-extrabold text-[#1b4985]">{fmt(challanValue)}</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action bar */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex items-center gap-2 flex-wrap">
+                  {["Sale", "Purchase", "SC", "PC", "Copy", "Paste", "SR", "PR", "O/S", "BE", "Cash", "Vou", "Hold", "Push"].map((b) => (
+                    <button key={b} tabIndex={-1} className="px-3 py-1.5 text-sm border border-slate-200 rounded text-slate-600 hover:bg-slate-50">{b}</button>
+                  ))}
+                  <div className="ml-auto flex items-center gap-2">
+                    <button tabIndex={-1} className="px-4 py-2 bg-purple-600 text-white rounded-lg font-bold text-sm">QR ID</button>
+                    <button onClick={() => handleSaveBillRef.current?.()} className="px-6 py-2 bg-[#1b4985] hover:bg-[#163a6b] text-white rounded-lg font-bold text-sm">Save (Shift + Enter)</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Customer status panel */}
+              <div className="w-80 shrink-0 space-y-4">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="bg-[#1b4985] text-white px-4 py-2.5 font-bold flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-400" /> Customer Status</div>
+                  <div className="p-4">
+                    <div className="text-lg font-bold text-slate-900 mb-3">{customer.name || "—"}</div>
+                    <div className="space-y-1.5 text-sm">
+                      <div className="flex justify-between"><span className="text-slate-400">Mobile</span><span className="font-semibold">{customer.phone || "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">Area</span><span className="font-semibold">{customer.address || "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">Outstanding</span><span className="font-bold">{fmt(ph.balance)}</span></div>
+                    </div>
+                    <div className="border-t border-slate-100 my-3" />
+                    <div className="space-y-1.5 text-sm">
+                      <div className="flex justify-between"><span className="text-slate-400">Sale (Annual)</span><span className="font-semibold">0</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">Last Sale</span><span className="font-semibold">{lastSale ? dmy(lastSale) : "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">Last Receipt</span><span className="font-semibold">—</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                  <div className="text-xs font-semibold text-slate-400 uppercase mb-2">Collection Days</div>
+                  <div className="bg-blue-50 text-[#1b4985] font-bold text-center py-2 rounded-lg">All Days</div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* GRID SECTION */}
-          <div className="flex-1 flex flex-col bg-white border border-[#1b4985] min-h-0 overflow-y-auto relative">
-             <table className="w-full text-left border-collapse whitespace-nowrap text-[11px]">
-               <thead className="sticky top-0 bg-[#1b4985] text-white z-10 font-normal">
-                 <tr>
-                   <th className="px-1 border-r border-slate-400 w-6 text-center"></th>
-                   <th className="px-1 border-r border-slate-400 w-1/3">Product</th>
-                   <th className="px-1 border-r border-slate-400 text-center w-24">Batch</th>
-                   <th className="px-1 border-r border-slate-400 text-center w-24">Expiry</th>
-                   <th className="px-1 border-r border-slate-400 text-center w-12">Qty</th>
-                   <th className="px-1 border-r border-slate-400 text-center w-12">Free</th>
-                   <th className="px-1 border-r border-slate-400 text-center w-16">MRP</th>
-                   <th className="px-1 border-r border-slate-400 text-center w-16">Rate</th>
-                   <th className="px-1 border-r border-slate-400 text-center w-16">GST %</th>
-                   <th className="px-1 text-center w-20">Net</th>
-                 </tr>
-                 <tr className="bg-slate-200 text-black border-b border-slate-400">
-                   <td className="border-r border-slate-400"></td>
-                   <td className="px-0.5 border-r border-slate-400">
-                     <div className="flex bg-[#e6f0fa] border border-slate-400 items-center px-1 text-slate-500 text-[10px]">Start typing item name... <span className="ml-auto">🔍</span></div>
-                   </td>
-                   <td className="px-0.5 border-r border-slate-400"><div className="flex bg-[#e6f0fa] border border-slate-400 items-center px-1 text-slate-500 justify-between text-[10px]">Batch <span>▼</span></div></td>
-                   <td className="px-0.5 border-r border-slate-400"><div className="flex bg-[#e6f0fa] border border-slate-400 items-center px-1 text-slate-500 justify-between text-[10px]">Expiry <span>▼</span></div></td>
-                   <td className="border-r border-slate-400"></td><td className="border-r border-slate-400"></td><td className="border-r border-slate-400"></td><td className="border-r border-slate-400"></td><td className="border-r border-slate-400"></td><td></td>
-                 </tr>
-               </thead>
-               <tbody>
-                 {rows.map((row, i) => {
-                   const isLowStock = row.name && row.availableQty !== null && (row.availableQty + (row.availableSchemeQty || 0)) <= (row.reorderPoint ?? 10);
-                   let isNearExpiry = false;
-                   if (row.name && row.expiry) {
-                     const expDate = new Date(row.expiry);
-                     const diffTime = expDate - new Date();
-                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                     isNearExpiry = diffDays > 0 && diffDays <= 60;
-                   }
-                   return (
-                   <tr key={i} className={`border-b border-slate-300 text-black ${i%2===0?'bg-[#e6f0fa]':'bg-white'}`}>
-                     <td className="px-1 border-r border-slate-300 text-center font-bold text-slate-500">{i+1}</td>
-                     <td className="px-1 border-r border-slate-300 flex items-center justify-between group relative">
-                       <input 
-                          id={`search-product-${i}`}
-                          value={row.searchStr !== undefined ? row.searchStr : row.name} 
-                          onChange={(e) => handleItemSelect(i, e.target.value)} 
-                          onFocus={() => { setActiveDropdown(`item-${i}`); setDropdownIndex(0); }}
-                          onBlur={() => setTimeout(() => setActiveDropdown(prev => prev === `item-${i}` ? null : prev), 200)}
-                          aria-expanded={activeDropdown === `item-${i}` ? 'true' : 'false'}
-                          onKeyDown={(e) => {
-                            if (activeDropdown === `item-${i}`) {
-                              const s = row.searchStr !== undefined ? row.searchStr : row.name;
-                              const filtered = items.filter(it => !s || it.name.toLowerCase().includes(s.toLowerCase()));
-                              if (e.key === 'ArrowDown') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setDropdownIndex(prev => Math.min(prev + 1, filtered.length - 1));
-                              } else if (e.key === 'ArrowUp') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setDropdownIndex(prev => Math.max(prev - 1, 0));
-                              } else if (e.key === 'Enter') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                const typed = (row.searchStr !== undefined ? row.searchStr : row.name) || '';
-                                // Pick the highlighted match, or accept typed text. A blank
-                                // line does nothing here — use Shift+Enter / Finish Bill to save.
-                                if (filtered[dropdownIndex]) {
-                                  const it = filtered[dropdownIndex];
-                                  handleItemSelect(i, `${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`);
-                                } else if (typed.trim()) {
-                                  handleItemSelect(i, e.target.value);
-                                } else {
-                                  setActiveDropdown(null);
-                                  return;
-                                }
-                                setActiveDropdown(null);
-                                // …then jump to Qty for this row.
-                                setTimeout(() => {
-                                  const tr = e.target.closest('tr');
-                                  if (tr) {
-                                    const qtyInput = tr.querySelector('input[type="number"]');
-                                    if (qtyInput) { qtyInput.focus(); qtyInput.select(); }
-                                  }
-                                }, 50);
-                              } else if (e.key === 'Escape') {
-                                e.preventDefault();
-                                setActiveDropdown(null);
-                              }
-                            }
-                          }}
-                          className="bg-transparent outline-none w-full text-black font-bold" 
-                          placeholder={i === rows.length-1 ? "Type to add item..." : ""} 
-                          title="Press F2 to focus and search for products quickly" 
-                        />
-                        {activeDropdown === `item-${i}` && (
-                          <ul className="absolute left-0 top-full mt-0.5 w-[400px] bg-white border border-gray-400 shadow-xl z-50 max-h-48 overflow-y-auto">
-                            {items.filter(it => !(row.searchStr !== undefined ? row.searchStr : row.name) || it.name.toLowerCase().includes((row.searchStr !== undefined ? row.searchStr : row.name).toLowerCase())).map((it, idx) => (
-                              <li key={it.id || idx} className={`px-2 py-1 cursor-pointer text-xs text-black border-b border-gray-100 last:border-0 ${dropdownIndex === idx ? 'bg-blue-200' : 'hover:bg-blue-50'}`} onMouseDown={(e) => { e.preventDefault(); handleItemSelect(i, `${it.name}${it.batch ? ' | Batch: ' + it.batch : ''}`); setActiveDropdown(null); setTimeout(() => { const qtyInput = document.querySelector(`tr:nth-child(${i+1}) input[type="number"]`); if (qtyInput) qtyInput.focus(); }, 50); }}>
-                                <div className="flex justify-between font-bold"><span>{it.name}</span><span className="text-green-700">₹{it.selling_price || it.mrp || 0}</span></div>
-                                <div className="flex justify-between text-[10px] text-gray-500"><span>Batch: {it.batch || '-'}</span><span>Stock: {it.stock_qty || 0}</span></div>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                       {isNearExpiry && !isLowStock && <span className="bg-[#ff9900] text-black font-bold px-1 py-0.5 ml-1 text-[9px] shrink-0 border border-slate-500">Near Expiry</span>}
-                       {isLowStock && <span className="bg-[#cc0000] text-white font-bold px-1 py-0.5 ml-1 text-[9px] shrink-0 border border-slate-500">Low Stock</span>}
-                       {row.name && <button onClick={() => removeRow(i)} className="text-red-500 opacity-0 group-hover:opacity-100 ml-1 px-1 hover:bg-red-200">✕</button>}
-                     </td>
-                     <td className="px-1 border-r border-slate-300 text-left text-slate-600">{row.batch || ""}</td>
-                     <td className="px-1 border-r border-slate-300 text-left text-slate-600">{row.expiry ? new Date(row.expiry).toLocaleDateString('en-GB').replace(/\//g,'-') : ''}</td>
-                     <td className="px-1 border-r border-slate-300 text-right"><input type="number" min="1" value={row.qty || ""} onChange={e => handleRowChange(i, "qty", e.target.value)} className="w-full text-right bg-transparent outline-none text-black font-bold" /></td>
-                     <td className="px-1 border-r border-slate-300 text-right"><input type="number" min="0" value={row.schemeQty || ""} onChange={e => handleRowChange(i, "schemeQty", e.target.value)} className="w-full text-right bg-transparent outline-none text-black text-green-700 font-bold" /></td>
-                     <td className="px-1 border-r border-slate-300 text-right text-slate-500">{row.name ? parseFloat(row.mrp||0).toFixed(2) : ''}</td>
-                     <td className="px-1 border-r border-slate-300 text-right"><input type="number" value={row.selling_price || ""} onChange={e => handleRowChange(i, "selling_price", e.target.value)} className="w-full text-right bg-transparent outline-none text-black" /></td>
-                     <td className="px-1 border-r border-slate-300 text-right">{row.name ? <input type="number" min="0" step="0.01" value={row.gst ?? ""} onChange={e => handleRowChange(i, "gst", e.target.value)} className="w-full text-right bg-transparent outline-none text-black" /> : ''}</td>
-                     <td className="px-1 text-right font-bold">{row.name ? (parseFloat(row.amount||0)).toFixed(2) : ''}</td>
-                   </tr>
-                 )})}
-                 {emptyRows.map((_, i) => (
-                    <tr key={`empty-${i}`} className={`border-b border-slate-300 ${(i+rows.length)%2===0?'bg-[#e6f0fa]':'bg-white'} h-[21px]`}>
-                      <td className="border-r border-slate-300"></td><td className="border-r border-slate-300"></td><td className="border-r border-slate-300"></td><td className="border-r border-slate-300"></td><td className="border-r border-slate-300"></td><td className="border-r border-slate-300"></td><td className="border-r border-slate-300"></td><td className="border-r border-slate-300"></td><td className="border-r border-slate-300"></td><td></td>
-                    </tr>
-                 ))}
-               </tbody>
-             </table>
-          </div>
-
-          {/* TOTALS SECTION */}
-          <div className="bg-[#1b4985] text-white flex flex-col shrink-0 border border-white p-0.5">
-             <div className="grid grid-cols-[1fr_1fr_1fr_1.5fr] text-[10px]">
-                {/* Col 1 */}
-                <div className="border-r border-white/20 p-1">
-                   <div className="flex justify-between items-center mb-0.5"><span>Base Total</span><input readOnly value={totals.gross.toFixed(2)} className="w-20 text-right text-black bg-[#e6f0fa] px-1 outline-none" /></div>
-                   <div className="flex justify-between items-center mb-0.5"><span>GST Total</span><input readOnly value={totals.totalGst.toFixed(2)} className="w-20 text-right text-black bg-[#e6f0fa] px-1 outline-none" /></div>
-                   <div className="flex justify-between items-center mb-0.5"><span>Discount</span><input type="number" value={discount} onChange={e => setDiscount(e.target.value)} className="w-20 text-right text-black bg-white px-1 outline-none border border-slate-400" /></div>
-                   <div className="flex justify-between items-center mb-0.5"><span>Total Qty</span><input readOnly value={totalQty} className="w-20 text-right text-black bg-[#e6f0fa] px-1 outline-none" /></div>
-                   <div className="flex justify-between items-center font-bold text-yellow-300"><span className="text-white">Grand Total</span><input readOnly value={grandTotal.toFixed(2)} className="w-20 text-right text-black bg-[#ffcc99] font-bold px-1 outline-none border border-slate-500" /></div>
-                </div>
-                {/* Col 2 */}
-                <div className="border-r border-white/20 p-1">
-                   <div className="flex justify-between items-center mb-0.5"><span className="text-slate-300">GST 5%</span><input readOnly value={totals.gst5.toFixed(2)} className="w-16 text-right text-black bg-[#e6f0fa] px-1 outline-none" /></div>
-                   <div className="flex justify-between items-center mb-0.5"><span className="text-slate-300">GST 12%</span><input readOnly value={totals.gst12.toFixed(2)} className="w-16 text-right text-black bg-[#e6f0fa] px-1 outline-none" /></div>
-                   <div className="flex justify-between items-center mb-0.5"><span className="text-slate-300">GST 18%</span><input readOnly value={totals.gst18.toFixed(2)} className="w-16 text-right text-black bg-[#e6f0fa] px-1 outline-none" /></div>
-                   <div className="flex justify-between items-center mb-0.5"><span className="text-slate-300">GST 28%</span><input readOnly value={totals.gst28.toFixed(2)} className="w-16 text-right text-black bg-[#e6f0fa] px-1 outline-none" /></div>
-                   <div className="flex justify-between items-center"><span className="text-slate-300">GST 0%</span><input readOnly value={totals.gst0.toFixed(2)} className="w-16 text-right text-black bg-[#e6f0fa] px-1 outline-none" /></div>
-                </div>
-                {/* Col 3 */}
-                <div className="border-r border-white/20 p-1 flex items-center justify-center">
-                   <div className="text-center text-slate-300">
-                     <div className="font-bold mb-1">Automated Tax Engine</div>
-                     <div>Synced to HSN/SAC</div>
-                     <div className="text-yellow-400 mt-2 font-bold">{totalFree > 0 && `+${totalFree} Free Items!`}</div>
-                   </div>
-                </div>
-                {/* Col 4 */}
-                <div className="p-1">
-                   <div className="flex justify-between items-center mb-0.5"><span className="text-slate-300">Round Off</span><span className="w-20 text-right text-[#a8c6e6]">{(grandTotal - finalAmount).toFixed(2)}</span></div>
-                   <div className="flex justify-between items-center mb-0.5"><span className="text-slate-300">Total Free Qty</span><span className="w-20 text-right text-[#a8c6e6]">{totalFree}</span></div>
-                   <div className="flex justify-between items-center mb-0.5"><span className="text-slate-300">Total Items</span><span className="w-20 text-right text-[#a8c6e6]">{rows.filter(r=>r.name).length}</span></div>
-                   <div className="flex justify-between items-center mb-0.5"><span className="text-slate-300">Status</span><span className="w-20 text-right text-green-400 font-bold uppercase">Valid</span></div>
-                   <div className="flex justify-between items-center font-bold"><span className="text-slate-300">Net Payable</span><span className="w-20 text-right text-white text-[12px]">₹{grandTotal.toFixed(2)}</span></div>
-                </div>
-             </div>
-          </div>
-
-          {/* BOTTOM BUTTONS */}
-          <div className="flex justify-between bg-[#1b4985] p-1 gap-1 shrink-0">
-             <div className="flex gap-1 flex-1">
-               <button onClick={handleSaveBill} className="bg-[#1b4985] text-white border border-white hover:bg-[#255b9e] text-[10px] w-12 text-center py-0.5 leading-tight font-bold">F10<br/>Save</button>
-               <button className="bg-[#1b4985] text-white border border-slate-500 hover:bg-[#255b9e] text-[10px] w-12 text-center py-0.5 leading-tight opacity-50 cursor-not-allowed">F11<br/>Mover</button>
-               <button className="bg-[#1b4985] text-white border border-slate-500 hover:bg-[#255b9e] text-[10px] w-12 text-center py-0.5 leading-tight opacity-50 cursor-not-allowed">F12<br/>Fast</button>
-               <button onClick={resetForm} className="bg-[#1b4985] text-white border border-white hover:bg-[#255b9e] text-[10px] w-12 text-center py-0.5 leading-tight">F13<br/>Clear</button>
-               <button className="bg-[#1b4985] text-white border border-slate-500 hover:bg-[#255b9e] text-[10px] w-14 text-center py-0.5 leading-tight opacity-50 cursor-not-allowed">F14<br/>Shortcut</button>
-               <button className="bg-[#1b4985] text-white border border-slate-500 hover:bg-[#255b9e] text-[10px] w-16 text-center py-0.5 leading-tight opacity-50 cursor-not-allowed">F15<br/>Shortcuts</button>
-               <button className="bg-[#1b4985] text-white border border-slate-500 hover:bg-[#255b9e] text-[10px] w-12 text-center py-0.5 leading-tight opacity-50 cursor-not-allowed">F17<br/>Count</button>
-             </div>
-             <div className="flex gap-1">
-               <button
-                 onClick={handleSaveBill}
-                 tabIndex={-1}
-                 className="bg-emerald-600 text-white border border-emerald-300 hover:bg-emerald-700 text-xs font-bold px-4 text-center py-0.5 leading-tight flex flex-col items-center justify-center"
-               >
-                 ✓ Finish Bill
-                 <span className="text-[9px] font-normal opacity-90">Shift + Enter</span>
-               </button>
-               <button onClick={() => setView('list')} className="bg-[#1b4985] text-white border border-white hover:bg-[#255b9e] text-[10px] w-12 text-center py-0.5 leading-tight flex items-center justify-center">Close</button>
-             </div>
-          </div>
-        </main>
+        {/* F-key bar */}
+        <div className="bg-white border-t border-slate-200 px-6 py-2 flex items-center gap-3 text-sm text-slate-500 shrink-0">
+          {[["F2", "New"], ["F3", "Edit"], ["F4", "Ledger"], ["F6", "PDC"], ["F7", "All"], ["F8", "O/S"], ["F10", "Balance"], ["?", "Search"], ["Alt+S", "Filter"]].map(([k, l]) => (
+            <span key={k}><span className="font-bold text-[#1b4985] bg-slate-100 px-1.5 py-0.5 rounded">{k}</span> {l}</span>
+          ))}
+          <span className="ml-auto">Esc <span className="text-slate-400">= step back</span></span>
+        </div>
       </div>
     );
   }
