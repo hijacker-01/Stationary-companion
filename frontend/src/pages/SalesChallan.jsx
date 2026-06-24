@@ -40,6 +40,7 @@ const emptyRow = {
   selling_price: "",
   mrp: "",
   gst: 12,
+  disc: 0,
   amount: 0,
   availableQty: null,
   availableSchemeQty: null,
@@ -73,6 +74,8 @@ export default function SalesChallan() {
   const [step, setStep] = useState(1);
   const [partySearch, setPartySearch] = useState("");
   const [partyIndex, setPartyIndex] = useState(0);
+  const [billDate, setBillDate] = useState(new Date().toISOString().slice(0, 10));
+  const [billType, setBillType] = useState("Credit"); // Credit | Cash
   const [listFilter, setListFilter] = useState("All");
   const [showDebtorsModal, setShowDebtorsModal] = useState(false);
   const [debtorsConfig, setDebtorsConfig] = useState({
@@ -134,7 +137,7 @@ export default function SalesChallan() {
     if (step === 1) focusId('select-party-btn');   // Enter → Select Party
     if (step === 2) focusId('party-search');        // type/↑↓/Enter → pick party
     if (step === 3) focusId('proceed-billing');     // Enter → Proceed to Billing
-    if (step === 4) focusId('search-product-0');    // Enter through product rows
+    if (step === 4) focusId('bill-date-input');     // Date → Type → product rows
   }, [view, step]);
 
   // Shift+Enter to finish/save, Enter on preview to print
@@ -226,7 +229,7 @@ export default function SalesChallan() {
         pack: found.pack || "", expiry: found.expiry || "", mrp: found.mrp || "",
         selling_price: found.selling_price || found.mrp || "", unit: found.unit || "strips",
         availableQty: found.stock_qty, availableSchemeQty: found.scheme_qty,
-        amount: calculateAmount(found.selling_price || found.mrp, updated[index].qty, updated[index].gst),
+        amount: calculateAmount(found.selling_price || found.mrp, updated[index].qty, updated[index].disc),
       };
       checkScheme(index, found.name, updated[index].qty);
     } else {
@@ -237,9 +240,11 @@ export default function SalesChallan() {
     setRows(updated);
   };
 
-  const calculateAmount = (mrp, qty, gst) => {
-    const base = parseFloat(mrp || 0) * parseInt(qty || 1);
-    return parseFloat((base + (base * gst) / 100).toFixed(2));
+  // Line amount = rate × qty, less DIS%. GST is applied on the taxable total,
+  // not per line (matches the bill-entry layout).
+  const calculateAmount = (rate, qty, disc) => {
+    const base = parseFloat(rate || 0) * parseInt(qty || 1);
+    return parseFloat((base * (1 - (parseFloat(disc || 0) / 100))).toFixed(2));
   };
 
   const handleRowChange = (index, field, value) => {
@@ -248,7 +253,7 @@ export default function SalesChallan() {
     updated[index].amount = calculateAmount(
       field === "selling_price" ? value : updated[index].selling_price,
       field === "qty" ? value : updated[index].qty,
-      field === "gst" ? value : updated[index].gst,
+      field === "disc" ? value : updated[index].disc,
     );
     setRows(updated);
     if (field === "qty") checkScheme(index, updated[index].name, value);
@@ -256,10 +261,6 @@ export default function SalesChallan() {
 
   const addRow = () => setRows([...rows, { ...emptyRow }]);
   const removeRow = (i) => { setRows(rows.filter((_, idx) => idx !== i)); setRowSchemes((prev) => { const n = { ...prev }; delete n[i]; return n; }); };
-
-  const subtotal = rows.reduce((s, r) => s + parseFloat(r.selling_price || r.mrp || 0) * parseInt(r.qty || 1), 0);
-  const gstAmount = rows.reduce((s, r) => { const base = parseFloat(r.selling_price || r.mrp || 0) * parseInt(r.qty || 1); return s + (base * r.gst) / 100; }, 0);
-  const total = subtotal + gstAmount - parseFloat(discount || 0);
 
   const handleSaveBill = async () => {
     if (!customer.name) return 
@@ -271,18 +272,21 @@ export default function SalesChallan() {
     }
     const payload = { customerName: customer.name, customerPhone: customer.phone, customerAddress: customer.address,
       customerDl: customer.dlNumber, customerGst: customer.gstNumber, dueDate: customer.dueDate || null,
+      date: billDate || null,
       transportDetails: customer.transportDetails, salesmanId: selectedSalesman.id || null, salesmanName: selectedSalesman.name || "",
       items: rows.filter((r) => r.name).map(r => ({
         ...r,
         qty: parseInt(r.qty) || 1,
         schemeQty: parseInt(r.schemeQty) || 0,
-        discount: parseFloat(r.discount) || 0,
+        disc: parseFloat(r.disc) || 0,
+        discount: parseFloat(r.disc) || 0,
         gst: parseFloat(r.gst) || 0,
         amount: parseFloat(r.amount) || 0,
         mrp: parseFloat(r.mrp) || 0,
         selling_price: parseFloat(r.selling_price) || 0,
-      })), subtotal: parseFloat(subtotal.toFixed(2)) || 0, gstAmount: parseFloat(gstAmount.toFixed(2)) || 0,
-      discount: parseFloat(parseFloat(discount || 0).toFixed(2)), total: parseFloat(total.toFixed(2)), paymentMode, status: "paid",
+      })), subtotal: parseFloat(valueOfGoods.toFixed(2)) || 0, gstAmount: parseFloat(gstAmt.toFixed(2)) || 0,
+      discount: parseFloat(discountAmt.toFixed(2)) || 0, total: challanValue,
+      paymentMode: billType.toLowerCase() === "cash" ? "cash" : "credit", status: "paid",
     };
     try {
       const res = await axios.post("/sales-challan", payload);
@@ -314,6 +318,7 @@ export default function SalesChallan() {
   const resetForm = () => {
     setRows([{ ...emptyRow }]); setCustomer({ name: "", phone: "", address: "", dlNumber: "", gstNumber: "", transportDetails: "Hand Delivery", dueDate: "" });
     setDiscount(0); setPaymentMode("cash"); setSelectedSalesman({ id: "", name: "" }); setActiveBill(null); setRowSchemes({}); setView("list");
+    setBillDate(new Date().toISOString().slice(0, 10)); setBillType("Credit");
   };
 
   // Number to Words converter
@@ -331,15 +336,21 @@ export default function SalesChallan() {
     return str || "Zero";
   };
 
-  // ── Computed totals for create view ──
-  const grossAmount = rows.reduce((sum, r) => sum + parseFloat(r.amount || 0), 0);
-  const sgstAmount = rows.reduce((sum, r) => { const a = parseFloat(r.amount || 0); const g = parseFloat(r.gst || 0); return sum + (a * g / 100) / 2; }, 0);
-  const cgstAmount = sgstAmount;
-  const finalAmount = grossAmount - parseFloat(discount || 0) + sgstAmount + cgstAmount;
-  const roundOff = (Math.round(finalAmount) - finalAmount).toFixed(2);
-  const grandTotal = Math.round(finalAmount);
+  // ── Computed totals for the bill (match the bill-entry layout) ──
+  const mrpValue = rows.reduce((s, r) => s + parseFloat(r.mrp || 0) * parseInt(r.qty || 0), 0);
+  const grossBeforeDisc = rows.reduce((s, r) => s + parseFloat(r.selling_price || r.mrp || 0) * parseInt(r.qty || 0), 0);
+  const valueOfGoods = rows.reduce((s, r) => s + parseFloat(r.amount || 0), 0); // taxable, after DIS%
+  const discountAmt = grossBeforeDisc - valueOfGoods;
+  const gstAmt = rows.reduce((s, r) => s + parseFloat(r.amount || 0) * parseFloat(r.gst || 0) / 100, 0);
+  const sgstAmount = gstAmt / 2;
+  const cgstAmount = gstAmt / 2;
+  const preRound = valueOfGoods + gstAmt;
+  const challanValue = Math.round(preRound);
+  const roundOff = (challanValue - preRound).toFixed(2);
   const totalQty = rows.reduce((sum, r) => sum + parseInt(r.qty || 0), 0);
   const totalFree = rows.reduce((sum, r) => sum + parseInt(r.schemeQty || 0), 0);
+  // Avg GST % across the bill (for the "GST @ x%" label).
+  const avgGstPct = valueOfGoods > 0 ? Math.round((gstAmt / valueOfGoods) * 100) : 0;
 
   // Active row for item info panel
   const activeRowData = rows[activeRowIndex] || rows[0] || {};
@@ -476,6 +487,7 @@ export default function SalesChallan() {
 
   // ── CREATE VIEW ──
   // ── CREATE VIEW (4-step wizard: New → Select Party → Party Status → Bill Entry) ──
+  // ── CREATE VIEW (4-step wizard: New → Select Party → Party Status → Bill Entry) ──
   if (view === "create") {
     const q = partySearch.trim().toLowerCase();
     const partyList = customers.filter((c) =>
@@ -492,6 +504,67 @@ export default function SalesChallan() {
       { n: 3, label: "Party Status" },
       { n: 4, label: "Bill Entry" },
     ];
+    const dmy = (d) => (d ? new Date(d).toLocaleDateString("en-GB") : "—");
+
+    const ProductRow = ({ row, i }) => {
+      const searchVal = row.searchStr !== undefined ? row.searchStr : row.name;
+      const filtered = items.filter((it) => !searchVal || it.name.toLowerCase().includes(searchVal.toLowerCase()));
+      return (
+        <div key={i} data-billrow className="grid grid-cols-[44px_2fr_1fr_1.2fr_0.8fr_0.8fr_1fr_0.8fr_1.2fr] items-center border-b border-slate-100 hover:bg-blue-50/40 text-base" onFocus={() => setActiveRowIndex(i)}>
+          <div className="px-2 py-1.5 text-slate-400 font-mono">{String(i + 1).padStart(2, "0")}</div>
+          <div className="px-2 py-1.5 relative">
+            <input id={`search-product-${i}`} value={searchVal}
+              onChange={(e) => { handleItemSelect(i, e.target.value); setActiveDropdown(`item-${i}`); setDropdownIndex(0); }}
+              onFocus={() => { setActiveRowIndex(i); setActiveDropdown(`item-${i}`); setDropdownIndex(0); }}
+              onBlur={() => setTimeout(() => setActiveDropdown((prev) => prev === `item-${i}` ? null : prev), 200)}
+              aria-expanded={activeDropdown === `item-${i}` ? "true" : "false"}
+              onKeyDown={(e) => {
+                if (activeDropdown !== `item-${i}`) return;
+                if (e.key === "ArrowDown") { e.preventDefault(); e.stopPropagation(); setDropdownIndex((p) => Math.min(p + 1, filtered.length - 1)); }
+                else if (e.key === "ArrowUp") { e.preventDefault(); e.stopPropagation(); setDropdownIndex((p) => Math.max(p - 1, 0)); }
+                else if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault(); e.stopPropagation();
+                  const it = filtered[dropdownIndex];
+                  if (it) handleItemSelect(i, `${it.name}${it.batch ? " | Batch: " + it.batch : ""}`);
+                  else if ((searchVal || "").trim()) handleItemSelect(i, searchVal);
+                  else { setActiveDropdown(null); return; }
+                  setActiveDropdown(null);
+                  if (i === rows.length - 1) setTimeout(() => addRow(), 0);
+                  setTimeout(() => { const tr = e.target.closest("[data-billrow]"); tr?.querySelector("input[data-qty]")?.focus(); }, 50);
+                } else if (e.key === "Escape") { e.preventDefault(); setActiveDropdown(null); }
+              }}
+              placeholder={i === rows.length - 1 ? "Type to add item…" : ""}
+              className="w-full bg-transparent outline-none font-semibold" />
+            {activeDropdown === `item-${i}` && filtered.length > 0 && (
+              <ul className="absolute left-2 top-full mt-0.5 w-[440px] bg-white border border-gray-300 shadow-xl z-50 max-h-56 overflow-auto">
+                {filtered.map((it, di) => (
+                  <li key={it.id || di} className={`px-3 py-1.5 cursor-pointer text-sm border-b border-gray-100 ${di === dropdownIndex ? "bg-blue-100" : "hover:bg-blue-50"}`}
+                    onMouseDown={(e) => { e.preventDefault(); handleItemSelect(i, `${it.name}${it.batch ? " | Batch: " + it.batch : ""}`); setActiveDropdown(null); if (i === rows.length - 1) setTimeout(() => addRow(), 0); }}>
+                    <div className="flex justify-between font-semibold"><span>{it.name}</span><span className="text-emerald-700">₹{it.selling_price || it.mrp || 0}</span></div>
+                    <div className="flex justify-between text-xs text-gray-500"><span>Batch {it.batch || "-"}</span><span>Stock {it.stock_qty || 0}</span></div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="px-2 py-1.5 text-slate-600">{row.pack || "—"}</div>
+          <div className="px-2 py-1.5 text-slate-600 font-mono">{row.batch || "—"}</div>
+          <div className="px-1 py-1.5"><input data-qty type="number" min="1" value={row.qty} onChange={(e) => handleRowChange(i, "qty", e.target.value)} className="w-full text-right bg-transparent outline-none font-bold" /></div>
+          <div className="px-1 py-1.5"><input type="number" min="0" value={row.schemeQty} onChange={(e) => handleRowChange(i, "schemeQty", e.target.value)} className="w-full text-right bg-transparent outline-none text-emerald-700 font-bold" /></div>
+          <div className="px-1 py-1.5"><input type="number" value={row.selling_price} onChange={(e) => handleRowChange(i, "selling_price", e.target.value)} className="w-full text-right bg-transparent outline-none" /></div>
+          <div className="px-1 py-1.5"><input type="number" value={row.disc} onChange={(e) => handleRowChange(i, "disc", e.target.value)} className="w-full text-right bg-transparent outline-none" /></div>
+          <div className="px-2 py-1.5 text-right font-bold">{row.name ? fmt(row.amount) : ""}</div>
+        </div>
+      );
+    };
+
+    const GridHeader = () => (
+      <div className="grid grid-cols-[44px_2fr_1fr_1.2fr_0.8fr_0.8fr_1fr_0.8fr_1.2fr] bg-[#1b4985] text-white text-sm font-semibold">
+        <div className="px-2 py-2.5">#</div><div className="px-2 py-2.5">PRODUCT</div><div className="px-2 py-2.5">PACK</div><div className="px-2 py-2.5">BATCH</div>
+        <div className="px-1 py-2.5 text-right">QTY</div><div className="px-1 py-2.5 text-right">FREE</div><div className="px-1 py-2.5 text-right">RATE</div>
+        <div className="px-1 py-2.5 text-right">DIS %</div><div className="px-2 py-2.5 text-right">AMOUNT</div>
+      </div>
+    );
 
     return (
       <div className="flex h-screen flex-col bg-slate-100 font-sans overflow-hidden">
@@ -525,116 +598,30 @@ export default function SalesChallan() {
 
         {/* Content */}
         <div className="flex-1 overflow-auto p-6" data-form-scope>
-          {/* STEP 1 (New) + STEP 4 (Bill Entry) share the bill canvas */}
-          {(step === 1 || step === 4) && (
+          {/* STEP 1 — New */}
+          {step === 1 && (
             <div className="flex gap-6">
               <div className="flex-1 flex flex-col gap-4 min-w-0">
-                {/* Party name card */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center justify-between">
                   <div>
                     <div className="text-sm font-semibold text-slate-400 uppercase tracking-wide">Party Name</div>
-                    <div className={`text-xl font-bold ${customer.name ? "text-slate-900" : "text-slate-300"}`}>{customer.name || "No party selected"}</div>
+                    <div className="text-xl font-bold text-slate-300">No party selected</div>
                   </div>
                   <button id="select-party-btn" onClick={() => setStep(2)} className="flex items-center gap-2 bg-[#1b4985] hover:bg-[#163a6b] text-white px-5 py-2.5 rounded-lg font-semibold cursor-pointer">
                     <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs">?</span> Select Party
                   </button>
                 </div>
-
-                {/* Product grid */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="grid grid-cols-[2fr_1fr_1.2fr_0.8fr_0.8fr_1fr_0.8fr_1.2fr] bg-[#1b4985] text-white text-sm font-semibold">
-                    <div className="px-4 py-2.5">PRODUCT</div><div className="px-2 py-2.5">PACK</div><div className="px-2 py-2.5">BATCH</div>
-                    <div className="px-2 py-2.5 text-right">QTY</div><div className="px-2 py-2.5 text-right">FREE</div><div className="px-2 py-2.5 text-right">RATE</div>
-                    <div className="px-2 py-2.5 text-right">GST %</div><div className="px-2 py-2.5 text-right">AMOUNT</div>
-                  </div>
-                  {step === 1 ? (
-                    <div className="px-4 py-3 text-[#1b4985] bg-blue-50/60 text-sm">Select a party to begin adding products…</div>
-                  ) : (
-                    rows.map((row, i) => {
-                      const searchVal = row.searchStr !== undefined ? row.searchStr : row.name;
-                      const filtered = items.filter((it) => !searchVal || it.name.toLowerCase().includes(searchVal.toLowerCase()));
-                      return (
-                        <div key={i} data-billrow className="grid grid-cols-[2fr_1fr_1.2fr_0.8fr_0.8fr_1fr_0.8fr_1.2fr] items-center border-b border-slate-100 hover:bg-slate-50 text-base" onFocus={() => setActiveRowIndex(i)}>
-                          <div className="px-2 py-1.5 relative">
-                            <input id={`search-product-${i}`} value={searchVal}
-                              onChange={(e) => { handleItemSelect(i, e.target.value); setActiveDropdown(`item-${i}`); setDropdownIndex(0); }}
-                              onFocus={() => { setActiveRowIndex(i); setActiveDropdown(`item-${i}`); setDropdownIndex(0); }}
-                              onBlur={() => setTimeout(() => setActiveDropdown((prev) => prev === `item-${i}` ? null : prev), 200)}
-                              aria-expanded={activeDropdown === `item-${i}` ? "true" : "false"}
-                              onKeyDown={(e) => {
-                                if (activeDropdown !== `item-${i}`) return;
-                                if (e.key === "ArrowDown") { e.preventDefault(); e.stopPropagation(); setDropdownIndex((p) => Math.min(p + 1, filtered.length - 1)); }
-                                else if (e.key === "ArrowUp") { e.preventDefault(); e.stopPropagation(); setDropdownIndex((p) => Math.max(p - 1, 0)); }
-                                else if (e.key === "Enter" && !e.shiftKey) {
-                                  e.preventDefault(); e.stopPropagation();
-                                  const it = filtered[dropdownIndex];
-                                  if (it) handleItemSelect(i, `${it.name}${it.batch ? " | Batch: " + it.batch : ""}`);
-                                  else if ((searchVal || "").trim()) handleItemSelect(i, searchVal);
-                                  else { setActiveDropdown(null); return; }
-                                  setActiveDropdown(null);
-                                  if (i === rows.length - 1) setTimeout(() => addRow(), 0);
-                                  setTimeout(() => { const tr = e.target.closest("[data-billrow]"); tr?.querySelector("input[data-qty]")?.focus(); }, 50);
-                                } else if (e.key === "Escape") { e.preventDefault(); setActiveDropdown(null); }
-                              }}
-                              placeholder={i === rows.length - 1 ? "Type to add item…" : ""}
-                              className="w-full bg-transparent outline-none font-semibold" />
-                            {activeDropdown === `item-${i}` && filtered.length > 0 && (
-                              <ul className="absolute left-2 top-full mt-0.5 w-[440px] bg-white border border-gray-300 shadow-xl z-50 max-h-56 overflow-auto">
-                                {filtered.map((it, di) => (
-                                  <li key={it.id || di} className={`px-3 py-1.5 cursor-pointer text-sm border-b border-gray-100 ${di === dropdownIndex ? "bg-blue-100" : "hover:bg-blue-50"}`}
-                                    onMouseDown={(e) => { e.preventDefault(); handleItemSelect(i, `${it.name}${it.batch ? " | Batch: " + it.batch : ""}`); setActiveDropdown(null); if (i === rows.length - 1) setTimeout(() => addRow(), 0); }}>
-                                    <div className="flex justify-between font-semibold"><span>{it.name}</span><span className="text-emerald-700">₹{it.selling_price || it.mrp || 0}</span></div>
-                                    <div className="flex justify-between text-xs text-gray-500"><span>Batch {it.batch || "-"}</span><span>Stock {it.stock_qty || 0}</span></div>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                          <div className="px-2 py-1.5 text-slate-600">{row.pack || "—"}</div>
-                          <div className="px-2 py-1.5 text-slate-600">{row.batch || "—"}</div>
-                          <div className="px-1 py-1.5"><input data-qty type="number" min="1" value={row.qty} onChange={(e) => handleRowChange(i, "qty", e.target.value)} className="w-full text-right bg-transparent outline-none font-bold" /></div>
-                          <div className="px-1 py-1.5"><input type="number" min="0" value={row.schemeQty} onChange={(e) => handleRowChange(i, "schemeQty", e.target.value)} className="w-full text-right bg-transparent outline-none text-emerald-700 font-bold" /></div>
-                          <div className="px-1 py-1.5"><input type="number" value={row.selling_price} onChange={(e) => handleRowChange(i, "selling_price", e.target.value)} className="w-full text-right bg-transparent outline-none" /></div>
-                          <div className="px-1 py-1.5"><input type="number" value={row.gst} onChange={(e) => handleRowChange(i, "gst", e.target.value)} className="w-full text-right bg-transparent outline-none" /></div>
-                          <div className="px-2 py-1.5 text-right font-bold">{row.name ? fmt(row.amount) : ""}</div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {/* Selected line + totals */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                    <div className="text-sm font-semibold text-slate-400 uppercase mb-2">Selected Line</div>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between"><span className="text-slate-500">Item</span><span className="font-semibold">{activeRowData.name || "—"}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-500">Batch</span><span className="font-semibold">{activeRowData.batch || "—"}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-500">Expiry</span><span className="font-semibold">{activeRowData.expiry ? new Date(activeRowData.expiry).toLocaleDateString("en-GB") : "—"}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-500">Stock</span><span className="font-semibold">{activeRowData.availableQty ?? "—"}</span></div>
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                    <div className="space-y-1.5 text-sm">
-                      <div className="flex justify-between"><span className="text-slate-500">Value of Goods</span><span className="font-semibold">{fmt(grossAmount)}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-500">Discount</span><span className="font-semibold">{fmt(discount)}</span></div>
-                      <div className="flex justify-between"><span className="text-slate-500">GST</span><span className="font-semibold">{fmt(sgstAmount + cgstAmount)}</span></div>
-                      <div className="border-t pt-2 flex justify-between items-center"><span className="font-bold text-[#1b4985]">CHALLAN VALUE</span><span className="text-3xl font-extrabold text-[#1b4985]">{fmt(grandTotal)}</span></div>
-                    </div>
-                    {step === 4 && (
-                      <button onClick={() => handleSaveBillRef.current?.()} className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-bold cursor-pointer">Finish Challan (Shift + Enter)</button>
-                    )}
-                  </div>
+                  <GridHeader />
+                  <div className="px-4 py-3 text-[#1b4985] bg-blue-50/60 text-sm">Select a party to begin adding products…</div>
                 </div>
               </div>
-
-              {/* Right info panel */}
               <div className="w-72 shrink-0">
                 <div className="bg-[#0e2440] text-white rounded-xl p-5">
-                  <div className="font-bold text-blue-200 uppercase text-sm mb-2">{step === 4 ? "Bill Entry" : "New Challan"}</div>
-                  <p className="text-sm text-blue-100/80 mb-4">{step === 4 ? "Type a product, Enter to move across, Shift+Enter to finish." : "Date is set to today. Press ? or use the button to pick a party from your ledgers, then start scanning products."}</p>
+                  <div className="font-bold text-blue-200 uppercase text-sm mb-2">New Challan</div>
+                  <p className="text-sm text-blue-100/80 mb-4">Press Enter or use the button to pick a party from your ledgers, then capture date &amp; type and start scanning products.</p>
                   <div className="space-y-2 text-sm border-t border-white/10 pt-3">
-                    <div className="flex justify-between"><span className="text-blue-300">Date</span><span>{now.toLocaleDateString("en-GB")}</span></div>
+                    <div className="flex justify-between"><span className="text-blue-300">Date</span><span>{dmy(billDate)}</span></div>
                     <div className="flex justify-between"><span className="text-blue-300">Series</span><span>Credit Sale</span></div>
                     <div className="flex justify-between"><span className="text-blue-300">Counter</span><span>Main</span></div>
                   </div>
@@ -681,8 +668,6 @@ export default function SalesChallan() {
                   {partyList.length === 0 && <div className="px-5 py-10 text-center text-slate-400">No matching parties.</div>}
                 </div>
               </div>
-
-              {/* Highlighted party panel */}
               <div className="w-80 shrink-0">
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                   <div className="bg-[#1b4985] text-white px-4 py-2.5 font-bold">Highlighted Party</div>
@@ -726,14 +711,14 @@ export default function SalesChallan() {
                   <div className="bg-[#1b4985] text-white px-5 py-2.5 font-bold">Party History</div>
                   <div className="grid grid-cols-2">
                     <div className="p-5 space-y-2 text-sm border-r border-slate-100">
-                      {[["Sale (Annual)", "0"], ["Sale (Month)", "0"], ["Credit Limit", fmt(ph.customer?.creditLimit)], ["Balance", fmt(ph.balance)], ["Last Receipt", "—"], ["Last Sale", lastSale ? new Date(lastSale).toLocaleDateString("en-GB") : "—"], ["P.D.C.", "Nil"], ["Collection Days", "All Days"]].map(([k, v]) => (
+                      {[["Sale (Annual)", "0"], ["Sale (Month)", "0"], ["Credit Limit", fmt(ph.customer?.creditLimit)], ["Balance", fmt(ph.balance)], ["Last Receipt", "—"], ["Last Sale", lastSale ? dmy(lastSale) : "—"], ["P.D.C.", "Nil"], ["Collection Days", "All Days"]].map(([k, v]) => (
                         <div key={k} className="flex justify-between"><span className="text-slate-500">{k}</span><span className="font-bold text-slate-800">{v}</span></div>
                       ))}
                     </div>
                     <div className="p-5">
                       <div className="grid grid-cols-4 text-xs font-semibold text-slate-400 border-b border-slate-200 pb-2"><span>BILL</span><span>DATE</span><span className="text-right">AMOUNT</span><span className="text-right">DAYS</span></div>
                       {phInvoices.length ? phInvoices.slice().reverse().slice(0, 8).map((e, i) => (
-                        <div key={i} className="grid grid-cols-4 text-sm py-1.5 border-b border-slate-50"><span className="font-mono">{e.ref}</span><span>{new Date(e.date).toLocaleDateString("en-GB")}</span><span className="text-right font-semibold">{fmt(e.debit)}</span><span className="text-right">—</span></div>
+                        <div key={i} className="grid grid-cols-4 text-sm py-1.5 border-b border-slate-50"><span className="font-mono">{e.ref}</span><span>{dmy(e.date)}</span><span className="text-right font-semibold">{fmt(e.debit)}</span><span className="text-right">—</span></div>
                       )) : <div className="py-10 text-center text-slate-400">No outstanding bills</div>}
                     </div>
                   </div>
@@ -742,7 +727,6 @@ export default function SalesChallan() {
                   <button id="proceed-billing" onClick={proceedToBilling} className="bg-[#1b4985] hover:bg-[#163a6b] text-white px-6 py-3 rounded-lg font-bold cursor-pointer">Proceed to Billing →</button>
                 </div>
               </div>
-              {/* Customer status panel */}
               <div className="w-80 shrink-0">
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                   <div className="bg-[#1b4985] text-white px-4 py-2.5 font-bold">Customer Status</div>
@@ -754,6 +738,113 @@ export default function SalesChallan() {
                       <div className="flex justify-between"><span className="text-slate-400">Outstanding</span><span className="font-bold">{fmt(ph.balance)}</span></div>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4 — Bill Entry */}
+          {step === 4 && (
+            <div className="flex gap-6">
+              <div className="flex-1 flex flex-col gap-4 min-w-0">
+                {/* Party header with date + type */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-start justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-slate-400 uppercase tracking-wide">Party Name</div>
+                    <div className="text-2xl font-bold text-slate-900">{customer.name || "—"}</div>
+                    <div className="text-sm text-slate-500 mt-0.5">{[customer.address, customer.gstNumber, customer.phone ? "M-" + customer.phone : ""].filter(Boolean).join(" · ")}</div>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <div>
+                      <div className="text-xs font-semibold text-slate-400 uppercase">Challan No.</div>
+                      <div className="text-[#1b4985] font-bold">{activeBill?.billNo || "NEW"}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-slate-400 uppercase">Date</div>
+                      <input id="bill-date-input" type="date" value={billDate}
+                        onChange={(e) => setBillDate(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); document.getElementById("bill-type-input")?.focus(); } }}
+                        className="font-bold text-slate-800 bg-transparent outline-none border-b border-transparent focus:border-[#1b4985]" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-slate-400 uppercase">Type</div>
+                      <div className="flex items-center gap-1.5">
+                        <select id="bill-type-input" value={billType}
+                          onChange={(e) => setBillType(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); document.getElementById("search-product-0")?.focus(); } }}
+                          className={`font-bold rounded px-2 py-0.5 outline-none cursor-pointer ${billType === "Cash" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
+                          <option value="Credit">Credit</option>
+                          <option value="Cash">Cash</option>
+                        </select>
+                        <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded">Local</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Product grid */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <GridHeader />
+                  {rows.map((row, i) => <ProductRow key={i} row={row} i={i} />)}
+                </div>
+
+                {/* Selected line + totals */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                    <div className="text-sm font-semibold text-slate-400 uppercase mb-2">Selected Line</div>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between"><span className="text-slate-500">Item</span><span className="font-semibold">{activeRowData.name || "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Batch</span><span className="font-semibold font-mono">{activeRowData.batch || "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Expiry</span><span className="font-semibold">{activeRowData.expiry ? dmy(activeRowData.expiry) : "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Stock</span><span className="font-semibold">{activeRowData.availableQty != null ? `${activeRowData.availableQty} units` : "—"}</span></div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                    <div className="space-y-1.5 text-sm">
+                      <div className="flex justify-between"><span className="text-slate-500">MRP Value</span><span className="font-semibold">{fmt(mrpValue)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Value of Goods</span><span className="font-semibold">{fmt(valueOfGoods)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Discount</span><span className="font-semibold text-red-600">- {fmt(discountAmt)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">GST @ {avgGstPct}%</span><span className="font-semibold">{fmt(gstAmt)}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Round Off</span><span className="font-semibold">{roundOff}</span></div>
+                      <div className="border-t pt-2 flex justify-between items-center"><span className="font-bold text-[#1b4985]">CHALLAN VALUE</span><span className="text-3xl font-extrabold text-[#1b4985]">{fmt(challanValue)}</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action bar */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex items-center gap-2 flex-wrap">
+                  {["Sale", "Purchase", "SC", "PC", "Copy", "Paste", "SR", "PR", "O/S", "BE", "Cash", "Vou", "Hold", "Push"].map((b) => (
+                    <button key={b} tabIndex={-1} className="px-3 py-1.5 text-sm border border-slate-200 rounded text-slate-600 hover:bg-slate-50">{b}</button>
+                  ))}
+                  <div className="ml-auto flex items-center gap-2">
+                    <button tabIndex={-1} className="px-4 py-2 bg-purple-600 text-white rounded-lg font-bold text-sm">QR ID</button>
+                    <button onClick={() => handleSaveBillRef.current?.()} className="px-6 py-2 bg-[#1b4985] hover:bg-[#163a6b] text-white rounded-lg font-bold text-sm">Save (Shift + Enter)</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Customer status panel */}
+              <div className="w-80 shrink-0 space-y-4">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="bg-[#1b4985] text-white px-4 py-2.5 font-bold flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-400" /> Customer Status</div>
+                  <div className="p-4">
+                    <div className="text-lg font-bold text-slate-900 mb-3">{customer.name || "—"}</div>
+                    <div className="space-y-1.5 text-sm">
+                      <div className="flex justify-between"><span className="text-slate-400">Mobile</span><span className="font-semibold">{customer.phone || "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">Area</span><span className="font-semibold">{customer.address || "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">Outstanding</span><span className="font-bold">{fmt(ph.balance)}</span></div>
+                    </div>
+                    <div className="border-t border-slate-100 my-3" />
+                    <div className="space-y-1.5 text-sm">
+                      <div className="flex justify-between"><span className="text-slate-400">Sale (Annual)</span><span className="font-semibold">0</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">Last Sale</span><span className="font-semibold">{lastSale ? dmy(lastSale) : "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">Last Receipt</span><span className="font-semibold">—</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                  <div className="text-xs font-semibold text-slate-400 uppercase mb-2">Collection Days</div>
+                  <div className="bg-blue-50 text-[#1b4985] font-bold text-center py-2 rounded-lg">All Days</div>
                 </div>
               </div>
             </div>
