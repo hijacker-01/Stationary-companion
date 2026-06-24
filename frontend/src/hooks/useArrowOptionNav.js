@@ -16,8 +16,15 @@ import { useEffect } from "react";
  * bar, an action bar…), or an explicit [data-option-group]. Right/Down → next,
  * Left/Up → previous, wrapping around.
  */
+// Controls that the arrow keys can MOVE FROM (an "option" the user is sitting on).
 const OPTION =
   'button:not([disabled]):not([tabindex="-1"]), [role="button"]:not([tabindex="-1"]), [role="tab"]:not([tabindex="-1"]), a[href]:not([tabindex="-1"]), [data-option]:not([tabindex="-1"])';
+
+// Controls the arrow keys can STOP ON — options PLUS dropdowns, so a dropdown
+// sitting in a row of choices is part of the cycle: arrow lands on it, it opens
+// and you navigate it, Enter selects + advances to the next option.
+const DROPDOWN = 'select:not([disabled]):not([tabindex="-1"]), [data-smart-select] input:not([disabled]), [role="combobox"]:not([disabled])';
+const STOP = `${OPTION}, ${DROPDOWN}`;
 
 const CHROME = 'header, nav, aside, [data-section="sidebar"], [data-section="right-sidebar"]';
 
@@ -49,11 +56,12 @@ export function useArrowOptionNav() {
 
       const visible = (el) => el.offsetParent !== null && !el.closest(CHROME);
 
-      // Find the nearest ancestor group that holds 2+ visible options.
+      // Find the nearest ancestor group that holds 2+ visible stops (options or
+      // dropdowns). Stops include dropdowns so they're part of the arrow cycle.
       let opts = [];
       let node = active.closest("[data-option-group]") || active.parentElement;
       while (node) {
-        const found = Array.from(node.querySelectorAll(OPTION)).filter(visible);
+        const found = Array.from(node.querySelectorAll(STOP)).filter(visible);
         if (found.length >= 2) { opts = found; break; }
         if (node.tagName === "MAIN" || node === document.body) break;
         node = node.parentElement;
@@ -66,7 +74,7 @@ export function useArrowOptionNav() {
       if (next && next !== active) {
         e.preventDefault();
         e.stopPropagation();
-        next.focus();
+        next.focus(); // a dropdown auto-opens on focus and then owns the arrows
       }
     };
     // Bubble phase: a control's own onKeyDown (React, fires first) can claim the
