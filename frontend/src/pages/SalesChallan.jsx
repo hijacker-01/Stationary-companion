@@ -107,7 +107,6 @@ export default function SalesChallan() {
       if (e.key === "Escape") {
         if (e.defaultPrevented) return; // useEscReverse / dropdown already handled it
         if (showDebtorsModal) { e.preventDefault(); setShowDebtorsModal(false); return; }
-        if (partyHistory) return; // popup owns its own Esc
         // Wizard: step one back (4→3→2→1); from step 1 leave to the list.
         e.preventDefault();
         if (step > 1) setStep((s) => s - 1);
@@ -116,7 +115,7 @@ export default function SalesChallan() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [view, showDebtorsModal, step, partyHistory]);
+  }, [view, showDebtorsModal, step]);
 
   // Reset the wizard to step 1 whenever the create view opens.
   useEffect(() => {
