@@ -260,7 +260,7 @@ export default function SalesChallan() {
     if (field === "qty") checkScheme(index, updated[index].name, value);
   };
 
-  const addRow = () => setRows([...rows, { ...emptyRow }]);
+  const addRow = () => setRows((prev) => [...prev, { ...emptyRow }]);
   const removeRow = (i) => { setRows(rows.filter((_, idx) => idx !== i)); setRowSchemes((prev) => { const n = { ...prev }; delete n[i]; return n; }); };
 
   const handleSaveBill = async () => {
@@ -536,8 +536,8 @@ export default function SalesChallan() {
                   else if ((searchVal || "").trim()) handleItemSelect(i, searchVal);
                   else { setActiveDropdown(null); return; }
                   setActiveDropdown(null);
-                  if (i === rows.length - 1) setTimeout(() => addRow(), 0);
-                  setTimeout(() => { const tr = e.target.closest("[data-billrow]"); tr?.querySelector("input[data-qty]")?.focus(); }, 50);
+                  if (i === rows.length - 1) addRow();
+                  setTimeout(() => { const el = document.getElementById(`qty-${i}`); if (el) { el.focus(); el.select(); } }, 60);
                 } else if (e.key === "Escape") { e.preventDefault(); setActiveDropdown(null); }
               }}
               placeholder={i === rows.length - 1 ? "Type to add item…" : ""}
@@ -546,7 +546,7 @@ export default function SalesChallan() {
               <ul className="absolute left-2 top-full mt-0.5 w-[440px] bg-white border border-gray-300 shadow-xl z-50 max-h-56 overflow-auto">
                 {filtered.map((it, di) => (
                   <li key={it.id || di} className={`px-3 py-1.5 cursor-pointer text-sm border-b border-gray-100 ${di === dropdownIndex ? "bg-blue-100" : "hover:bg-blue-50"}`}
-                    onMouseDown={(e) => { e.preventDefault(); handleItemSelect(i, `${it.name}${it.batch ? " | Batch: " + it.batch : ""}`); setActiveDropdown(null); if (i === rows.length - 1) setTimeout(() => addRow(), 0); }}>
+                    onMouseDown={(e) => { e.preventDefault(); handleItemSelect(i, `${it.name}${it.batch ? " | Batch: " + it.batch : ""}`); setActiveDropdown(null); if (i === rows.length - 1) addRow(); setTimeout(() => { const el = document.getElementById(`qty-${i}`); if (el) { el.focus(); el.select(); } }, 60); }}>
                     <div className="flex justify-between font-semibold"><span>{it.name}</span><span className="text-emerald-700">₹{it.selling_price || it.mrp || 0}</span></div>
                     <div className="flex justify-between text-xs text-gray-500"><span>Batch {it.batch || "-"}</span><span>Stock {it.stock_qty || 0}</span></div>
                   </li>
@@ -556,7 +556,7 @@ export default function SalesChallan() {
           </div>
           <div className="px-2 py-1.5 text-slate-600">{row.pack || "—"}</div>
           <div className="px-2 py-1.5 text-slate-600 font-mono">{row.batch || "—"}</div>
-          <div className="px-1 py-1.5"><input data-qty type="number" min="1" value={row.qty} onChange={(e) => handleRowChange(i, "qty", e.target.value)} className="w-full text-right bg-transparent outline-none font-bold" /></div>
+          <div className="px-1 py-1.5"><input id={`qty-${i}`} data-qty type="number" min="1" value={row.qty} onChange={(e) => handleRowChange(i, "qty", e.target.value)} className="w-full text-right bg-transparent outline-none font-bold" /></div>
           <div className="px-1 py-1.5"><input type="number" min="0" value={row.schemeQty} onChange={(e) => handleRowChange(i, "schemeQty", e.target.value)} className="w-full text-right bg-transparent outline-none text-emerald-700 font-bold" /></div>
           <div className="px-1 py-1.5"><input type="number" value={row.selling_price} onChange={(e) => handleRowChange(i, "selling_price", e.target.value)} className="w-full text-right bg-transparent outline-none" /></div>
           <div className="px-1 py-1.5"><input type="number" value={row.disc} onChange={(e) => handleRowChange(i, "disc", e.target.value)} className="w-full text-right bg-transparent outline-none" /></div>
@@ -574,7 +574,8 @@ export default function SalesChallan() {
     );
 
     return (
-      <div className="flex h-screen flex-col bg-slate-100 font-sans overflow-hidden">
+      // zoom 1.125 → ~18px scale on the entry wizard, while the rest of the app stays 16px.
+      <div className="flex h-screen flex-col bg-slate-100 font-sans overflow-hidden" style={{ zoom: 1.125 }}>
         {/* Top bar */}
         <div className="bg-[#1b4985] text-white px-6 py-3 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
