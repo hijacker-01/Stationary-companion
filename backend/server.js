@@ -85,8 +85,9 @@ const { seedStateMaster } = require("./seeders/stateMasterSeeder");
 sequelize.authenticate()
   .then(async () => {
     console.log("✅ Database connected successfully");
-    // In production, migrations should be run via CLI (e.g. sequelize-cli) 
-    // rather than auto-syncing.
+    // Local-first deployments do not have a separate migration service. Sync the
+    // model graph on startup so a fresh SQLite file is immediately usable.
+    await sequelize.sync();
     await seedStateMaster();
     
     // Initialize cron jobs

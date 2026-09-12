@@ -49,6 +49,25 @@ async function login({ email, password }) {
   return { cookie, user: body.user };
 }
 
+// Ensure the admin test user exists (branch 1), so the suite is reproducible
+// on a fresh database without relying on production seed data.
+async function ensureAdminUser() {
+  const bcrypt = require("bcryptjs");
+  const sequelize = require("../config/db");
+  const hashed = await bcrypt.hash(ADMIN.password, 10);
+  await sequelize.query(
+    `INSERT INTO "Users" (name, email, password, role, permissions, "isActive", "branchId", "createdAt", "updatedAt")
+     VALUES (:name, :email, :password, 'admin', '["*"]', true, 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+     ON CONFLICT (email) DO UPDATE SET password = :password, permissions = '["*"]', "branchId" = 4, role = 'admin', "isActive" = true`,
+    { replacements: { name: "Admin Test", email: ADMIN.email, password: hashed } }
+  );
+  await sequelize.query(
+    `INSERT INTO "Items" (name, batch, category, unit, mrp, selling_price, cost_price, stock_qty, "branchId", "createdAt", "updatedAt")
+     VALUES ('TEST Base Item', 'BASE1', 'General', 'PCS', 10, 9, 8, 10, 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+     ON CONFLICT ("branchId", name, batch) DO NOTHING`
+  );
+}
+
 // Ensure the non-admin test user exists (branch 1), so the suite is
 // reproducible on a fresh database. The user is a non-admin in branch 1 with
 // the `billing.create` permission (so we can exercise the billing path) but
@@ -61,7 +80,7 @@ async function ensureStaffUser() {
   const permissions = JSON.stringify(["billing.create"]);
   await sequelize.query(
     `INSERT INTO "Users" (name, email, password, role, permissions, "isActive", "branchId", "createdAt", "updatedAt")
-     VALUES (:name, :email, :password, 'staff', :permissions, true, 1, NOW(), NOW())
+     VALUES (:name, :email, :password, 'staff', :permissions, true, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
      ON CONFLICT (email) DO UPDATE SET permissions = :permissions, "branchId" = 1, role = 'staff', "isActive" = true`,
     { replacements: { name: "Staff Mumbai (test)", email: STAFF.email, password: hashed, permissions } }
   );
@@ -78,4 +97,4 @@ async function assertServerUp() {
   }
 }
 
-module.exports = { BASE_URL, ADMIN, STAFF, api, login, ensureStaffUser, assertServerUp };
+module.exports = { BASE_URL, ADMIN, STAFF, api, login, ensureAdminUser, ensureStaffUser, assertServerUp };

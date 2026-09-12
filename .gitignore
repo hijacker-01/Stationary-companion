@@ -36,3 +36,6 @@ env/
 # ChromaDB persistence folder
 ai-service/chroma_db/
 **/chroma_db/
+
+# Local SQLite runtime data
+backend/data/

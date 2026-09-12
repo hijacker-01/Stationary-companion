@@ -1,21 +1,15 @@
+const path = require("path");
+const fs = require("fs");
 const { Sequelize } = require("sequelize");
 require("dotenv").config();
 
-const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
-  {
-    host: process.env.DB_HOST,
-    dialect: "postgres",
-    pool: {
-      max: 50,
-      min: 10,
-      acquire: 30000,
-      idle: 10000
-    },
-    logging: false // Disable logging to keep console clean
-  }
-);
+const storagePath = process.env.DB_STORAGE_PATH || path.join(__dirname, "../data/stationary-companion.db");
+fs.mkdirSync(path.dirname(storagePath), { recursive: true });
+
+const sequelize = new Sequelize({
+  dialect: "sqlite",
+  storage: storagePath,
+  logging: false
+});
 
 module.exports = sequelize;

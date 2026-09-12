@@ -54,6 +54,24 @@ export default function ProfitAnalytics() {
   if (loading && !data) return <div className="p-8 text-center font-bold">Loading Enterprise Profit Engine...</div>;
   if (errorMsg) return <div className="p-8 text-center font-bold text-red-600">Error: {errorMsg}</div>;
   if (!data) return null;
+  if (data.insufficientData) return (
+    <div className="flex h-screen bg-[#f8f9fa] font-sans">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header />
+        <main className="flex-1 flex items-center justify-center p-8">
+          <div className="max-w-lg rounded-lg border border-blue-100 bg-white p-8 text-center shadow-sm">
+            <AlertCircle className="mx-auto mb-3 h-10 w-10 text-blue-600" />
+            <h1 className="mb-2 text-lg font-bold text-gray-800">Profit Analytics is waiting for more data</h1>
+            <p className="mb-5 text-sm leading-6 text-gray-600">{data.message}</p>
+            <button onClick={fetchAnalytics} disabled={loading} className="rounded bg-[#1b4985] px-4 py-2 text-xs font-bold text-white hover:bg-blue-800 disabled:opacity-50">
+              {loading ? "Refreshing..." : "Refresh report"}
+            </button>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
 
   const sum = data.summary;
   const isLoss = sum.netMargin < 0;

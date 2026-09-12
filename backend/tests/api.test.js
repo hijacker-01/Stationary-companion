@@ -9,7 +9,7 @@
 
 const { test, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const { api, login, ADMIN, STAFF, ensureStaffUser, assertServerUp } = require("./helpers");
+const { api, login, ADMIN, STAFF, ensureAdminUser, ensureStaffUser, assertServerUp } = require("./helpers");
 
 let admin; // { cookie, user }
 let staff;
@@ -17,6 +17,7 @@ const created = { billIds: [] };
 
 before(async () => {
   await assertServerUp();
+  await ensureAdminUser();
   await ensureStaffUser();
   // Log each role in exactly once; reuse cookies across all tests.
   admin = await login(ADMIN);

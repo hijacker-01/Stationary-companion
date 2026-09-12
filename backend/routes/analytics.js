@@ -46,6 +46,22 @@ router.get("/profit", protect, adminOnly, async (req, res) => {
       })
     });
 
+    if (bills.length === 0) {
+      return res.json({
+        insufficientData: true,
+        message: "Profit Analytics needs at least one completed sale in the selected period. Record a sale or choose a wider date range, then refresh the report.",
+        period: filter || "last_90_days",
+        summary: null,
+        insights: null,
+        topProducts: [],
+        bottomProducts: [],
+        customerWise: [],
+        batchWise: [],
+        supplierWise: [],
+        invoiceWise: []
+      });
+    }
+
     const allItems = await Item.findAll({ where: branchWhere(req) });
     const itemMaster = {};
     allItems.forEach(i => {
