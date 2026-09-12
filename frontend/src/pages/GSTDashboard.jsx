@@ -11,7 +11,7 @@ export default function GSTDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get("/api/gst/dashboard")
+    axios.get("/gst/dashboard")
       .then(res => setStats(res.data))
       .catch(() => {})
       .finally(() => setLoading(false));

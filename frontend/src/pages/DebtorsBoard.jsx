@@ -8,7 +8,7 @@ const fmt = (v) => Number(v || 0).toLocaleString("en-IN", { minimumFractionDigit
 
 const customersData = [
   {
-    id: 1, name: 'AADI SHARTH MEDICAL STORE', location: 'GADARWARA',
+    id: 1, name: 'AADI SHARTH GENERAL STORES', location: 'GADARWARA',
     ledger: [
       { date: '01/07/2026', voucher: 'SI-000123', type: 'SI', particulars: 'SALES INVOICE', debit: 4458.00, credit: 0.00, balance: '4458.00 Dr' },
       { date: '03/07/2026', voucher: 'SI-000145', type: 'SI', particulars: 'SALES INVOICE', debit: 6084.00, credit: 0.00, balance: '10542.00 Dr' },
@@ -36,7 +36,7 @@ const customersData = [
     priceLevel: 'PL-1', salesman: 'RAMESH',
   },
   {
-    id: 3, name: 'AARAV PHARMACY', location: 'GADARWARA',
+    id: 3, name: 'AARAV OFFICE MART', location: 'GADARWARA',
     ledger: [
       { date: '04/07/2026', voucher: 'SI-000155', type: 'SI', particulars: 'SALES INVOICE', debit: 15200.00, credit: 0.00, balance: '15200.00 Dr' },
       { date: '08/07/2026', voucher: 'SI-000185', type: 'SI', particulars: 'SALES INVOICE', debit: 3400.00, credit: 0.00, balance: '18600.00 Dr' },
@@ -49,7 +49,7 @@ const customersData = [
     priceLevel: 'PL-2', salesman: 'SURESH',
   },
   {
-    id: 4, name: 'AAROGYA MEDICAL AND GENRAL', location: 'GADARWARA',
+    id: 4, name: 'AAROGYA GENERAL STORES', location: 'GADARWARA',
     ledger: [
       { date: '05/07/2026', voucher: 'SI-000160', type: 'SI', particulars: 'SALES INVOICE', debit: 4500.00, credit: 0.00, balance: '4500.00 Dr' },
     ],
@@ -60,7 +60,7 @@ const customersData = [
     priceLevel: 'PL-1', salesman: 'NA',
   },
   {
-    id: 5, name: 'ABIA PHARMA', location: 'BILASPUR (C.G.)',
+    id: 5, name: 'ABIA PAPER DISTRIBUTORS', location: 'BILASPUR (C.G.)',
     ledger: [
       { date: '01/07/2026', voucher: 'SI-000121', type: 'SI', particulars: 'SALES INVOICE', debit: 22450.00, credit: 0.00, balance: '22450.00 Dr' },
       { date: '05/07/2026', voucher: 'RC-000065', type: 'RC', particulars: 'RECEIPT', debit: 0.00, credit: 15000.00, balance: '7450.00 Dr' },
@@ -73,7 +73,7 @@ const customersData = [
     priceLevel: 'PL-2', salesman: 'DINESH',
   },
   {
-    id: 6, name: 'ADARSH MEDICAL SIHORA', location: 'SIHORA',
+    id: 6, name: 'ADARSH STATIONERY SIHORA', location: 'SIHORA',
     ledger: [
       { date: '03/07/2026', voucher: 'SI-000140', type: 'SI', particulars: 'SALES INVOICE', debit: 3200.00, credit: 0.00, balance: '3200.00 Dr' },
     ],
@@ -84,7 +84,7 @@ const customersData = [
     priceLevel: 'PL-1', salesman: 'NA',
   },
   {
-    id: 7, name: 'ADS PHARMA', location: '',
+    id: 7, name: 'ADS OFFICE SUPPLIES', location: '',
     ledger: [],
     opening: 0.00, openingType: '', totalDebit: 0.00, totalCredit: 0.00, balance: 0.00, balanceType: '',
     summary: 0.00, mot: 0.00, overdue: 0.00, futureAmt: 0.00,
@@ -102,7 +102,7 @@ const customersData = [
     priceLevel: 'PL-1', salesman: 'NA',
   },
   {
-    id: 9, name: 'ADS PHARMA', location: 'JABALPUR',
+    id: 9, name: 'ADS OFFICE SUPPLIES', location: 'JABALPUR',
     ledger: [
       { date: '06/07/2026', voucher: 'SI-000170', type: 'SI', particulars: 'SALES INVOICE', debit: 5600.00, credit: 0.00, balance: '5600.00 Dr' },
     ],
