@@ -1,4 +1,5 @@
 const express = require("express");
+const path = require("path");
 const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
@@ -74,6 +75,14 @@ app.use("/api/automation",      require("./routes/automation"));
 app.use("/api/plugins",         require("./routes/plugins"));
 app.use("/api/webhooks",        require("./routes/webhooks"));
 app.use("/api/api-keys",        require("./routes/api-keys"));
+
+// In production/Electron, serve the built React app from the same process as the API.
+const frontendDist = path.join(__dirname, "../frontend/dist");
+app.use(express.static(frontendDist));
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api")) return next();
+  res.sendFile(path.join(frontendDist, "index.html"));
+});
 
 const errorHandler = require("./middleware/errorHandler");
 app.use(errorHandler);

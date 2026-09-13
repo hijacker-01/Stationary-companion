@@ -39,3 +39,7 @@ ai-service/chroma_db/
 
 # Local SQLite runtime data
 backend/data/
+
+# Electron build output
+electron/dist/
+electron/node_modules/

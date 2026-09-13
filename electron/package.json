@@ -1,0 +1,49 @@
+{
+  "name": "stationary-companion-desktop",
+  "version": "1.0.0",
+  "description": "Stationary Companion desktop application",
+  "author": "Stationary Companion",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --publish never"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.stationarycompanion.app",
+    "productName": "Stationary Companion",
+    "files": [
+      "main.js",
+      "build/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../backend",
+        "to": "backend",
+        "filter": [
+          "**/*",
+          "!node_modules/.cache",
+          "!data/*.db",
+          "!uploads/**"
+        ]
+      },
+      {
+        "from": "../frontend/dist",
+        "to": "frontend/dist"
+      }
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}
